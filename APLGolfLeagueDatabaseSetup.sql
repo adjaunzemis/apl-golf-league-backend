@@ -1,0 +1,112 @@
+CREATE DATABASE apl_golf_league;
+SHOW DATABASES;
+USE apl_golf_league;
+
+DROP TABLE players;
+CREATE TABLE players (
+	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+DROP TABLE courses;
+CREATE TABLE courses (
+	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    course_name VARCHAR(255) NOT NULL,
+    track_name VARCHAR(255) NOT NULL,
+    abbreviation VARCHAR(255) NOT NULL,
+    year_updated SMALLINT UNSIGNED NOT NULL,
+    gender ENUM("M", "F") NOT NULL,
+    tee_set VARCHAR(255) NOT NULL,
+	tee_color CHAR(6),
+    rating FLOAT NOT NULL,
+    slope FLOAT NOT NULL,
+    address VARCHAR(255),
+    city VARCHAR(255),
+    state VARCHAR(7),
+    zip_code SMALLINT UNSIGNED,
+    phone VARCHAR(255),
+    website VARCHAR(255),
+    PRIMARY KEY (id)
+);
+
+DROP TABLE course_holes;
+CREATE TABLE course_holes (
+	course_id INT UNSIGNED NOT NULL,
+    number TINYINT UNSIGNED NOT NULL,
+    par TINYINT UNSIGNED NOT NULL,
+    handicap TINYINT UNSIGNED NOT NULL,
+    yardage SMALLINT UNSIGNED NOT NULL,
+    PRIMARY KEY (course_id, number)
+);
+
+DROP TABLE flights;
+CREATE TABLE flights (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    year SMALLINT UNSIGNED NOT NULL,
+    short_name VARCHAR(255) NOT NULL,
+    home_course_id INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id)
+);
+
+DROP TABLE teams;
+CREATE TABLE teams (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    flight_id INT UNSIGNED NOT NULL,
+    year SMALLINT UNSIGNED NOT NULL,
+    name VARCHAR(255),
+    PRIMARY KEY (id)
+);
+
+DROP TABLE team_players;
+CREATE TABLE team_players (
+	team_id INT UNSIGNED NOT NULL,
+    player_id INT UNSIGNED NOT NULL,
+    role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
+    PRIMARY KEY (team_id, player_id)
+);
+
+DROP TABLE matches;
+CREATE TABLE matches (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    team_1_id INT UNSIGNED NOT NULL,
+    team_2_id INT UNSIGNED NOT NULL,
+    week TINYINT UNSIGNED NOT NULL,
+    course_id INT UNSIGNED NOT NULL,
+    type ENUM("REGULAR", "PLAYOFF") NOT NULL,
+    team_1_score TINYINT UNSIGNED,
+    team_2_score TINYINT UNSIGNED,
+    PRIMARY KEY (id)
+);
+
+DROP TABLE match_rounds;
+CREATE TABLE match_rounds (
+	match_id INT UNSIGNED NOT NULL,
+    round_id INT UNSIGNED NOT NULL,
+    PRIMARY KEY (match_id, round_id)
+);
+
+DROP TABLE rounds;
+CREATE TABLE rounds (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    course_id INT UNSIGNED NOT NULL,
+    player_id INT UNSIGNED NOT NULL,
+    date_played DATE NOT NULL,
+    player_handicap_index FLOAT NOT NULL,
+    player_course_handicap FLOAT NOT NULL,
+    gross_score TINYINT UNSIGNED NOT NULL,
+    adjusted_gross_score TINYINT UNSIGNED NOT NULL,
+    score_differential FLOAT NOT NULL,
+    PRIMARY KEY (id)
+);
+
+DROP TABLE round_hole_scores;
+CREATE TABLE round_hole_scores (
+	round_id INT UNSIGNED NOT NULL,
+    hole_number TINYINT UNSIGNED NOT NULL,
+    strokes TINYINT UNSIGNED NOT NULL,
+    PRIMARY KEY (round_id, hole_number)
+);
