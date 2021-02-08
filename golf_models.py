@@ -9,6 +9,8 @@ Andris Jaunzemis
 
 import numpy as np
 
+from usga_handicap import compute_course_handicap, compute_score_differential, compute_adjusted_gross_score
+
 class GolfCourse(object):
     r"""
     Container for 9-hole track on a golf course.
@@ -110,25 +112,14 @@ class GolfRound(object):
         return {
             'date_played': self.date_played,
             'player_handicap_index': self.player_handicap_index,
-            'player_course_handicap': self.compute_course_handicap(),
-            'gross_score': self.compute_gross_score(),
-            'adjusted_gross_score': self.compute_adjusted_gross_score(),
-            'score_differential': self.compute_score_differential()
+            'player_course_handicap': self.course_handicap,
+            'gross_score': self.gross_score,
+            'adjusted_gross_score': self.adjusted_gross_score,
+            'score_differential': self.score_differential
         }
 
-    def compute_course_handicap(self):
-        r"""
-        Computes course handicap using this player's handicap index.
-
-        Returns
-        -------
-        course_handicap : float
-            course handicap for this player
-
-        """
-        return None
-
-    def compute_gross_score(self):
+    @property
+    def gross_score(self):
         r"""
         Computes gross score: total number of strokes.
 
@@ -138,9 +129,10 @@ class GolfRound(object):
             gross score
         
         """
-        return None
+        return np.sum([hole.strokes for hole in self.holes])
 
-    def compute_adjusted_gross_score(self):
+    @property
+    def adjusted_gross_score(self):
         r"""
         Computes adjusted gross score using course handicap.
 
@@ -150,9 +142,23 @@ class GolfRound(object):
             adjusted gross score
 
         """
-        return None
+        return np.sum([compute_adjusted_gross_score(hole.par, hole.handicap, hole.strokes, self.course_handicap) for hole in self.holes])
 
-    def compute_score_differential(self):
+    @property
+    def course_handicap(self):
+        r"""
+        Computes course handicap using this player's handicap index.
+
+        Returns
+        -------
+        course_handicap : float
+            course handicap for this player
+
+        """
+        return compute_course_handicap(self.course.par, self.course.rating, self.course.slope, self.player_handicap_index)
+
+    @property
+    def score_differential(self):
         r"""
         Computes score differential.
 
@@ -162,4 +168,4 @@ class GolfRound(object):
             score differential
         
         """
-        return None
+        return compute_score_differential(self.course.rating, self.course.slope, self.adjusted_gross_score)
