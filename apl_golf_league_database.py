@@ -44,7 +44,7 @@ class APLGolfLeagueDatabase(object):
             if verbose:
                 print("Authenticated to database '{:s}' as user '{:s}'".format(config['database'], config['user']))
 
-    def fetch_all_course_names(self, verbose=False):
+    def get_all_course_names(self, verbose=False):
         r"""
         Fetches all course names from courses table.
 
@@ -74,7 +74,7 @@ class APLGolfLeagueDatabase(object):
         Parameters
         ----------
         course_name : string
-            golf course name
+            course name
         track_name : string
             9-hole track name
         tee_name : string
@@ -107,7 +107,67 @@ class APLGolfLeagueDatabase(object):
         # Return matched course id or None (if not found)
         if len(data) == 0:
             return None
-        return data[0][0]
+        result = data[0]
+        return result[0]
+
+    def get_course(self, course_name, track_name, tee_name, gender, verbose=False):
+        r"""
+        Fetches golf course data for the course matching the given parameters.
+
+        If a matching course cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        course_name : string
+            course name
+        track_name : string
+            9-hole track name
+        tee_name : string
+            tee set name
+        gender : string
+            indicates whether men's or women's data is requested
+            Options: "M", "F"
+        verbose : boolean, optional
+            if true, prints details to console
+        
+        Returns
+        -------
+        hole : GolfHole
+            golf hole data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT abbreviation, rating, slope, tee_color, address, city, state, zip_code, phone, website FROM courses WHERE course_name='{:s}' AND track_name='{:s}' AND tee_name='{:s}' AND gender='{:s}';".format(course_name, track_name, tee_name, gender)
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching course not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into course
+        result = data[0]
+        course = GolfCourse(course_name, track_name, result[0], tee_name, gender, result[1], result[2])
+        # TODO: Add other (optional) data fields from query
+        
+        # Gather hole data for this course
+        course_id = self.get_course_id(course_name, track_name, tee_name, gender, verbose=verbose)
+        hole_numbers = self.get_hole_numbers_for_course(course_id, verbose=verbose)
+
+        for hole_number in hole_numbers:
+            hole = self.get_hole(course_id, hole_number, verbose=verbose)
+            course.add_hole(hole.number, hole.par, hole.handicap, hole.yardage)
+            # TODO: Add ability to add hole object directly to course
+
+        # Return course
+        return course
     
     def put_course(self, course, update=False, verbose=False):
         r"""
@@ -190,7 +250,7 @@ class APLGolfLeagueDatabase(object):
         
         """
         # Build query
-        query = "SELECT number, par, handicap, yardage FROM course_holes WHERE course_id={:d} AND number={:d};".format(course_id, number)
+        query = "SELECT par, handicap, yardage FROM course_holes WHERE course_id={:d} AND number={:d};".format(course_id, number)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -203,8 +263,41 @@ class APLGolfLeagueDatabase(object):
         # Return matched golf hole or None (if not found)
         if len(data) == 0:
             return None
-        return GolfHole(data[0][0], data[0][1], data[0][2], data[0][3])
+        result = data[0]
+        return GolfHole(number, result[0], result[1], result[2])
         
+    def get_hole_numbers_for_course(self, course_id, verbose=False):
+        r"""
+        Fetches golf hole numbers for the given golf course.
+
+        Parameters
+        ----------
+        course_id : int
+            course identifier
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+
+        Returns
+        -------
+        numbers : list-like of ints
+            golf hole numbers for this course
+
+        """
+        # Build query
+        query = "SELECT number FROM course_holes WHERE course_id = {:d};".format(course_id)
+        
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        return [d[0] for d in data]
+
     def put_hole(self, hole, course_id, update=False, verbose=False):
         r"""
         Adds/updates golf course hole data in database, populating 'course_holes' table.
@@ -278,12 +371,20 @@ if __name__ == "__main__":
     CONFIG_FILE = "./config/admin.user"
     db = APLGolfLeagueDatabase(CONFIG_FILE, verbose=True)
 
-    # Add Woodholme Country Club (blue tees, mens) to database
-    db.put_course(create_test_course_woodholme(), update=True, verbose=True)
+    # # Add Woodholme Country Club (blue tees, mens) to database
+    # db.put_course(create_test_course_woodholme(), update=True, verbose=True)
 
-    # Check data in database
-    course_names = db.fetch_all_course_names(verbose=True)
-    print(course_names)
+    # # Check data in database
+    # course_names = db.get_all_course_names(verbose=True)
+    # print(course_names)
 
-    course_id = db.get_course_id("Woodholme Country Club", "Front", "Blue", "M", verbose=True)
-    print(course_id)
+    # course_id = db.get_course_id("Woodholme Country Club", "Front", "Blue", "M", verbose=True)
+    # print(course_id)
+
+    # hole_numbers = db.get_hole_numbers_for_course(course_id, verbose=True)
+    # print(hole_numbers)
+
+    # Fetch course from database
+    course = db.get_course("Woodholme Country Club", "Front", "Blue", "M", verbose=True)
+    print(course)
+    print(course.par)
