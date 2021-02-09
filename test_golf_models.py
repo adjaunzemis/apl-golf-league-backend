@@ -24,18 +24,19 @@ def main():
     )
 
     # Add holes
-    course.add_hole(1, 4, 325, 17)
-    course.add_hole(2, 5, 529, 7)
-    course.add_hole(3, 3, 167, 11)
-    course.add_hole(4, 4, 401, 1)
-    course.add_hole(5, 3, 186, 13)
-    course.add_hole(6, 4, 404, 5)
-    course.add_hole(7, 4, 337, 9)
-    course.add_hole(8, 4, 306, 15)
-    course.add_hole(9, 4, 366, 3)
+    course.add_hole(1, 4, 17, 325)
+    course.add_hole(2, 5, 7, 529)
+    course.add_hole(3, 3, 11, 167)
+    course.add_hole(4, 4, 1, 401)
+    course.add_hole(5, 3, 13, 186)
+    course.add_hole(6, 4, 5, 404)
+    course.add_hole(7, 4, 9, 337)
+    course.add_hole(8, 4, 15, 306)
+    course.add_hole(9, 4, 3, 366)
     
     print(course.as_dict())
     print(course._create_database_insert_query())
+    print(course._create_database_update_query())
 
     # Create round
     golf_round = GolfRound(course, None, date.today(), 16.5)

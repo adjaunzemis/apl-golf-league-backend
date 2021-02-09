@@ -25,7 +25,7 @@ def main():
             row['name'], # course name
             row['track'], # track name
             row['shortname'], # abbreviation
-            row['teeSet'], # tee set
+            row['teeName'], # tee set
             "M", # gender # TODO: Add this to spreadsheet
             row['rating'], # course rating
             row['slope'] # slope rating
@@ -50,7 +50,7 @@ def main():
 
     # For each golf course:
     for course in courseList:
-        db.add_course(course, verbose=True)
+        db.put_course(course, verbose=True)
         
     # Check course list in database
     course_names = db.fetch_all_course_names(verbose=True)

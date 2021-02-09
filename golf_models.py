@@ -73,14 +73,14 @@ class GolfCourse(object):
             'website': self.website
         }
 
-    def _create_database_query_payload(self):
+    def _create_database_insert_query(self):
         r"""
-        Creates query payload for adding/updating this course in database.
+        Creates query for inserting this course into database.
 
         Returns
         -------
-        payload : string
-            database query payload
+        query : string
+            database insert query for course
 
         """
         # Add required fields
@@ -110,8 +110,43 @@ class GolfCourse(object):
             fields += ", website"
             values += ", '{:s}'".format(self.website)
 
-        # Construct query payload
-        return "({:s}) VALUES ({:s})".format(fields, values)
+        # Construct query
+        return "INSERT INTO courses ({:s}) VALUES ({:s});".format(fields, values)
+
+    def _create_database_update_query(self):
+        r"""
+        Creates query for updating this course in database.
+
+        Returns
+        -------
+        query : string
+            database update query for course
+
+        """
+        # Add required fields
+        fieldValues = "course_name = '{:s}', track_name = '{:s}', abbreviation = '{:s}', tee_name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(self.course_name, self.track_name, self.abbreviation, self.tee_name, self.gender, self.rating, self.slope)
+
+        # Add optional fields if defined
+        if self.tee_color is not None:
+            fieldValues += ", tee_color = '{:s}'".format(self.tee_color)
+        if self.address is not None:
+            fieldValues += ", address = '{:s}'".format(self.address)
+        if self.city is not None:
+            fieldValues += ", city = '{:s}'".format(self.city)
+        if self.state is not None:
+            fieldValues += ", state = '{:s}'".format(self.state)
+        if self.zip_code is not None:
+            fieldValues += ", zip_code = '{:s}'".format(self.zip_code)
+        if self.phone is not None:
+            fieldValues += ", phone = '{:s}'".format(self.phone)
+        if self.website is not None:
+            fieldValues += ", website = '{:s}'".format(self.website)
+
+        # Construct conditions
+        conditions = "course_name = '{:s}' AND track_name = '{:s}' AND tee_name = '{:s}' AND gender = '{:s}'".format(self.course_name, self.track_name, self.tee_name, self.gender)
+
+        # Construct query
+        return "UPDATE courses SET {:s} WHERE {:s};".format(fieldValues, conditions)
 
     def add_hole(self, number, par, handicap, yardage):
         r"""
@@ -173,9 +208,9 @@ class GolfHole(object):
             'yardage': self.yardage
         }
 
-    def _create_database_query_payload(self, course_id):
+    def _create_database_insert_query(self, course_id):
         r"""
-        Creates query payload for adding/updating this hole in database.
+        Creates query for inserting this hole into database.
 
         Parameters
         ----------
@@ -184,16 +219,41 @@ class GolfHole(object):
 
         Returns
         -------
-        payload : string
-            database query payload
+        query : string
+            database insert query for hole
 
         """
         # Add required fields
         fields = "course_id, number, par, handicap, yardage"
         values = "{:d}, {:d}, {:d}, {:d}, {:d}".format(course_id, self.number, self.par, self.handicap, self.yardage)
 
-        # Construct query payload
-        return "({:s}) VALUES ({:s})".format(fields, values)
+        # Construct query
+        return "INSERT INTO course_holes ({:s}) VALUES ({:s})".format(fields, values)
+
+        
+    def _create_database_update_query(self, course_id):
+        r"""
+        Creates query for updating this hole in database.
+
+        Parameters
+        ----------
+        course_id : int
+            course identifier from database
+
+        Returns
+        -------
+        query : string
+            database update query for hole
+
+        """
+        # Add required fields
+        fieldValues = "number = {:d}, par = {:d}, handicap = {:d}, yardage = {:d}".format(self.number, self.par, self.handicap, self.yardage)
+
+        # Construct conditions
+        conditions = "course_id = {:d} AND number = {:d}".format(course_id, self.number)
+
+        # Construct query
+        return "UPDATE course_holes SET {:s} WHERE {:s};".format(fieldValues, conditions)
     
 class GolfHoleResult(object):
     r"""
