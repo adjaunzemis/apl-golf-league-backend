@@ -8,6 +8,7 @@ CREATE TABLE players (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -17,19 +18,20 @@ CREATE TABLE courses (
     course_name VARCHAR(255) NOT NULL,
     track_name VARCHAR(255) NOT NULL,
     abbreviation VARCHAR(255) NOT NULL,
-    year_updated SMALLINT UNSIGNED NOT NULL,
+    tee_name VARCHAR(255) NOT NULL,
     gender ENUM("M", "F") NOT NULL,
-    tee_set VARCHAR(255) NOT NULL,
-	tee_color CHAR(6),
     rating FLOAT NOT NULL,
     slope FLOAT NOT NULL,
+	tee_color CHAR(6),
     address VARCHAR(255),
     city VARCHAR(255),
     state VARCHAR(7),
     zip_code SMALLINT UNSIGNED,
     phone VARCHAR(255),
     website VARCHAR(255),
-    PRIMARY KEY (id)
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE (course_name, track_name, tee_name, gender)
 );
 
 DROP TABLE course_holes;
@@ -39,6 +41,7 @@ CREATE TABLE course_holes (
     par TINYINT UNSIGNED NOT NULL,
     handicap TINYINT UNSIGNED NOT NULL,
     yardage SMALLINT UNSIGNED NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (course_id, number)
 );
 
@@ -49,6 +52,7 @@ CREATE TABLE flights (
     year SMALLINT UNSIGNED NOT NULL,
     short_name VARCHAR(255) NOT NULL,
     home_course_id INT UNSIGNED NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -58,6 +62,7 @@ CREATE TABLE teams (
     flight_id INT UNSIGNED NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
     name VARCHAR(255),
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -66,6 +71,7 @@ CREATE TABLE team_players (
 	team_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
     role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (team_id, player_id)
 );
 
@@ -79,6 +85,7 @@ CREATE TABLE matches (
     type ENUM("REGULAR", "PLAYOFF") NOT NULL,
     team_1_score TINYINT UNSIGNED,
     team_2_score TINYINT UNSIGNED,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -86,6 +93,7 @@ DROP TABLE match_rounds;
 CREATE TABLE match_rounds (
 	match_id INT UNSIGNED NOT NULL,
     round_id INT UNSIGNED NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (match_id, round_id)
 );
 
@@ -100,6 +108,7 @@ CREATE TABLE rounds (
     gross_score TINYINT UNSIGNED NOT NULL,
     adjusted_gross_score TINYINT UNSIGNED NOT NULL,
     score_differential FLOAT NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -108,5 +117,6 @@ CREATE TABLE round_hole_scores (
 	round_id INT UNSIGNED NOT NULL,
     hole_number TINYINT UNSIGNED NOT NULL,
     strokes TINYINT UNSIGNED NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (round_id, hole_number)
 );
