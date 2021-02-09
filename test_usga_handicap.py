@@ -7,52 +7,54 @@ Andris Jaunzemis
 
 """
 
-from usga_handicap import round_toward_zero, compute_course_handicap, compute_handicap_strokes, compute_maximum_score, compute_adjusted_gross_score
+import pytest
 
-def test_round_toward_zero():
-    a = 8.49
-    print(round_toward_zero(a, 1))
-    a = 8.5
-    print(round_toward_zero(a, 1))
-    a = 8.51
-    print(round_toward_zero(a, 1))
-    a = -0.49
-    print(round_toward_zero(a, 1))
-    a = -0.5
-    print(round_toward_zero(a, 1))
-    a = -0.51
-    print(round_toward_zero(a, 1))
+from usga_handicap import *
+
+@pytest.mark.parametrize(
+    "par, handicap, index, max_score", [
+        (4, 7, 62, 9),
+        (4, 7, 52, 9),
+        (4, 7, 42, 8),
+        (4, 7, 32, 8),
+        (4, 7, 22, 7),
+        (4, 7, 12, 7),
+        (4, 7, 2, 6)
+    ])
+def test_compute_maximum_score(par, handicap, index, max_score):
+    assert compute_maximum_score(par, handicap, index) == max_score
+
+@pytest.mark.parametrize(
+    "handicap, index, handicap_strokes", [
+        (5, 63, 4),
+        (5, 53, 3),
+        (5, 43, 3),
+        (5, 33, 2),
+        (5, 23, 2),
+        (5, 13, 1),
+        (5, 3, 0)
+    ])
+def test_compute_handicap_strokes(handicap, index, handicap_strokes):
+    assert compute_handicap_strokes(handicap, index) == handicap_strokes
+
+@pytest.mark.parametrize(
+    "par, handicap, score, index, adjusted_score", [
+        (4, 7, 8, 16, 7)
+    ])
+def test_compute_adjusted_gross_score(par, handicap, score, index, adjusted_score):
+    assert compute_adjusted_gross_score(par, handicap, score, index=index) == adjusted_score
     
-def test_compute_handicap_strokes():
-    handicap = 7
-    index = 20
-    print(compute_handicap_strokes(handicap, index))
+@pytest.mark.parametrize(
+    "course_par, course_rating, course_slope_rating, handicap_index, course_handicap", [
+        (72, 73.1, 132, 12, 15.12)
+    ])
+def test_compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index, course_handicap):
+    assert pytest.approx(compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index), abs=1e-2) == course_handicap
 
-def test_compute_maximum_score():
-    par = 4
-    handicap = 7
-    index = 16
-    print(compute_maximum_score(par, handicap, index))
-
-def test_compute_adjusted_gross_score():
-    par = 4
-    handicap = 7
-    score = 8
-    index = 16
-    print(compute_adjusted_gross_score(par, handicap, score, index=index))
-
-def test_compute_course_handicap():
-    course_par = 72
-    course_rating = 73.1
-    course_slope_rating = 132
-    handicap_index = 12
-    course_handicap = compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index)
-    print(course_handicap)
-    print(round_toward_zero(course_handicap))
-
-if __name__ == '__main__':
-    # test_round_toward_zero()
-    # test_compute_handicap_strokes()
-    # test_compute_maximum_score()
-    test_compute_adjusted_gross_score()
-    # test_compute_course_handicap()
+@pytest.mark.parametrize(
+    "value, digits, result", [
+        (8.49, 0, 8),
+        (8.49, 1, 8.5),
+    ])
+def test_round_toward_zero(value, digits, result):
+    assert round_toward_zero(value, digits) == result
