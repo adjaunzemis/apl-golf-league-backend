@@ -1,5 +1,5 @@
 r"""
-Processing script for match data files
+Processing script for match/score data files
 
 Authors
 -------
@@ -8,8 +8,7 @@ Andris Jaunzemis
 """
 
 import re
-import pandas as pd
-from datetime import date, datetime
+from datetime import datetime
 
 def parse_match_data_from_file(file):
     matches = []
@@ -83,16 +82,23 @@ def match_data_to_dict(match_data):
     return match_dict
 
 if __name__ == "__main__":
-    match_data_list = parse_match_data_from_file("data/scores.tat.data")
+    DATA_YEAR = 2019
+    SCORE_DATA_FILES = ["scores.dr.data", "scores.fh.data", "scores.nwp.data", "scores.rw.data", "scores.tat.data", "scores.playoffs.data"]
 
-    match_dict_list = []
-    for match_data in match_data_list:
-        match_dict_list.append(match_data_to_dict(match_data))
+    for score_data_file in SCORE_DATA_FILES:
+        print("Processing {:d} score data file: {:s}".format(DATA_YEAR, score_data_file))
 
-    csv_data = ",".join([str(k) for k,v in match_dict_list[0].items()])
-    for match_dict in match_dict_list:
-        csv_data += "\n" + ",".join([str(v) for k,v in match_dict.items()])
+        match_data_list = parse_match_data_from_file("data/{:s}".format(score_data_file))
 
-    with open("data/scores_tat_processed.csv", "w") as fp:
-        fp.write(csv_data)
+        match_dict_list = []
+        for match_data in match_data_list:
+            match_dict_list.append(match_data_to_dict(match_data))
+
+        csv_data = ",".join([str(k) for k,v in match_dict_list[0].items()])
+        for match_dict in match_dict_list:
+            csv_data += "\n" + ",".join([str(v) for k,v in match_dict.items()])
+
+        outputFile = "data/scores_{:s}_{:d}.csv".format(score_data_file.split(".")[1], DATA_YEAR)
+        with open(outputFile, "w") as fp:
+            fp.write(csv_data)
         
