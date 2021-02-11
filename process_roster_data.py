@@ -1,14 +1,11 @@
 r"""
-Processing script for match data files
+Processing script for roster data files
 
 Authors
 -------
 Andris Jaunzemis
 
 """
-
-import re
-from datetime import datetime
 
 def parse_roster_data_from_file(file):
     players = []
