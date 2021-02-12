@@ -282,6 +282,11 @@ class GolfRound(object):
         r"""
         Creates dictionary representation of this round.
 
+        Returns
+        -------
+        course : dict
+            dictionary representation of round data
+
         """
         return {
             'date_played': self.date_played,
@@ -365,3 +370,110 @@ class GolfRound(object):
         
         """
         return compute_score_differential(self.course.rating, self.course.slope, self.adjusted_gross_score)
+
+class GolfPlayer(object):
+    r"""
+    Container for golf player information.
+
+    """
+    
+    def __init__(self, first_name, last_name, classification, email):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.classification = classification
+        self.email = email
+        self.phone = None
+        self.location = None
+        self.employee_id = None
+
+    def __str__(self):
+        r"""
+        Creates string representation of this player.
+
+        Returns
+        -------
+        s : string
+            string representation of player information
+        
+        """
+        return "{:s} {:s}".format(self.first_name, self.last_name)
+    
+    def as_dict(self):
+        r"""
+        Creates dictionary representation of this player.
+
+        Returns
+        -------
+        course : dict
+            dictionary representation of player information
+
+        """
+        return {
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'classification': self.classification,
+            'email': self.email,
+            'phone': self.phone,
+            'location': self.location,
+            'employee_id': self.employee_id
+        }
+
+    def _create_database_insert_query(self):
+        r"""
+        Creates query for inserting this player into database.
+
+        Returns
+        -------
+        query : string
+            database insert query for player
+
+        """
+        # Add required fields
+        fields = "first_name, last_name, classification, email"
+        values = "'{:s}', '{:s}', '{:s}', '{:s}'".format(self.first_name, self.last_name, self.classification, self.email)
+
+        # Add optional fields if defined
+        if self.phone is not None:
+            fields += ", phone"
+            values += ", '{:s}'".format(self.phone)
+        if self.location is not None:
+            fields += ", location"
+            values += ", '{:s}'".format(self.location)
+        if self.employee_id is not None:
+            fields += ", employee_id"
+            values += ", '{:s}'".format(self.employee_id)
+
+        # Construct query
+        return "INSERT INTO players ({:s}) VALUES ({:s});".format(fields, values)
+
+    def _create_database_update_query(self, player_id):
+        r"""
+        Creates query for updating this player in database.
+
+        Parameters
+        ----------
+        player_id : int
+            player identifier in database
+
+        Returns
+        -------
+        query : string
+            database update query for player
+
+        """
+        # Add required fields
+        fieldValues = "first_name = '{:s}', last_name = '{:s}', classification = '{:s}', email = '{:s}'".format(self.first_name, self.last_name, self.classification, self.email)
+
+        # Add optional fields if defined
+        if self.phone is not None:
+            fieldValues += ", phone = '{:s}'".format(self.phone)
+        if self.location is not None:
+            fieldValues += ", location = '{:s}'".format(self.location)
+        if self.employee_id is not None:
+            fieldValues += ", employee_id = '{:s}'".format(self.employee_id)
+
+        # Construct conditions
+        conditions = "id = {:d}".format(player_id)
+
+        # Construct query
+        return "UPDATE players SET {:s} WHERE {:s};".format(fieldValues, conditions)

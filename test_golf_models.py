@@ -9,9 +9,9 @@ Andris Jaunzemis
 
 from datetime import date
 
-from golf_models import GolfCourse, GolfRound
+from golf_models import GolfCourse, GolfRound, GolfPlayer
 
-def main():
+def test_golf_course():
     # Create course
     course = GolfCourse(
         "Woodholme Country Club",
@@ -34,6 +34,7 @@ def main():
     course.add_hole(8, 4, 15, 306)
     course.add_hole(9, 4, 3, 366)
     
+    print(str(course))
     print(course.as_dict())
     print(course._create_database_insert_query())
     print(course._create_database_update_query())
@@ -51,7 +52,20 @@ def main():
     golf_round.add_hole_score(7, 5)
     golf_round.add_hole_score(8, 5)
     golf_round.add_hole_score(9, 5)
+
     print(golf_round.as_dict())
 
+def test_golf_player():
+    player = GolfPlayer('Andris', 'Jaunzemis', 'APL_EMPLOYEE', 'Andris.Jaunzemis@jhuapl.edu')
+    player.phone = '443-845-2306'
+    player.location = '200-E342'
+    player.employee_id = '123456'
+
+    print(str(player))
+    print(player.as_dict())
+    print(player._create_database_insert_query())
+    print(player._create_database_update_query(0))
+
 if __name__ == '__main__':
-    main()
+    test_golf_course()
+    test_golf_player()

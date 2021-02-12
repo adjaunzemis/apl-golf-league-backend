@@ -7,7 +7,7 @@ CREATE TABLE players (
 	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    classification ENUM("APL_EMPLOYEE", "RETIREE", "NON_APL_EMPLOYEE") NOT NULL,
+    classification ENUM("APL_EMPLOYEE", "APL_FAMILY_MEMBER", "APL_RETIREE", "NON_APL_EMPLOYEE") NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(255),
     location VARCHAR(255),
@@ -75,6 +75,7 @@ CREATE TABLE team_players (
 	team_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
     role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
+    classification ENUM("MEN", "WOMEN", "SENIOR", "SUPER_SENIOR"),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (team_id, player_id)
 );
