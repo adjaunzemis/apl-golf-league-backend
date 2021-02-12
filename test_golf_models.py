@@ -9,7 +9,7 @@ Andris Jaunzemis
 
 from datetime import date
 
-from golf_models import GolfCourse, GolfRound, GolfPlayer
+from golf_models import GolfCourse, GolfRound, GolfPlayer, GolfFlight
 
 def test_golf_course():
     # Create course
@@ -66,6 +66,15 @@ def test_golf_player():
     print(player._create_database_insert_query())
     print(player._create_database_update_query(0))
 
+def test_golf_flight():
+    flight = GolfFlight("Diamond Ridge", 2019, "DR", 0, 1, 2, 3)
+
+    print(str(flight))
+    print(flight.as_dict())
+    print(flight._create_database_insert_query())
+    print(flight._create_database_update_query(0))
+
 if __name__ == '__main__':
     test_golf_course()
     test_golf_player()
+    test_golf_flight()

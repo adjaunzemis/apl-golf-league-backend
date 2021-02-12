@@ -371,6 +371,94 @@ class GolfRound(object):
         """
         return compute_score_differential(self.course.rating, self.course.slope, self.adjusted_gross_score)
 
+class GolfFlight(object):
+    r"""
+    Container for golf league flight information.
+
+    """
+
+    def __init__(self, name, year, abbreviation, mens_course_id, senior_course_id, super_senior_course_id, womens_course_id):
+        self.name = name
+        self.year = year
+        self.abbreviation = abbreviation
+        self.mens_course_id = mens_course_id
+        self.senior_course_id = senior_course_id
+        self.super_senior_course_id = super_senior_course_id
+        self.womens_course_id = womens_course_id
+
+    def __str__(self):
+        r"""
+        Creates string representation of golf flight information.
+
+        Returns
+        -------
+        s : string
+            string representation of flight information
+        
+        """
+        return "{:s} ({:d})".format(self.name, self.year)
+
+    def as_dict(self):
+        r"""
+        Creates dictionary representation of golf league flight information.
+
+        Returns
+        -------
+        flight : dict
+            dictionary representation of golf league flight information
+        
+        """
+        return {
+            'name': self.name,
+            'year': self.year,
+            'abbreviation': self.abbreviation,
+            'mens_course_id': self.mens_course_id,
+            'senior_course_id': self.senior_course_id,
+            'super_senior_course_id': self.super_senior_course_id,
+            'womens_course_id': self.womens_course_id
+        }
+
+    def _create_database_insert_query(self):
+        r"""
+        Creates query for inserting this flight into database.
+
+        Returns
+        -------
+        query : string
+            database insert query for flight
+
+        """
+        # Add required fields
+        fields = "name, year, abbreviation, mens_course_id, senior_course_id, super_senior_course_id, womens_course_id"
+        values = "'{:s}', {:d}, '{:s}', {:d}, {:d}, {:d}, {:d}".format(self.name, self.year, self.abbreviation, self.mens_course_id, self.senior_course_id, self.super_senior_course_id, self.womens_course_id)
+
+        # Construct query
+        return "INSERT INTO flights ({:s}) VALUES ({:s});".format(fields, values)
+
+    def _create_database_update_query(self, flight_id):
+        r"""
+        Creates query for updating this flight in database.
+
+        Parameters
+        ----------
+        flight_id : int
+            flight identifier in database
+
+        Returns
+        -------
+        query : string
+            database update query for flight
+
+        """
+        # Add required fields
+        fieldValues = "name = '{:s}', year = {:d}, abbreviation = '{:s}', mens_course_id = {:d}, senior_course_id = {:d}, super_senior_course_id = {:d}, womens_course_id = {:d}".format(self.name, self.year, self.abbreviation, self.mens_course_id, self.senior_course_id, self.super_senior_course_id, self.womens_course_id)
+
+        # Construct conditions
+        conditions = "id = {:d}".format(flight_id)
+
+        # Construct query
+        return "UPDATE flights SET {:s} WHERE {:s};".format(fieldValues, conditions)
+
 class GolfPlayer(object):
     r"""
     Container for golf player information.
@@ -404,7 +492,7 @@ class GolfPlayer(object):
 
         Returns
         -------
-        course : dict
+        player : dict
             dictionary representation of player information
 
         """

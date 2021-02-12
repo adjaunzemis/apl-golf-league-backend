@@ -54,8 +54,11 @@ CREATE TABLE flights (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
-    short_name VARCHAR(255) NOT NULL,
-    home_course_id INT UNSIGNED NOT NULL,
+    abbreviation VARCHAR(255) NOT NULL,
+    mens_course_id INT UNSIGNED NOT NULL,
+    senior_course_id INT UNSIGNED NOT NULL,
+	super_senior_course_id INT UNSIGNED NOT NULL,
+    womens_course_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
