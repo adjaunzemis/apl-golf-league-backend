@@ -60,7 +60,8 @@ CREATE TABLE flights (
 	super_senior_course_id INT UNSIGNED NOT NULL,
     womens_course_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (name, year)
 );
 
 DROP TABLE teams;
