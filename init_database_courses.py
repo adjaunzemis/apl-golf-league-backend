@@ -1,5 +1,5 @@
 r"""
-Script to initialize courses table in database
+Script to initialize courses and course_holes tables in database
 
 Authors
 -------
@@ -14,7 +14,7 @@ from apl_golf_league_database import APLGolfLeagueDatabase
 
 def main():
     # Read course data spreadsheet
-    COURSES_SPREADSHEET = "apl_courses_2019.csv"
+    COURSES_SPREADSHEET = "data/courses_2019.csv"
     df = pd.read_csv(COURSES_SPREADSHEET)
 
     # For each course entry:
@@ -22,23 +22,38 @@ def main():
     for idx, row in df.iterrows():
         # Create golf course object
         course = GolfCourse(
-            row['name'], # course name
-            row['track'], # track name
-            row['shortname'], # abbreviation
-            row['teeName'], # tee set
-            "M", # gender # TODO: Add this to spreadsheet
+            row['course_name'], # course name
+            row['track_name'], # track name
+            row['abbreviation'], # abbreviation
+            row['tee_name'], # tee name
+            "M", # gender # TODO: Add women's ratings to spreadsheet
             row['rating'], # course rating
             row['slope'] # slope rating
         )
 
+        # Add optional parameters
+        if pd.notna(row['address']):
+            course.address = row['address']
+        if pd.notna(row['city']):
+            course.city = row['city']
+        if pd.notna(row['state']):
+            course.state = row['state']
+        if pd.notna(row['zip_code']):
+            course.zip_code = int(row['zip_code'])
+        if pd.notna(row['phone']):
+            course.phone = row['phone']
+        if pd.notna(row['website']):
+            course.website = row['website']
+
         # Add golf holes:
         for holeNum in range(1, 10):
             par = int(row['par' + str(holeNum)])
+            hcp = 0 # TODO: Make sure each hole has handicap
             if pd.notna(row['hcp' + str(holeNum)]):
                 hcp = int(row['hcp' + str(holeNum)])
-            else:
-                hcp = 0 # TODO: Make sure each hole has handicap set
-            yds = 123 # TODO: Add yardage to spreadsheet
+            yds = 0 # TODO: Make sure each hole has yardage
+            if pd.notna(row['yd' + str(holeNum)]):
+                yds = int(row['yd' + str(holeNum)])
             course.add_hole(holeNum, par, hcp, yds)
 
         # Add to course list:
@@ -53,7 +68,7 @@ def main():
         db.put_course(course, verbose=True)
         
     # Check course list in database
-    course_names = db.fetch_all_course_names(verbose=True)
+    course_names = db.get_all_course_names(verbose=True)
     print(course_names)
         
 if __name__ == "__main__":

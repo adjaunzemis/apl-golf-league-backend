@@ -102,7 +102,7 @@ class GolfCourse(object):
             values += ", '{:s}'".format(self.state)
         if self.zip_code is not None:
             fields += ", zip_code"
-            values += ", '{:s}'".format(self.zip_code)
+            values += ", {:d}".format(self.zip_code)
         if self.phone is not None:
             fields += ", phone"
             values += ", '{:s}'".format(self.phone)

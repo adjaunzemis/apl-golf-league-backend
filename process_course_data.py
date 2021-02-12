@@ -194,18 +194,18 @@ def course_data_to_dict(course):
             course_dicts.append({
                 'course_name': name, 'track_name': track, 'abbreviation': abbreviation,
                 'address': address, 'city': city, 'state': state,
-                'zipcode': zipcode, 'phone': phone, 'website': website,
+                'zip_code': zipcode, 'phone': phone, 'website': website,
                 'tee_name': teeSet, 'tee_color': teeColor,
                 'rating': rating, 'slope': slope,
-                'par1': pars[0], 'hcp1': handicaps[0],
-                'par2': pars[1], 'hcp2': handicaps[1],
-                'par3': pars[2], 'hcp3': handicaps[2],
-                'par4': pars[3], 'hcp4': handicaps[3],
-                'par5': pars[4], 'hcp5': handicaps[4],
-                'par6': pars[5], 'hcp6': handicaps[5],
-                'par7': pars[6], 'hcp7': handicaps[6],
-                'par8': pars[7], 'hcp8': handicaps[7],
-                'par9': pars[8], 'hcp9': handicaps[8],
+                'par1': pars[0], 'hcp1': handicaps[0], 'yd1': None,
+                'par2': pars[1], 'hcp2': handicaps[1], 'yd2': None,
+                'par3': pars[2], 'hcp3': handicaps[2], 'yd3': None,
+                'par4': pars[3], 'hcp4': handicaps[3], 'yd4': None,
+                'par5': pars[4], 'hcp5': handicaps[4], 'yd5': None,
+                'par6': pars[5], 'hcp6': handicaps[5], 'yd6': None,
+                'par7': pars[6], 'hcp7': handicaps[6], 'yd7': None,
+                'par8': pars[7], 'hcp8': handicaps[7], 'yd8': None,
+                'par9': pars[8], 'hcp9': handicaps[8], 'yd9': None,
             })
         return course_dicts
 
@@ -225,4 +225,4 @@ if __name__ == "__main__":
 
         outputFile = "data/courses_{:d}.csv".format(DATA_YEAR)
         df = pd.DataFrame(course_dict_list)
-        df.to_csv(outputFile)
+        df.to_csv(outputFile, index=False)
