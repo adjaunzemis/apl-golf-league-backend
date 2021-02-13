@@ -8,6 +8,7 @@ Andris Jaunzemis
 """
 
 import numpy as np
+from typing import List
 
 from usga_handicap import compute_course_handicap, compute_score_differential, compute_adjusted_gross_score
 
@@ -565,3 +566,101 @@ class GolfPlayer(object):
 
         # Construct query
         return "UPDATE players SET {:s} WHERE {:s};".format(fieldValues, conditions)
+
+class GolfTeam(object):
+    r"""
+    Container class for golf league team.
+
+    """
+
+    def __init__(self, flight: GolfFlight, number: int, players: List[GolfPlayer]):
+        self.flight = flight
+        self.number = number
+        self.players = players
+        self.name = None
+    
+    def __str__(self):
+        r"""
+        Creates string representation of this team.
+
+        Returns
+        -------
+        s : string
+            string representation of team information
+
+        """
+        return "{:s} Team {:d}".format(str(self.flight), self.number)
+
+    def as_dict(self):
+        r"""
+        Create dictionary representation of this team.
+
+        Returns
+        -------
+        d : dict
+            dictionary representation of team information
+
+        """
+        return {
+            'flight_name': str(self.flight),
+            'number': self.number,
+            'name': self.name,
+            'player_names': [player.first_name + player.last_name for player in self.players]
+        }
+
+    def _create_database_insert_query(self, flight_id: int):
+        r"""
+        Creates query for inserting this team into database.
+
+        Parameters
+        ----------
+        flight_id : int
+            flight identifier in database
+
+        Returns
+        -------
+        query : string
+            database insert query for team
+
+        """
+        # Add required fields
+        fields = "flight_id, number"
+        values = "{:d}, {:d}, '{:s}'".format(flight_id, self.number)
+
+        # Add optional fields if defined
+        if self.name is not None:
+            fields += ", name"
+            values += ", '{:s}'".format(self.name)
+
+        # Construct query
+        return "INSERT INTO teams ({:s}) VALUES ({:s});".format(fields, values)
+
+    def _create_database_update_query(self, team_id: int, flight_id: int):
+        r"""
+        Creates query for updating this team in database.
+
+        Parameters
+        ----------
+        team_id : int
+            team identifier in database
+        flight_id : int
+            flight identifier in database
+
+        Returns
+        -------
+        query : string
+            database update query for team
+
+        """
+        # Add required fields
+        fieldValues = "flight_id = {:d}, number = {:d}".format(flight_id, self.number)
+
+        # Add optional fields if defined
+        if self.name is not None:
+            fieldValues += ", name = '{:s}'".format(self.name)
+
+        # Construct conditions
+        conditions = "id = {:d}".format(team_id)
+
+        # Construct query
+        return "UPDATE teams SET {:s} WHERE {:s};".format(fieldValues, conditions)

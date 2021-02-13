@@ -13,7 +13,8 @@ CREATE TABLE players (
     location VARCHAR(255),
     employee_id VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (first_name, last_name)
 );
 
 DROP TABLE courses;
@@ -68,10 +69,11 @@ DROP TABLE teams;
 CREATE TABLE teams (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     flight_id INT UNSIGNED NOT NULL,
-    year SMALLINT UNSIGNED NOT NULL,
+    number SMALLINT UNSIGNED NOT NULL,
     name VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE(flight_id, number)
 );
 
 DROP TABLE team_players;
