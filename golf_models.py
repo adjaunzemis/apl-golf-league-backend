@@ -34,6 +34,7 @@ class GolfCourse(object):
         self.zip_code = None
         self.phone = None
         self.website = None
+        self.date_updated = None
         self.holes = []
 
     def __str__(self):
@@ -86,6 +87,8 @@ class GolfCourse(object):
             course_dict['phone'] = self.phone
         if self.website is not None:
             course_dict['website'] = self.website
+        if self.date_updated is not None:
+            course_dict['dateUpdated'] = self.date_updated.strftime("%Y-%m-%d")
 
         return course_dict
 
@@ -232,6 +235,7 @@ class GolfHole(object):
         self.par = par
         self.handicap = handicap
         self.yardage = yardage
+        self.date_updated = None
 
     def as_dict(self):
         r"""
@@ -239,17 +243,22 @@ class GolfHole(object):
 
         Returns
         -------
-        hole : dict
+        hole_dict : dict
             dictionary representation of hole data
         
         """
-        return {
+        hole_dict = {
             'courseID': self.course_id,
             'number': self.number,
             'par': self.par,
             'handicap': self.handicap,
             'yardage': self.yardage
         }
+        
+        if self.date_updated is not None:
+            hole_dict['dateUpdated'] = self.date_updated.strftime("%Y-%m-%d")
+
+        return hole_dict
 
     def _create_database_insert_query(self):
         r"""

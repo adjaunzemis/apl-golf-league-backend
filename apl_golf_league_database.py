@@ -167,8 +167,7 @@ class APLGolfLeagueDatabase(object):
         hole_numbers = self.get_hole_numbers_for_course(course.id, verbose=verbose)
         for hole_number in hole_numbers:
             hole = self.get_hole(course.id, hole_number, verbose=verbose)
-            course.add_hole(hole.number, hole.par, hole.handicap, hole.yardage)
-            # TODO: Add ability to add hole object directly to course
+            course.add_hole(hole)
 
         # Return course
         return course
@@ -259,7 +258,7 @@ class APLGolfLeagueDatabase(object):
         
         """
         # Build query
-        query = "SELECT par, handicap, yardage FROM course_holes WHERE course_id={:d} AND number={:d};".format(course_id, number)
+        query = "SELECT par, handicap, yardage, date_updated FROM course_holes WHERE course_id={:d} AND number={:d};".format(course_id, number)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -273,7 +272,10 @@ class APLGolfLeagueDatabase(object):
         if len(data) == 0:
             return None
         result = data[0]
-        return GolfHole(course_id, number, result[0], result[1], result[2])
+
+        hole = GolfHole(course_id, number, result[0], result[1], result[2])
+        hole.date_updated = result[3]
+        return hole
         
     def get_hole_numbers_for_course(self, course_id, verbose=False):
         r"""

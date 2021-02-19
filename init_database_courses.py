@@ -62,15 +62,16 @@ def main():
 
     # Initialize connection to database
     CONFIG_FILE = "./config/admin.user"
-    db = APLGolfLeagueDatabase(CONFIG_FILE, verbose=True)
+    db = APLGolfLeagueDatabase(CONFIG_FILE, verbose=False)
 
     # For each golf course:
-    for course in courseList:
-        db.put_course(course, update=True, verbose=True)
+    for idx, course in enumerate(courseList):
+        print("Adding/updating database course: {:s} ({:d}/{:d})".format(str(course), idx + 1, len(courseList)))
+        db.put_course(course, update=True, verbose=False)
         
     # Check course list in database
-    course_names = db.get_all_course_names(verbose=True)
+    course_names = db.get_all_course_names(verbose=False)
     print(course_names)
-        
+
 if __name__ == "__main__":
     main()

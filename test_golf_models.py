@@ -23,6 +23,9 @@ def test_golf_round():
         34.8,
         133
     )
+    course.city = "Pikesville"
+    course.state = "MD"
+    course.date_updated = date.today()
 
     # Add holes
     course.create_hole(1, 4, 17, 325)
