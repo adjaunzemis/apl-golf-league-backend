@@ -22,6 +22,7 @@ def main():
     for idx, row in df.iterrows():
         # Create golf course object
         course = GolfCourse(
+            None, # id (assigned by database on insertion)
             row['course_name'], # course name
             row['track_name'], # track name
             row['abbreviation'], # abbreviation
@@ -54,7 +55,7 @@ def main():
             yds = 0 # TODO: Make sure each hole has yardage
             if pd.notna(row['yd' + str(holeNum)]):
                 yds = int(row['yd' + str(holeNum)])
-            course.add_hole(holeNum, par, hcp, yds)
+            course.create_hole(holeNum, par, hcp, yds)
 
         # Add to course list:
         courseList.append(course)
@@ -65,7 +66,7 @@ def main():
 
     # For each golf course:
     for course in courseList:
-        db.put_course(course, verbose=True)
+        db.put_course(course, update=True, verbose=True)
         
     # Check course list in database
     course_names = db.get_all_course_names(verbose=True)

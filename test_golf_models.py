@@ -11,7 +11,7 @@ from datetime import date
 
 from golf_models import GolfCourse, GolfHole, GolfRound, GolfPlayer, GolfFlight
 
-def test_golf_course():
+def test_golf_round():
     # Create course
     course = GolfCourse(
         1,
@@ -76,6 +76,6 @@ def test_golf_flight():
     print(flight._create_database_update_query(0))
 
 if __name__ == '__main__':
-    test_golf_course()
+    test_golf_round()
     test_golf_player()
     test_golf_flight()

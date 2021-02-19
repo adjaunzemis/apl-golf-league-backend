@@ -173,7 +173,7 @@ class APLGolfLeagueDatabase(object):
         # Return course
         return course
     
-    def put_course(self, course, update=False, verbose=False):
+    def put_course(self, course: GolfCourse, update=False, verbose=False):
         r"""
         Adds/updates golf course data in database, populating 'courses' table.
         
@@ -222,14 +222,18 @@ class APLGolfLeagueDatabase(object):
         self._connection.commit()
         cursor.close()
 
-        # Retrieve course id for this course
-        course_id = self.get_course_id(course.course_name, course.track_name, course.tee_name, course.gender, verbose=verbose)
+        # Retrieve course id for this course (if necessary)
+        course_id = course.id
+        if course_id is None:
+            course_id = self.get_course_id(course.course_name, course.track_name, course.tee_name, course.gender, verbose=verbose)
         if verbose:
             print("Added/updated course '{:s}' (id={:d}) in courses table".format(str(course), course_id))
 
         # Build and execute query to add each hole
         for hole in course.holes:
-            self.put_hole(hole, course_id, update=update, verbose=verbose)
+            if hole.course_id is None:
+                hole.course_id = course_id
+            self.put_hole(hole, update=update, verbose=verbose)
 
     def get_hole(self, course_id, number, verbose=False):
         r"""
@@ -269,47 +273,7 @@ class APLGolfLeagueDatabase(object):
         if len(data) == 0:
             return None
         result = data[0]
-        return GolfHole(number, result[0], result[1], result[2])
-
-    def get_hole_id(self, course_id, number, verbose=False):
-        r"""
-        Fetches golf hole identifier for hole matching given parameters.
-
-        If no matching golf hole is found, returns None.
-
-        Parameters
-        ----------
-        course_id : int
-            course identifier
-        number : int
-            hole number
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-        
-        Returns
-        -------
-        id : int
-            golf hole identifier from database
-            if matching course not found, returns None
-
-        """
-        # Build query
-        query = "SELECT id FROM course_holes WHERE course_id={:d} AND number={:d};".format(course_id, number)
-        if verbose:
-            print("Executing query: {:s}".format(query))
-
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-
-        # Return matched hole id or None (if not found)
-        if len(data) == 0:
-            return None
-        result = data[0]
-        return result[0]
+        return GolfHole(course_id, number, result[0], result[1], result[2])
         
     def get_hole_numbers_for_course(self, course_id, verbose=False):
         r"""
@@ -343,7 +307,7 @@ class APLGolfLeagueDatabase(object):
 
         return [d[0] for d in data]
 
-    def put_hole(self, hole, course_id, update=False, verbose=False):
+    def put_hole(self, hole, update=False, verbose=False):
         r"""
         Adds/updates golf course hole data in database, populating 'course_holes' table.
 
@@ -351,8 +315,6 @@ class APLGolfLeagueDatabase(object):
         ----------
         hole : GolfHole
             golf hole data to add
-        course_id : int
-            course identifer associated with this hole
         update : boolean, optional
             if true, allows updating of existing database entries
             Default: False
@@ -362,17 +324,16 @@ class APLGolfLeagueDatabase(object):
 
         """
         # Check if hole already exists in database
-        hole_id = self.get_hole_id(course_id, hole.number, verbose=verbose)
-        if hole_id is None:
+        if hole.number not in self.get_hole_numbers_for_course(hole.course_id, verbose=verbose):
             # Build hole insert query
-            query = hole._create_database_insert_query(course_id)
+            query = hole._create_database_insert_query(hole.course_id)
         else:
             # If existing entry updates are not allowed, raise exception
             if not update:
-                raise ValueError("Hole #{:d} for course id={:d} already exists in database, id={:d}".format(hole.number, course_id, hole_id))
+                raise ValueError("Hole number={:d} for course id={:d} already exists in database".format(hole.number, hole.course_id))
 
             # Build hole update query
-            query = hole._create_database_update_query(course_id)
+            query = hole._create_database_update_query()
 
         if verbose:
             print("Executing query: {:s}".format(query))
@@ -384,7 +345,7 @@ class APLGolfLeagueDatabase(object):
         cursor.close()
         
         if verbose:
-            print("Added/updated hole #{:d} for course id={:d} to course_holes table".format(hole.number, course_id))
+            print("Added/updated hole number={:d} for course id={:d} to course_holes table".format(hole.number, hole.course_id))
 
     def get_flight(self, name, year, verbose=False):
         r"""

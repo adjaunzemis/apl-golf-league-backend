@@ -46,7 +46,7 @@ class GolfCourse(object):
             string representation of GolfCourse
 
         """
-        return "{:s} (id={:d}, track_name={:s}, tee_name={:s}, gender={:s})".format(self.course_name, self.id, self.track_name, self.tee_name, self.gender)
+        return "{:s} (track_name={:s}, tee_name={:s}, gender={:s})".format(self.course_name, self.track_name, self.tee_name, self.gender)
     
     def as_dict(self):
         r"""
@@ -58,7 +58,6 @@ class GolfCourse(object):
             dictionary representation of course data
 
         """
-        # Add required fields.
         course_dict = {
             'id': self.id,
             'courseName': self.course_name,
@@ -71,7 +70,6 @@ class GolfCourse(object):
             'par': self.par
         }
 
-        # Add optional fields if defined.
         if self.abbreviation is not None:
             course_dict['abbreviation'] = self.abbreviation
         if self.tee_color is not None:
@@ -89,7 +87,6 @@ class GolfCourse(object):
         if self.website is not None:
             course_dict['website'] = self.website
 
-        # Return dictionary.
         return course_dict
 
     def _create_database_insert_query(self):
@@ -143,7 +140,7 @@ class GolfCourse(object):
 
         """
         # Add required fields
-        fieldValues = "id = {:d}, course_name = '{:s}', track_name = '{:s}', abbreviation = '{:s}', tee_name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(self.id, self.course_name, self.track_name, self.abbreviation, self.tee_name, self.gender, self.rating, self.slope)
+        fieldValues = "course_name = '{:s}', track_name = '{:s}', abbreviation = '{:s}', tee_name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(self.course_name, self.track_name, self.abbreviation, self.tee_name, self.gender, self.rating, self.slope)
 
         # Add optional fields if defined
         if self.tee_color is not None:
