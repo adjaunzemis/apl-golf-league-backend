@@ -138,7 +138,7 @@ class APLGolfLeagueDatabase(object):
         
         """
         # Build query
-        query = "SELECT abbreviation, rating, slope, tee_color, address, city, state, zip_code, phone, website FROM courses WHERE course_name='{:s}' AND track_name='{:s}' AND tee_name='{:s}' AND gender='{:s}';".format(course_name, track_name, tee_name, gender)
+        query = "SELECT id, abbreviation, rating, slope, tee_color, address, city, state, zip_code, phone, website FROM courses WHERE course_name='{:s}' AND track_name='{:s}' AND tee_name='{:s}' AND gender='{:s}';".format(course_name, track_name, tee_name, gender)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -154,15 +154,19 @@ class APLGolfLeagueDatabase(object):
 
         # Process query result into course
         result = data[0]
-        course = GolfCourse(course_name, track_name, result[0], tee_name, gender, result[1], result[2])
-        # TODO: Add other (optional) data fields from query
+        course = GolfCourse(result[0], course_name, track_name, result[1], tee_name, gender, result[2], result[3])
+        course.tee_color = result[4]
+        course.address = result[5]
+        course.city = result[6]
+        course.state = result[7]
+        course.zip_code = result[8]
+        course.phone = result[9]
+        course.website = result[10]
         
         # Gather hole data for this course
-        course_id = self.get_course_id(course_name, track_name, tee_name, gender, verbose=verbose)
-        hole_numbers = self.get_hole_numbers_for_course(course_id, verbose=verbose)
-
+        hole_numbers = self.get_hole_numbers_for_course(course.id, verbose=verbose)
         for hole_number in hole_numbers:
-            hole = self.get_hole(course_id, hole_number, verbose=verbose)
+            hole = self.get_hole(course.id, hole_number, verbose=verbose)
             course.add_hole(hole.number, hole.par, hole.handicap, hole.yardage)
             # TODO: Add ability to add hole object directly to course
 

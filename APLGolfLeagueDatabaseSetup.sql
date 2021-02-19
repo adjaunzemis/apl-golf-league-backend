@@ -118,6 +118,7 @@ CREATE TABLE rounds (
     player_course_handicap FLOAT NOT NULL,
     gross_score TINYINT UNSIGNED NOT NULL,
     adjusted_gross_score TINYINT UNSIGNED NOT NULL,
+    net_score TINYINT UNSIGNED NOT NULL,
     score_differential FLOAT NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)

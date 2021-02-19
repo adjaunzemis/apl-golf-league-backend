@@ -18,7 +18,8 @@ class GolfCourse(object):
 
     """
 
-    def __init__(self, course_name, track_name, abbreviation, tee_name, gender, rating, slope):
+    def __init__(self, id, course_name, track_name, abbreviation, tee_name, gender, rating, slope):
+        self.id = id
         self.course_name = course_name
         self.track_name = track_name
         self.abbreviation = abbreviation
@@ -45,7 +46,7 @@ class GolfCourse(object):
             string representation of GolfCourse
 
         """
-        return "{:s}: Track={:s}, Tees={:s}, Gender={:s}".format(self.course_name, self.track_name, self.tee_name, self.gender)
+        return "{:s} (id={:d}, track_name={:s}, tee_name={:s}, gender={:s})".format(self.course_name, self.id, self.track_name, self.tee_name, self.gender)
     
     def as_dict(self):
         r"""
@@ -53,26 +54,43 @@ class GolfCourse(object):
 
         Returns
         -------
-        course : dict
+        course_dict : dict
             dictionary representation of course data
 
         """
-        return {
-            'course_name': self.course_name,
-            'track_name': self.track_name,
-            'abbreviation': self.abbreviation,
-            'tee_name': self.tee_name,
+        # Add required fields.
+        course_dict = {
+            'id': self.id,
+            'courseName': self.course_name,
+            'trackName': self.track_name,
+            'teeName': self.tee_name,
             'gender': self.gender,
             'rating': self.rating,
             'slope': self.slope,
-            'tee_color': self.tee_color,
-            'address': self.address,
-            'city': self.city,
-            'state': self.state,
-            'zip_code': self.zip_code,
-            'phone': self.phone,
-            'website': self.website
+            'holes': [hole.as_dict() for hole in self.holes],
+            'par': self.par
         }
+
+        # Add optional fields if defined.
+        if self.abbreviation is not None:
+            course_dict['abbreviation'] = self.abbreviation
+        if self.tee_color is not None:
+            course_dict['teeColor'] = self.tee_color
+        if self.address is not None:
+            course_dict['address'] = self.address
+        if self.city is not None:
+            course_dict['city'] = self.city
+        if self.state is not None:
+            course_dict['state'] = self.state
+        if self.zip_code is not None:
+            course_dict['zipCode'] = self.zip_code
+        if self.phone is not None:
+            course_dict['phone'] = self.phone
+        if self.website is not None:
+            course_dict['website'] = self.website
+
+        # Return dictionary.
+        return course_dict
 
     def _create_database_insert_query(self):
         r"""
@@ -125,7 +143,7 @@ class GolfCourse(object):
 
         """
         # Add required fields
-        fieldValues = "course_name = '{:s}', track_name = '{:s}', abbreviation = '{:s}', tee_name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(self.course_name, self.track_name, self.abbreviation, self.tee_name, self.gender, self.rating, self.slope)
+        fieldValues = "id = {:d}, course_name = '{:s}', track_name = '{:s}', abbreviation = '{:s}', tee_name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(self.id, self.course_name, self.track_name, self.abbreviation, self.tee_name, self.gender, self.rating, self.slope)
 
         # Add optional fields if defined
         if self.tee_color is not None:
@@ -144,14 +162,39 @@ class GolfCourse(object):
             fieldValues += ", website = '{:s}'".format(self.website)
 
         # Construct conditions
-        conditions = "course_name = '{:s}' AND track_name = '{:s}' AND tee_name = '{:s}' AND gender = '{:s}'".format(self.course_name, self.track_name, self.tee_name, self.gender)
+        if self.id is not None:
+            conditions = "id = {:d}".format(self.id)
+        else:
+            conditions = "course_name = '{:s}' AND track_name = '{:s}' AND tee_name = '{:s}' AND gender = '{:s}'".format(self.course_name, self.track_name, self.tee_name, self.gender)
 
         # Construct query
         return "UPDATE courses SET {:s} WHERE {:s};".format(fieldValues, conditions)
 
-    def add_hole(self, number, par, handicap, yardage):
+    def add_hole(self, hole):
         r"""
-        Adds a hole to this golf course.
+        Add a hole to this golf course.
+
+        Parameters
+        ----------
+        hole : GolfHole
+            hole to add
+
+        Raises
+        ------
+        ValueError :
+            if course identifier for given hole does not match this course identifier
+            if this course already contains a hole with the given number
+        
+        """
+        if hole.course_id != self.id:
+            raise ValueError("Cannot add hole with course id={:d} to course with id={:d}".format(hole.course_id, self.id))
+        if hole.number in [h.number for h in self.holes]:
+            raise ValueError("Course (id={:d}) already contains a hole with number={:d}".format(self.id, hole.number))
+        self.holes.append(hole)
+
+    def create_hole(self, number, par, handicap, yardage):
+        r"""
+        Creates a golf hole using the given data and adds it to this golf course.
 
         Parameters
         ----------
@@ -165,7 +208,7 @@ class GolfCourse(object):
             hole yardage
 
         """
-        self.holes.append(GolfHole(number, par, handicap, yardage))
+        self.add_hole(GolfHole(self.id, number, par, handicap, yardage))
 
     @property
     def par(self):
@@ -186,7 +229,8 @@ class GolfHole(object):
 
     """
 
-    def __init__(self, number, par, handicap, yardage):
+    def __init__(self, course_id, number, par, handicap, yardage):
+        self.course_id = course_id
         self.number = number
         self.par = par
         self.handicap = handicap
@@ -203,20 +247,16 @@ class GolfHole(object):
         
         """
         return {
+            'courseID': self.course_id,
             'number': self.number,
             'par': self.par,
             'handicap': self.handicap,
             'yardage': self.yardage
         }
 
-    def _create_database_insert_query(self, course_id):
+    def _create_database_insert_query(self):
         r"""
         Creates query for inserting this hole into database.
-
-        Parameters
-        ----------
-        course_id : int
-            course identifier from database
 
         Returns
         -------
@@ -226,20 +266,14 @@ class GolfHole(object):
         """
         # Add required fields
         fields = "course_id, number, par, handicap, yardage"
-        values = "{:d}, {:d}, {:d}, {:d}, {:d}".format(course_id, self.number, self.par, self.handicap, self.yardage)
+        values = "{:d}, {:d}, {:d}, {:d}, {:d}".format(self.course_id, self.number, self.par, self.handicap, self.yardage)
 
         # Construct query
         return "INSERT INTO course_holes ({:s}) VALUES ({:s})".format(fields, values)
-
         
-    def _create_database_update_query(self, course_id):
+    def _create_database_update_query(self):
         r"""
         Creates query for updating this hole in database.
-
-        Parameters
-        ----------
-        course_id : int
-            course identifier from database
 
         Returns
         -------
@@ -251,7 +285,7 @@ class GolfHole(object):
         fieldValues = "number = {:d}, par = {:d}, handicap = {:d}, yardage = {:d}".format(self.number, self.par, self.handicap, self.yardage)
 
         # Construct conditions
-        conditions = "course_id = {:d} AND number = {:d}".format(course_id, self.number)
+        conditions = "course_id = {:d} AND number = {:d}".format(self.course_id, self.number)
 
         # Construct query
         return "UPDATE course_holes SET {:s} WHERE {:s};".format(fieldValues, conditions)

@@ -9,11 +9,12 @@ Andris Jaunzemis
 
 from datetime import date
 
-from golf_models import GolfCourse, GolfRound, GolfPlayer, GolfFlight
+from golf_models import GolfCourse, GolfHole, GolfRound, GolfPlayer, GolfFlight
 
 def test_golf_course():
     # Create course
     course = GolfCourse(
+        1,
         "Woodholme Country Club",
         "Front",
         "WCCF",
@@ -24,15 +25,15 @@ def test_golf_course():
     )
 
     # Add holes
-    course.add_hole(1, 4, 17, 325)
-    course.add_hole(2, 5, 7, 529)
-    course.add_hole(3, 3, 11, 167)
-    course.add_hole(4, 4, 1, 401)
-    course.add_hole(5, 3, 13, 186)
-    course.add_hole(6, 4, 5, 404)
-    course.add_hole(7, 4, 9, 337)
-    course.add_hole(8, 4, 15, 306)
-    course.add_hole(9, 4, 3, 366)
+    course.create_hole(1, 4, 17, 325)
+    course.create_hole(2, 5, 7, 529)
+    course.create_hole(3, 3, 11, 167)
+    course.create_hole(4, 4, 1, 401)
+    course.create_hole(5, 3, 13, 186)
+    course.create_hole(6, 4, 5, 404)
+    course.create_hole(7, 4, 9, 337)
+    course.create_hole(8, 4, 15, 306)
+    course.create_hole(9, 4, 3, 366)
     
     print(str(course))
     print(course.as_dict())
