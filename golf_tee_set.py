@@ -112,7 +112,7 @@ class GolfTeeSet(object):
             conditions = "track_id = {:d}, name = '{:s}'".format(self.track_id, self.name)
 
         # Construct query
-        return "UPDATE courses SET {:s} WHERE {:s};".format(fieldValues, conditions)
+        return "UPDATE tee_sets SET {:s} WHERE {:s};".format(fieldValues, conditions)
 
     def add_hole(self, hole: GolfHole):
         r"""

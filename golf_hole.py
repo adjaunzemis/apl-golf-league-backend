@@ -31,7 +31,9 @@ class GolfHole(object):
             string representation of hole
 
         """
-        return "{:d} (Par={:d}, Handicap={:d}, Yardage={:d})".format(self.number, self.par, self.handicap)
+        if self.yardage is not None:
+            return "{:d} (Par={:d}, Handicap={:d}, Yardage={:d})".format(self.number, self.par, self.handicap, self.yardage)
+        return "{:d} (Par={:d}, Handicap={:d}, Yardage=n/a)".format(self.number, self.par, self.handicap)
     
     def as_dict(self):
         r"""
@@ -73,7 +75,7 @@ class GolfHole(object):
         # Add optional fields if defined
         if self.yardage is not None:
             fields += ", yardage"
-            values += ", '{:s}'".format(self.yardage)
+            values += ", {:d}".format(self.yardage)
 
         # Construct query
         return "INSERT INTO holes ({:s}) VALUES ({:s});".format(fields, values)
@@ -93,13 +95,13 @@ class GolfHole(object):
 
         # Add optional fields if defined
         if self.yardage is not None:
-            fieldValues += ", yardage = '{:s}'".format(self.yardage)
+            fieldValues += ", yardage = {:d}".format(self.yardage)
             
         # Construct conditions
         if self.id is not None:
             conditions = "id = {:d}".format(self.id)
         else:
-            conditions = "tee_set_id = {:d}, number = '{:s}'".format(self.tee_set_id, self.number)
+            conditions = "tee_set_id = {:d} AND number = {:d}".format(self.tee_set_id, self.number)
 
         # Construct query
-        return "UPDATE courses SET {:s} WHERE {:s};".format(fieldValues, conditions)
+        return "UPDATE holes SET {:s} WHERE {:s};".format(fieldValues, conditions)
