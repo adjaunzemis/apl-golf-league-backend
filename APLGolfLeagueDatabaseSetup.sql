@@ -6,28 +6,21 @@ DROP TABLE players;
 CREATE TABLE players (
 	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     first_name VARCHAR(255) NOT NULL,
+    middle_initial VARCHAR(255),
     last_name VARCHAR(255) NOT NULL,
-    classification ENUM("APL_EMPLOYEE", "APL_FAMILY_MEMBER", "APL_RETIREE", "NON_APL_EMPLOYEE") NOT NULL,
+    affiliation ENUM("APL_EMPLOYEE", "APL_FAMILY_MEMBER", "APL_RETIREE", "NON_APL_EMPLOYEE") NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(255),
-    location VARCHAR(255),
-    employee_id VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE (first_name, last_name)
+    UNIQUE (first_name, last_name, email)
 );
 
 DROP TABLE courses;
 CREATE TABLE courses (
 	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
-    course_name VARCHAR(255) NOT NULL,
-    track_name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(255) NOT NULL,
-    tee_name VARCHAR(255) NOT NULL,
-    gender ENUM("M", "F") NOT NULL,
-    rating FLOAT NOT NULL,
-    slope FLOAT NOT NULL,
-	tee_color CHAR(6),
+    name VARCHAR(255) NOT NULL,
+    abbreviation VARCHAR(7) NOT NULL,
     address VARCHAR(255),
     city VARCHAR(255),
     state VARCHAR(7),
@@ -36,18 +29,42 @@ CREATE TABLE courses (
     website VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE (course_name, track_name, tee_name, gender)
+    UNIQUE (name, city, state)
 );
 
-DROP TABLE course_holes;
-CREATE TABLE course_holes (
-	course_id INT UNSIGNED NOT NULL,
+DROP TABLE tracks;
+CREATE TABLE tracks (
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    course_id INT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    abbreviation VARCHAR(7) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (course_id, name)
+);
+
+DROP TABLE tee_sets;
+CREATE TABLE tee_sets (
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    track_id INT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    gender ENUM("M", "F") NOT NULL,
+    rating FLOAT NOT NULL,
+    slope FLOAT NOT NULL,
+    color VARCHAR(6),
+    PRIMARY KEY (id),
+    UNIQUE (track_id, name)
+);
+
+DROP TABLE holes;
+CREATE TABLE holes (
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+	tee_set_id INT UNSIGNED NOT NULL,
     number TINYINT UNSIGNED NOT NULL,
     par TINYINT UNSIGNED NOT NULL,
     handicap TINYINT UNSIGNED NOT NULL,
-    yardage SMALLINT UNSIGNED NOT NULL,
-    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (course_id, number)
+    yardage SMALLINT UNSIGNED,
+    PRIMARY KEY (id),
+    UNIQUE (tee_set_id, number)
 );
 
 DROP TABLE flights;
@@ -56,10 +73,10 @@ CREATE TABLE flights (
     name VARCHAR(255) NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
     abbreviation VARCHAR(255) NOT NULL,
-    mens_course_id INT UNSIGNED NOT NULL,
-    senior_course_id INT UNSIGNED NOT NULL,
-	super_senior_course_id INT UNSIGNED NOT NULL,
-    womens_course_id INT UNSIGNED NOT NULL,
+    middle_teeset_id INT UNSIGNED NOT NULL,
+    senior_teeset_id INT UNSIGNED NOT NULL,
+	super_senior_teeset_id INT UNSIGNED NOT NULL,
+    womens_teeset_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE (name, year)
@@ -81,7 +98,7 @@ CREATE TABLE team_players (
 	team_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
     role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
-    classification ENUM("MEN", "WOMEN", "SENIOR", "SUPER_SENIOR"),
+    classification ENUM("MIDDLE", "SENIOR", "SUPER_SENIOR", "FORWARD"),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (team_id, player_id)
 );
