@@ -26,8 +26,5 @@ def test_constructor(id, track_id, name, gender, rating, slope, color):
     assert tee_set.gender == gender
     assert tee_set.rating == rating
     assert tee_set.slope == slope
-    if color is None:
-        assert tee_set.color is None
-    else:
-        assert tee_set.color == color
+    assert tee_set.color == color
     assert len(tee_set.holes) == 0

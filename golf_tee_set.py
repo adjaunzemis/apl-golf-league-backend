@@ -7,8 +7,6 @@ Andris Jaunzemis
 
 """
 
-from typing import List
-
 from golf_hole import GolfHole
 
 class GolfTeeSet(object):
@@ -27,7 +25,7 @@ class GolfTeeSet(object):
         self.rating = rating
         self.slope = slope
         self.color: str = None
-        self.holes = List(GolfHole)
+        self.holes = []
 
     def __str__(self):
         r"""
@@ -130,6 +128,8 @@ class GolfTeeSet(object):
             if this tee set already contains a hole with the given number
         
         """
+        if not isinstance(hole, GolfHole):
+            raise ValueError("")
         if hole.tee_set_id != self.id:
             raise ValueError("Cannot add hole with tee set id={:d} to tee set with id={:d}".format(hole.tee_set_id, self.id))
         if hole.number in [h.number for h in self.holes]:
