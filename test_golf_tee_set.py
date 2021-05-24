@@ -12,26 +12,35 @@ import pytest
 from golf_tee_set import GolfTeeSet
 from golf_hole import GolfHole
 
-holes_valid = [
-    GolfHole(0, 0, 1, 4, 1),
-    GolfHole(0, 0, 2, 4, 2),
-    GolfHole(0, 0, 3, 4, 3),
-    GolfHole(0, 0, 4, 4, 4),
-    GolfHole(0, 0, 5, 4, 5),
-    GolfHole(0, 0, 6, 4, 6),
-    GolfHole(0, 0, 7, 4, 7),
-    GolfHole(0, 0, 8, 4, 8),
-    GolfHole(0, 0, 9, 4, 9)
-]
+def init_holes_valid():
+    return [
+        GolfHole(0, 0, 1, 4, 1),
+        GolfHole(0, 0, 2, 4, 2),
+        GolfHole(0, 0, 3, 4, 3),
+        GolfHole(0, 0, 4, 4, 4),
+        GolfHole(0, 0, 5, 4, 5),
+        GolfHole(0, 0, 6, 4, 6),
+        GolfHole(0, 0, 7, 4, 7),
+        GolfHole(0, 0, 8, 4, 8),
+        GolfHole(0, 0, 9, 4, 9)
+    ]
 
-holes_wrong_id = [
-    GolfHole(0, 1, 1, 4, 1)
-]
+def init_holes_wrong_id():
+    return [
+        GolfHole(0, 1, 1, 4, 1)
+    ]
 
-holes_duplicate = [
-    GolfHole(0, 0, 1, 4, 1),
-    GolfHole(0, 0, 1, 4, 1)
-]
+def init_holes_duplicate():
+    return [
+        GolfHole(0, 0, 1, 4, 1),
+        GolfHole(0, 0, 1, 4, 1)
+    ]
+
+def init_tee_set(id, track_id, name, gender, rating, slope, color):
+    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
+    if color is not None:
+        tee_set.color = color
+    return tee_set
 
 @pytest.mark.parametrize(
     "id, track_id, name, gender, rating, slope, color", [
@@ -41,9 +50,7 @@ holes_duplicate = [
         (None, 0, "Tee Set", "M", 71.2, 124, "ffffff")
     ])
 def test_constructor(id, track_id, name, gender, rating, slope, color):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    if color is not None:
-        tee_set.color = color
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
     assert tee_set.id == id
     assert tee_set.track_id == track_id
     assert tee_set.name == name
@@ -61,18 +68,16 @@ def test_constructor(id, track_id, name, gender, rating, slope, color):
         (None, 0, "Tee Set", "M", 71.2, 124, "ffffff")
     ])
 def test_str(id, track_id, name, gender, rating, slope, color):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    if color is not None:
-        tee_set.color = color
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
     assert str(tee_set) == "{:s} ({:s}: {:.1f}/{:.1f})".format(name, gender, rating, slope)
 
 @pytest.mark.parametrize(
-    "id, track_id, name, gender, rating, slope, color, holes", [
-        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+    "id, track_id, name, gender, rating, slope, color, init_holes", [
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_valid),
     ])
-def test_add_hole(id, track_id, name, gender, rating, slope, color, holes):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    tee_set.color = color
+def test_add_hole(id, track_id, name, gender, rating, slope, color, init_holes):
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
+    holes = init_holes()
     for hole in holes:
         tee_set.add_hole(hole)
     assert tee_set.id == id
@@ -83,32 +88,34 @@ def test_add_hole(id, track_id, name, gender, rating, slope, color, holes):
     assert tee_set.slope == slope
     assert tee_set.color == color
     assert len(tee_set.holes) == len(holes)
-    for hIdx, hole in enumerate(holes):
-        assert tee_set.holes[hIdx] == hole
+    for hole in holes:
+        assert hole in tee_set.holes
 
 @pytest.mark.parametrize(
-    "id, track_id, name, gender, rating, slope, holes", [
-        (0, 0, "Tee Set", "M", 71.2, 124, holes_wrong_id),
-        (0, 0, "Tee Set", "M", 71.2, 124, holes_duplicate)
+    "id, track_id, name, gender, rating, slope, color, init_holes", [
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_wrong_id),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_duplicate)
     ])
-def test_add_hole_errors(id, track_id, name, gender, rating, slope, holes):
+def test_add_hole_errors(id, track_id, name, gender, rating, slope, color, init_holes):
     with pytest.raises(ValueError) as e:
-        tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
+        tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
+        holes = init_holes()
         for hole in holes:
             tee_set.add_hole(hole)
 
 @pytest.mark.parametrize(
-    "id, track_id, name, gender, rating, slope, color, holes", [
+    "id, track_id, name, gender, rating, slope, color, init_holes", [
         (0, 0, "Tee Set", "M", 71.2, 124, None, None),
         (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
         (None, 0, "Tee Set", "M", 71.2, 124, None, None),
         (None, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
-        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_valid),
     ])
-def test_as_dict(id, track_id, name, gender, rating, slope, color, holes):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    if color is not None:
-        tee_set.color = color
+def test_as_dict(id, track_id, name, gender, rating, slope, color, init_holes):
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
+    holes = None
+    if init_holes is not None:
+        holes = init_holes()
     if holes is not None:
         for hole in holes:
             tee_set.add_hole(hole)
@@ -131,17 +138,18 @@ def test_as_dict(id, track_id, name, gender, rating, slope, color, holes):
             assert tee_set_dict['holes'][hIdx] == hole.as_dict()
 
 @pytest.mark.parametrize(
-    "id, track_id, name, gender, rating, slope, color, holes", [
+    "id, track_id, name, gender, rating, slope, color, init_holes", [
         (0, 0, "Tee Set", "M", 71.2, 124, None, None),
         (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
         (None, 0, "Tee Set", "M", 71.2, 124, None, None),
         (None, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
-        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_valid),
     ])
-def test_create_database_insert_query(id, track_id, name, gender, rating, slope, color, holes):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    if color is not None:
-        tee_set.color = color
+def test_create_database_insert_query(id, track_id, name, gender, rating, slope, color, init_holes):
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
+    holes = None
+    if init_holes is not None:
+        holes = init_holes()
     if holes is not None:
         for hole in holes:
             tee_set.add_hole(hole)
@@ -154,17 +162,18 @@ def test_create_database_insert_query(id, track_id, name, gender, rating, slope,
     assert query == "INSERT INTO tee_sets ({:s}) VALUES ({:s});".format(fields, values)
 
 @pytest.mark.parametrize(
-    "id, track_id, name, gender, rating, slope, color, holes", [
+    "id, track_id, name, gender, rating, slope, color, init_holes", [
         (0, 0, "Tee Set", "M", 71.2, 124, None, None),
         (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
         (None, 0, "Tee Set", "M", 71.2, 124, None, None),
         (None, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
-        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", init_holes_valid),
     ])
-def test_create_database_update_query(id, track_id, name, gender, rating, slope, color, holes):
-    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
-    if color is not None:
-        tee_set.color = color
+def test_create_database_update_query(id, track_id, name, gender, rating, slope, color, init_holes):
+    tee_set = init_tee_set(id, track_id, name, gender, rating, slope, color)
+    holes = None
+    if init_holes is not None:
+        holes = init_holes()
     if holes is not None:
         for hole in holes:
             tee_set.add_hole(hole)
