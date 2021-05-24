@@ -129,3 +129,51 @@ def test_as_dict(id, track_id, name, gender, rating, slope, color, holes):
         assert len(tee_set_dict['holes']) == len(holes)
         for hIdx, hole in enumerate(holes):
             assert tee_set_dict['holes'][hIdx] == hole.as_dict()
+
+@pytest.mark.parametrize(
+    "id, track_id, name, gender, rating, slope, color, holes", [
+        (0, 0, "Tee Set", "M", 71.2, 124, None, None),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
+        (None, 0, "Tee Set", "M", 71.2, 124, None, None),
+        (None, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+    ])
+def test_create_database_insert_query(id, track_id, name, gender, rating, slope, color, holes):
+    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
+    if color is not None:
+        tee_set.color = color
+    if holes is not None:
+        for hole in holes:
+            tee_set.add_hole(hole)
+    query = tee_set._create_database_insert_query()
+    fields = "track_id, name, gender, rating, slope"
+    values = "{:d}, '{:s}', '{:s}', {:f}, {:f}".format(track_id, name, gender, rating, slope)
+    if color is not None:
+        fields += ", color"
+        values += ", '{:s}'".format(color)
+    assert query == "INSERT INTO tee_sets ({:s}) VALUES ({:s});".format(fields, values)
+
+@pytest.mark.parametrize(
+    "id, track_id, name, gender, rating, slope, color, holes", [
+        (0, 0, "Tee Set", "M", 71.2, 124, None, None),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
+        (None, 0, "Tee Set", "M", 71.2, 124, None, None),
+        (None, 0, "Tee Set", "M", 71.2, 124, "ffffff", None),
+        (0, 0, "Tee Set", "M", 71.2, 124, "ffffff", holes_valid),
+    ])
+def test_create_database_update_query(id, track_id, name, gender, rating, slope, color, holes):
+    tee_set = GolfTeeSet(id, track_id, name, gender, rating, slope)
+    if color is not None:
+        tee_set.color = color
+    if holes is not None:
+        for hole in holes:
+            tee_set.add_hole(hole)
+    query = tee_set._create_database_update_query()
+    fieldValues = "track_id = {:d}, name = '{:s}', gender = '{:s}', rating = {:f}, slope = {:f}".format(track_id, name, gender, rating, slope)
+    if color is not None:
+        fieldValues += ", color = '{:s}'".format(color)
+    if id is not None:
+        conditions = "id = {:d}".format(id)
+    else:
+        conditions = "track_id = {:d} AND name = '{:s}'".format(track_id, name)
+    assert query == "UPDATE tee_sets SET {:s} WHERE {:s};".format(fieldValues, conditions)
