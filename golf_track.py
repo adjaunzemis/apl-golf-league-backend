@@ -7,8 +7,6 @@ Andris Jaunzemis
 
 """
 
-from typing import List
-
 from golf_tee_set import GolfTeeSet
 
 class GolfTrack(object):
@@ -22,7 +20,7 @@ class GolfTrack(object):
         self.course_id = course_id
         self.name = name
         self.abbreviation = abbreviation
-        self.tee_sets = List(GolfTeeSet)
+        self.tee_sets = []
 
     def __str__(self):
         r"""
@@ -89,7 +87,7 @@ class GolfTrack(object):
         if self.id is not None:
             conditions = "id = {:d}".format(self.id)
         else:
-            conditions = "course_id = {:d}, name = '{:s}'".format(self.course_id, self.name)
+            conditions = "course_id = {:d} AND name = '{:s}'".format(self.course_id, self.name)
 
         # Construct query
         return "UPDATE tracks SET {:s} WHERE {:s};".format(fieldValues, conditions)
@@ -107,11 +105,11 @@ class GolfTrack(object):
         ------
         ValueError :
             if track identifier for given tee set does not match this track identifier
-            if this track already contains a tee set with the given name
+            if this track already contains a tee set with the given name and gender
         
         """
         if tee_set.track_id != self.id:
             raise ValueError("Cannot add tee set with track id={:d} to track with id={:d}".format(tee_set.track_id, self.id))
-        if tee_set.name in [t.name for t in self.tee_sets]:
+        if tee_set.name in [t.name for t in self.tee_sets] and tee_set.gender in [t.gender for t in self.tee_sets]:
             raise ValueError("Track (id={:d}) already contains a tee set with name={:s}".format(self.id, tee_set.name))
         self.tee_sets.append(tee_set)

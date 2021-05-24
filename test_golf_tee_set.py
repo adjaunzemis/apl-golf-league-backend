@@ -134,8 +134,8 @@ def test_as_dict(id, track_id, name, gender, rating, slope, color, init_holes):
         assert len(tee_set_dict['holes']) == 0
     else:
         assert len(tee_set_dict['holes']) == len(holes)
-        for hIdx, hole in enumerate(holes):
-            assert tee_set_dict['holes'][hIdx] == hole.as_dict()
+        for hole in holes:
+            assert hole.as_dict() in tee_set_dict['holes']
 
 @pytest.mark.parametrize(
     "id, track_id, name, gender, rating, slope, color, init_holes", [
