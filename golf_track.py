@@ -111,5 +111,5 @@ class GolfTrack(object):
         if tee_set.track_id != self.id:
             raise ValueError("Cannot add tee set with track id={:d} to track with id={:d}".format(tee_set.track_id, self.id))
         if tee_set.name in [t.name for t in self.tee_sets] and tee_set.gender in [t.gender for t in self.tee_sets]:
-            raise ValueError("Track (id={:d}) already contains a tee set with name={:s}".format(self.id, tee_set.name))
+            raise ValueError("Track '{:s}' (id={:d}) already contains a tee set with name='{:s}' and gender='{:s}'".format(self.name, self.id, tee_set.name, tee_set.gender))
         self.tee_sets.append(tee_set)

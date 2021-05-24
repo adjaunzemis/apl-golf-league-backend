@@ -133,5 +133,5 @@ class GolfTeeSet(object):
         if hole.tee_set_id != self.id:
             raise ValueError("Cannot add hole with tee set id={:d} to tee set with id={:d}".format(hole.tee_set_id, self.id))
         if hole.number in [h.number for h in self.holes]:
-            raise ValueError("Tee set (id={:d}) already contains a hole with number={:d}".format(self.id, hole.number))
+            raise ValueError("Tee set '{:s}' (id={:d}) already contains a hole with number={:d}".format(self.name, self.id, hole.number))
         self.holes.append(hole)

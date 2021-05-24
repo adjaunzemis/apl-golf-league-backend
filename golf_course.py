@@ -7,8 +7,6 @@ Andris Jaunzemis
 
 """
 
-from typing import List
-
 from golf_track import GolfTrack
 
 class GolfCourse(object):
@@ -28,7 +26,7 @@ class GolfCourse(object):
         self.phone: str = None
         self.website: str = None
         self.date_updated = None
-        self.tracks = List(GolfTrack)
+        self.tracks = []
 
     def __str__(self):
         r"""
@@ -88,7 +86,7 @@ class GolfCourse(object):
         """
         # Add required fields
         fields = "name, abbreviation"
-        values = "'{:s}', '{:s}'".format(self.course_name, self.track_name, self.abbreviation)
+        values = "'{:s}', '{:s}'".format(self.name, self.abbreviation)
 
         # Add optional fields if defined
         if self.address is not None:
@@ -134,7 +132,7 @@ class GolfCourse(object):
         if self.state is not None:
             fieldValues += ", state = '{:s}'".format(self.state)
         if self.zip_code is not None:
-            fieldValues += ", zip_code = '{:s}'".format(self.zip_code)
+            fieldValues += ", zip_code = '{:d}'".format(self.zip_code)
         if self.phone is not None:
             fieldValues += ", phone = '{:s}'".format(self.phone)
         if self.website is not None:
@@ -168,5 +166,5 @@ class GolfCourse(object):
         if track.course_id != self.id:
             raise ValueError("Cannot add track with course id={:d} to course with id={:d}".format(track.course_id, self.id))
         if track.name in [t.name for t in self.tracks]:
-            raise ValueError("Course (id={:d}) already contains a track with name={:s}".format(self.id, track.name))
+            raise ValueError("Course '{:s}' (id={:d}) already contains a track with name='{:s}'".format(self.name, self.id, track.name))
         self.tracks.append(track)
