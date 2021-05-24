@@ -9,10 +9,34 @@ Andris Jaunzemis
 
 import pandas as pd
 
-from golf_models import GolfCourse
+from golf_course import GolfCourse
 from apl_golf_league_database import APLGolfLeagueDatabase
 
+def test_woodholme():
+    # Create course
+    course = GolfCourse(
+        None, # id (assigned by database on insertion)
+        "Woodholme Country Club", # name
+        "WCC" # abbreviation
+    )
+    course.address = "Woodholme Dr"
+    course.city = "Pikesville"
+    course.state = "MD"
+    course.zip_code = 12345
+    course.phone = "123-456-7890"
+    course.website = "google.com"
+
+    print(course)
+    print(course.as_dict())
+    
+    # Initialize connection to database
+    CONFIG_FILE = "./config/admin.user"
+    db = APLGolfLeagueDatabase(CONFIG_FILE, verbose=False)
+    
+    db.put_course(course, update=True, verbose=True)
+
 def main():
+    # TODO: Rework for new database schema
     # Read course data spreadsheet
     COURSES_SPREADSHEET = "data/courses_2019.csv"
     df = pd.read_csv(COURSES_SPREADSHEET)
@@ -74,4 +98,5 @@ def main():
     print(course_names)
 
 if __name__ == "__main__":
-    main()
+    # main()
+    test_woodholme()

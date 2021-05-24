@@ -10,7 +10,11 @@ Andris Jaunzemis
 import json
 import mysql.connector
 
-from golf_models import GolfCourse, GolfHole, GolfFlight, GolfPlayer, GolfTeam
+from golf_course import GolfCourse
+from golf_track import GolfTrack
+from golf_tee_set import GolfTeeSet
+from golf_hole import GolfHole
+from golf_models import GolfFlight, GolfPlayer, GolfTeam
 
 class APLGolfLeagueDatabase(object):
     r"""
@@ -55,7 +59,7 @@ class APLGolfLeagueDatabase(object):
             Default: False
 
         """
-        query = "SELECT course_name FROM courses;"
+        query = "SELECT name FROM courses;"
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -65,7 +69,7 @@ class APLGolfLeagueDatabase(object):
         cursor.close()
         return data
 
-    def get_course_id(self, course_name, track_name, tee_name, gender, verbose=False):
+    def get_course_id(self, name, city=None, state=None, verbose=False):
         r"""
         Fetches course identifier for the course matching the given parameters.
 
@@ -73,28 +77,32 @@ class APLGolfLeagueDatabase(object):
 
         Parameters
         ----------
-        course_name : string
+        name : string
             course name
-        track_name : string
-            9-hole track name
-        tee_name : string
-            tee set name
-        gender : string
-            indicates whether men's or women's data is requested
-            Options: "M", "F"
+        city : string, optional
+            course city
+            Default: None (not used in filtering database results)
+        state : string, optional
+            course state
+            Default: None (not used in filtering database results)
         verbose : boolean, optional
             if true, prints details to console
             Default: False
         
         Returns
         -------
-        course_id : int
+        id : int
             golf course identifier from database
             if matching course not found, returns None
 
         """
         # Build query
-        query = "SELECT id FROM courses WHERE course_name='{:s}' AND track_name='{:s}' AND tee_name='{:s}' AND gender='{:s}';".format(course_name, track_name, tee_name, gender)
+        query = "SELECT id FROM courses WHERE name='{:s}'".format(name)
+        if city is not None:
+            query += " AND city = '{:s}'".format(city)
+        if state is not None:
+            state += " AND state = '{:s}'".format(state)
+        query += ";"
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -105,12 +113,13 @@ class APLGolfLeagueDatabase(object):
         cursor.close()
 
         # Return matched course id or None (if not found)
+        # TODO: Handle condition where multiple matches are found?
         if len(data) == 0:
             return None
         result = data[0]
         return result[0]
 
-    def get_course(self, course_name, track_name, tee_name, gender, verbose=False):
+    def get_course(self, name, city=None, state=None, verbose=False):
         r"""
         Fetches golf course data for the course matching the given parameters.
 
@@ -120,15 +129,15 @@ class APLGolfLeagueDatabase(object):
         ----------
         course_name : string
             course name
-        track_name : string
-            9-hole track name
-        tee_name : string
-            tee set name
-        gender : string
-            indicates whether men's or women's data is requested
-            Options: "M", "F"
+        city : string, optional
+            course city
+            Default: None (not used in filtering database results)
+        state : string, optional
+            course state
+            Default: None (not used in filtering database results)
         verbose : boolean, optional
             if true, prints details to console
+            Default: False
         
         Returns
         -------
@@ -138,7 +147,14 @@ class APLGolfLeagueDatabase(object):
         
         """
         # Build query
-        query = "SELECT id, abbreviation, rating, slope, tee_color, address, city, state, zip_code, phone, website FROM courses WHERE course_name='{:s}' AND track_name='{:s}' AND tee_name='{:s}' AND gender='{:s}';".format(course_name, track_name, tee_name, gender)
+        query = "SELECT id, abbreviation, address, city, state, zip_code, phone, website, date_updated FROM courses WHERE name='{:s}'".format(name)
+        if city is not None:
+            query += " AND city = '{:s}'".format(city)
+        if state is not None:
+            state += " AND state = '{:s}'".format(state)
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -154,20 +170,20 @@ class APLGolfLeagueDatabase(object):
 
         # Process query result into course
         result = data[0]
-        course = GolfCourse(result[0], course_name, track_name, result[1], tee_name, gender, result[2], result[3])
-        course.tee_color = result[4]
-        course.address = result[5]
-        course.city = result[6]
-        course.state = result[7]
-        course.zip_code = result[8]
-        course.phone = result[9]
-        course.website = result[10]
+        course = GolfCourse(result[0], name, result[1])
+        course.address = result[2]
+        course.city = result[3]
+        course.state = result[4]
+        course.zip_code = result[5]
+        course.phone = result[6]
+        course.website = result[7]
+        course.date_updated = result[8]
         
-        # Gather hole data for this course
-        hole_numbers = self.get_hole_numbers_for_course(course.id, verbose=verbose)
-        for hole_number in hole_numbers:
-            hole = self.get_hole(course.id, hole_number, verbose=verbose)
-            course.add_hole(hole)
+        # TODO: Gather track, tee set, and hole data for this course
+        # hole_numbers = self.get_hole_numbers_for_course(course.id, verbose=verbose)
+        # for hole_number in hole_numbers:
+        #     hole = self.get_hole(course.id, hole_number, verbose=verbose)
+        #     course.add_hole(hole)
 
         # Return course
         return course
@@ -193,14 +209,10 @@ class APLGolfLeagueDatabase(object):
         # Check input data integrity before adding to database.
         if not isinstance(course, GolfCourse):
             raise Exception("Input must be a GolfCourse")
-        if len(course.holes) != 9:
-            raise Exception("Input GolfCourse must have exactly 9 holes")
-        for hole in course.holes:
-            if not isinstance(hole, GolfHole):
-                raise Exception("Input GolfCourse must contain a list of GolfHoles")
+        # TODO: Check for tracks, tee sets, and holes
 
         # Check if course already exists in database
-        course_id = self.get_course_id(course.course_name, course.track_name, course.tee_name, course.gender, verbose=verbose)
+        course_id = self.get_course_id(course.name, city=course.city, state=course.state, verbose=verbose)
         if course_id is None:
             # Build course insert query
             query = course._create_database_insert_query()
@@ -224,15 +236,15 @@ class APLGolfLeagueDatabase(object):
         # Retrieve course id for this course (if necessary)
         course_id = course.id
         if course_id is None:
-            course_id = self.get_course_id(course.course_name, course.track_name, course.tee_name, course.gender, verbose=verbose)
+            course_id = self.get_course_id(course.name, city=course.city, state=course.state, verbose=verbose)
         if verbose:
             print("Added/updated course '{:s}' (id={:d}) in courses table".format(str(course), course_id))
 
-        # Build and execute query to add each hole
-        for hole in course.holes:
-            if hole.course_id is None:
-                hole.course_id = course_id
-            self.put_hole(hole, update=update, verbose=verbose)
+        # TODO: Build and execute queries to add tracks, tee sets, and holes to database
+        # for hole in course.holes:
+        #     if hole.course_id is None:
+        #         hole.course_id = course_id
+        #     self.put_hole(hole, update=update, verbose=verbose)
 
     def get_hole(self, course_id, number, verbose=False):
         r"""
