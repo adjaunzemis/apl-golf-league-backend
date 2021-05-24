@@ -80,13 +80,6 @@ def test_add_hole(id, track_id, name, gender, rating, slope, color, init_holes):
     holes = init_holes()
     for hole in holes:
         tee_set.add_hole(hole)
-    assert tee_set.id == id
-    assert tee_set.track_id == track_id
-    assert tee_set.name == name
-    assert tee_set.gender == gender
-    assert tee_set.rating == rating
-    assert tee_set.slope == slope
-    assert tee_set.color == color
     assert len(tee_set.holes) == len(holes)
     for hole in holes:
         assert hole in tee_set.holes

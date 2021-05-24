@@ -94,10 +94,6 @@ def test_add_tee_set(id, course_id, name, abbreviation, init_tee_sets):
     tee_sets = init_tee_sets()
     for tee_set in tee_sets:
         track.add_tee_set(tee_set)
-    assert track.id == id
-    assert track.course_id == course_id
-    assert track.name == name
-    assert track.abbreviation == abbreviation
     assert len(track.tee_sets) == len(tee_sets)
     for tee_set in tee_sets:
         assert tee_set in track.tee_sets
