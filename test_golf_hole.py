@@ -93,7 +93,7 @@ def test_create_database_insert_query(id, tee_set_id, number, par, handicap, yar
         (None, 1, 2, 3, 4, None),
         (None, 1, 2, 3, 4, 123)
     ])
-def test_create_database_update_query_with_id_with_optional_fields(id, tee_set_id, number, par, handicap, yardage):
+def test_create_database_update_query(id, tee_set_id, number, par, handicap, yardage):
     hole = GolfHole(id, tee_set_id, number, par, handicap)
     if yardage is not None:
         hole.yardage = yardage
