@@ -192,7 +192,7 @@ class APLGolfLeagueDatabase(object):
         r"""
         Adds/updates golf course data in database, populating 'courses' table.
         
-        Also loops through golf holes to populate 'course_holes' table.
+        Also calls 'put_track' for each track in this golf course.
 
         Parameters
         ----------
@@ -205,11 +205,15 @@ class APLGolfLeagueDatabase(object):
             if true, prints details to console
             Default: False
         
+        Raises
+        ------
+        ValueError :
+            if course already exists in database and 'update' is false
+
         """
         # Check input data integrity before adding to database.
         if not isinstance(course, GolfCourse):
             raise Exception("Input must be a GolfCourse")
-        # TODO: Check for tracks, tee sets, and holes
 
         # Check if course already exists in database
         course_id = self.get_course_id(course.name, city=course.city, state=course.state, verbose=verbose)
@@ -240,7 +244,110 @@ class APLGolfLeagueDatabase(object):
         if verbose:
             print("Added/updated course '{:s}' (id={:d}) in courses table".format(str(course), course_id))
 
-        # TODO: Build and execute queries to add tracks, tee sets, and holes to database
+        # Build and execute queries to add tracks to database
+        for track in course.tracks:
+            if track.course_id is None:
+                track.course_id = course_id
+            self.put_track(track, update=update, verbose=verbose)
+
+    def get_track_id(self, course_id, name, verbose=False):
+        r"""
+        Fetches track identifier for the track matching the given parameters.
+
+        If a matching track cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        course_id : int
+            course identifier
+        name : string
+            track name
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        id : int
+            golf course identifier from database
+            if matching course not found, returns None
+
+        """
+        # Build query
+        query = "SELECT id FROM tracks WHERE course_id={:d} AND name='{:s}';".format(course_id, name)
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return matched track id or None (if not found)
+        # TODO: Handle condition where multiple matches are found?
+        if len(data) == 0:
+            return None
+        result = data[0]
+        return result[0]
+
+    def put_track(self, track: GolfTrack, update=False, verbose=False):
+        r"""
+        Adds/updates golf course track in database, populating 'tracks' table.
+        
+        Also calls 'put_tee_set' for each tee set in this golf track.
+
+        Parameters
+        ----------
+        track : GolfTrack
+            golf course track data to add
+        update : boolean, optional
+            if true, allows updating of existing database entries
+            Default: False
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Raises
+        ------
+        ValueError :
+            if track already exists in database and 'update' is false
+            
+        """
+        # Check input data integrity before adding to database.
+        if not isinstance(track, GolfTrack):
+            raise Exception("Input must be a GolfTrack")
+
+        # Check if track already exists in database
+        track_id = self.get_track_id(track.course_id, track.name, verbose=verbose)
+        if track_id is None:
+            # Build track insert query
+            query = track._create_database_insert_query()
+        else:
+            # If existing entry updates are not allowed, raise exception
+            if not update:
+                raise ValueError("Track '{:s}' already exists in database, id={:d}".format(str(track), track_id))
+
+            # Build track update query
+            query = track._create_database_update_query()
+
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query to add/update course data
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        self._connection.commit()
+        cursor.close()
+
+        # Retrieve track id for this track (if necessary)
+        track_id = track.id
+        if track_id is None:
+            track_id = self.get_track_id(track.course_id, track.name, verbose=verbose)
+        if verbose:
+            print("Added/updated track '{:s}' (id={:d}) in courses table".format(str(track), track_id))
+
+        # TODO: Build and execute queries to add tee sets to database
         # for hole in course.holes:
         #     if hole.course_id is None:
         #         hole.course_id = course_id
