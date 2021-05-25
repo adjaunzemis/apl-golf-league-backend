@@ -52,7 +52,7 @@ CREATE TABLE tee_sets (
     slope FLOAT NOT NULL,
     color VARCHAR(6),
     PRIMARY KEY (id),
-    UNIQUE (track_id, name)
+    UNIQUE (track_id, name, gender)
 );
 
 DROP TABLE holes;
