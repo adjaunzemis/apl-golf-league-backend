@@ -15,7 +15,7 @@ class GolfTeeSet(object):
 
     """
 
-    def __init__(self, id: int, track_id: int, name: str, gender: str, rating: float, slope: float):
+    def __init__(self, id: int, track_id: int, name: str, gender: str, rating: float, slope: float, color: str = None):
         r"""
         """
         self.id = id
@@ -24,7 +24,7 @@ class GolfTeeSet(object):
         self.gender = gender
         self.rating = rating
         self.slope = slope
-        self.color: str = None
+        self.color = color
         self.holes = []
 
     def __str__(self):

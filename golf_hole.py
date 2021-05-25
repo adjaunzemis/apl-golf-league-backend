@@ -13,13 +13,13 @@ class GolfHole(object):
 
     """
 
-    def __init__(self, id: int, tee_set_id: int, number: int, par: int, handicap: int):
+    def __init__(self, id: int, tee_set_id: int, number: int, par: int, handicap: int, yardage: int = None):
         self.id = id
         self.tee_set_id = tee_set_id
         self.number = number
         self.par = par
         self.handicap = handicap
-        self.yardage: int = None
+        self.yardage = yardage
     
     def __str__(self):
         r"""
