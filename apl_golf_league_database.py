@@ -269,8 +269,8 @@ class APLGolfLeagueDatabase(object):
         Returns
         -------
         id : int
-            golf course identifier from database
-            if matching course not found, returns None
+            golf track identifier from database
+            if matching track not found, returns None
 
         """
         # Build query
@@ -334,7 +334,7 @@ class APLGolfLeagueDatabase(object):
         if verbose:
             print("Executing query: {:s}".format(query))
 
-        # Execute query to add/update course data
+        # Execute query to add/update track data
         cursor = self._connection.cursor()
         cursor.execute(query)
         self._connection.commit()
@@ -345,13 +345,118 @@ class APLGolfLeagueDatabase(object):
         if track_id is None:
             track_id = self.get_track_id(track.course_id, track.name, verbose=verbose)
         if verbose:
-            print("Added/updated track '{:s}' (id={:d}) in courses table".format(str(track), track_id))
+            print("Added/updated track '{:s}' (id={:d}) in tracks table".format(str(track), track_id))
 
-        # TODO: Build and execute queries to add tee sets to database
-        # for hole in course.holes:
-        #     if hole.course_id is None:
-        #         hole.course_id = course_id
-        #     self.put_hole(hole, update=update, verbose=verbose)
+        # Build and execute queries to add tee sets to database
+        for tee_set in track.tee_sets:
+            if tee_set.track_id is None:
+                tee_set.track_id = track_id
+            self.put_tee_set(tee_set, update=update, verbose=verbose)
+
+    def get_tee_set_id(self, track_id, name, gender, verbose=False):
+        r"""
+        Fetches tee set identifier for the tee set matching the given parameters.
+
+        If a matching tee set cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        track_id : int
+            track identifier
+        name : string
+            tee set name
+        gender : string
+            tee set gender for rating and slope data
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        id : int
+            golf tee set identifier from database
+            if matching tee set not found, returns None
+
+        """
+        # Build query
+        query = "SELECT id FROM tee_sets WHERE track_id={:d} AND name='{:s}' AND gender='{:s}';".format(track_id, name, gender)
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return matched tee set id or None (if not found)
+        # TODO: Handle condition where multiple matches are found?
+        if len(data) == 0:
+            return None
+        result = data[0]
+        return result[0]
+
+    def put_tee_set(self, tee_set: GolfTeeSet, update=False, verbose=False):
+        r"""
+        Adds/updates golf course tee set in database, populating 'tee_sets' table.
+        
+        Also calls 'put_hole' for each hole in this golf tee set.
+
+        Parameters
+        ----------
+        tee_set : GolfTeeSet
+            golf course tee set data to add
+        update : boolean, optional
+            if true, allows updating of existing database entries
+            Default: False
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Raises
+        ------
+        ValueError :
+            if tee set already exists in database and 'update' is false
+            
+        """
+        # Check input data integrity before adding to database.
+        if not isinstance(tee_set, GolfTeeSet):
+            raise Exception("Input must be a GolfTeeSet")
+
+        # Check if tee set already exists in database
+        tee_set_id = self.get_tee_set_id(tee_set.track_id, tee_set.name, tee_set.gender, verbose=verbose)
+        if tee_set_id is None:
+            # Build tee set insert query
+            query = tee_set._create_database_insert_query()
+        else:
+            # If existing entry updates are not allowed, raise exception
+            if not update:
+                raise ValueError("Tee set '{:s}' already exists in database, id={:d}".format(str(tee_set), tee_set_id))
+
+            # Build tee set update query
+            query = tee_set._create_database_update_query()
+
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query to add/update tee set data
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        self._connection.commit()
+        cursor.close()
+
+        # Retrieve tee set id for this tee set (if necessary)
+        tee_set_id = tee_set.id
+        if tee_set_id is None:
+            tee_set_id = self.get_tee_set_id(tee_set.track_id, tee_set.name, tee_set.gender, verbose=verbose)
+        if verbose:
+            print("Added/updated track '{:s}' (id={:d}) in tee sets table".format(str(tee_set), tee_set_id))
+
+        # Build and execute queries to add holes to database
+        # for hole in tee_set.holes:
+        #     if hole.tee_set_id is None:
+        #         hole.tee_set_id = tee_set_id
+        #     self.put_hole(tee_set, update=update, verbose=verbose)
 
     def get_hole(self, course_id, number, verbose=False):
         r"""
