@@ -15,6 +15,12 @@ from golf_tee_set import GolfTeeSet
 from golf_hole import GolfHole
 from apl_golf_league_database import APLGolfLeagueDatabase
 
+
+def init_db():
+    # Initialize connection to database
+    CONFIG_FILE = "./config/admin.user"
+    return APLGolfLeagueDatabase(CONFIG_FILE, verbose=False)
+    
 def test_woodholme():
     # Create Woodholme course
     course = GolfCourse(
@@ -386,11 +392,8 @@ def test_woodholme():
     print(course)
     print(course.as_dict())
     
-    # Initialize connection to database
-    CONFIG_FILE = "./config/admin.user"
-    db = APLGolfLeagueDatabase(CONFIG_FILE, verbose=False)
-    
     # Add/update course in database
+    db = init_db()
     db.put_course(course, update=True, verbose=True)
 
 def main():
