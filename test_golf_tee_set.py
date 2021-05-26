@@ -177,5 +177,5 @@ def test_create_database_update_query(id, track_id, name, gender, rating, slope,
     if id is not None:
         conditions = "id = {:d}".format(id)
     else:
-        conditions = "track_id = {:d} AND name = '{:s}'".format(track_id, name)
+        conditions = "track_id = {:d} AND name = '{:s}' AND gender = '{:s}'".format(track_id, name, gender)
     assert query == "UPDATE tee_sets SET {:s} WHERE {:s};".format(fieldValues, conditions)

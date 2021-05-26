@@ -107,7 +107,7 @@ class GolfTeeSet(object):
         if self.id is not None:
             conditions = "id = {:d}".format(self.id)
         else:
-            conditions = "track_id = {:d} AND name = '{:s}'".format(self.track_id, self.name)
+            conditions = "track_id = {:d} AND name = '{:s}' AND gender = '{:s}'".format(self.track_id, self.name, self.gender)
 
         # Construct query
         return "UPDATE tee_sets SET {:s} WHERE {:s};".format(fieldValues, conditions)
