@@ -69,6 +69,104 @@ class APLGolfLeagueDatabase(object):
         cursor.close()
         return data
 
+    def get_courses(self, id: int = None, name: str = None, city: str = None, state: str = None, verbose=False):
+        r"""
+        Fetches golf course data for courses matching the given parameters.
+
+        Also calls 'get_tracks' to populate list of tracks for each course.
+
+        If a matching course cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        id : int, optional
+            course identifier
+            Default: None (not used in filtering database results)
+        name : string, optional
+            course name
+            Default: None (not used in filtering database results)
+        city : string, optional
+            course city
+            Default: None (not used in filtering database results)
+        state : string, optional
+            course state
+            Default: None (not used in filtering database results)
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        courses : list of GolfCourses
+            golf course data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT id, name, abbreviation, address, city, state, zip_code, phone, website, date_updated FROM courses"
+        if any(val is not None for val in (id, name, city, state)):
+            query += " WHERE"
+            condition_count = 0
+            if id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " id = {:d}".format(id)
+            if name is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " name = '{:s}'".format(name)
+            if city is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " city = '{:s}'".format(city)
+            if state is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                state += " state = '{:s}'".format(state)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching course not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into courses
+        courses = []
+        for course_data in data:
+            course = GolfCourse(
+                id=course_data[0],
+                name=course_data[1],
+                abbreviation=course_data[2]
+            )
+            course.address = course_data[3]
+            course.city = course_data[4]
+            course.state = course_data[5]
+            course.zip_code = course_data[6]
+            course.phone = course_data[7]
+            course.website = course_data[8]
+            course.date_updated = course_data[9]
+            
+            # Gather track data for this course
+            course.tracks = self.get_tracks(course_id=course.id)
+
+            # Add course to courses list
+            courses.append(course)
+
+        # Return courses
+        return courses
+
     def get_course_id(self, name: str, city: str = None, state: str = None, verbose=False):
         r"""
         Fetches course identifier for the course matching the given parameters.
@@ -118,75 +216,6 @@ class APLGolfLeagueDatabase(object):
             return None
         result = data[0]
         return result[0]
-
-    def get_course(self, name:str, city: str = None, state: str = None, verbose=False):
-        r"""
-        Fetches golf course data for the course matching the given parameters.
-
-        If a matching course cannot be found in the database, returns None.
-
-        Parameters
-        ----------
-        course_name : string
-            course name
-        city : string, optional
-            course city
-            Default: None (not used in filtering database results)
-        state : string, optional
-            course state
-            Default: None (not used in filtering database results)
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-        
-        Returns
-        -------
-        hole : GolfHole
-            golf hole data
-            if no match is found, returns None
-        
-        """
-        # Build query
-        query = "SELECT id, abbreviation, address, city, state, zip_code, phone, website, date_updated FROM courses WHERE name='{:s}'".format(name)
-        if city is not None:
-            query += " AND city = '{:s}'".format(city)
-        if state is not None:
-            state += " AND state = '{:s}'".format(state)
-        query += ";"
-        if verbose:
-            print("Executing query: {:s}".format(query))
-        if verbose:
-            print("Executing query: {:s}".format(query))
-
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-
-        # Return None if matching course not found
-        if len(data) == 0:
-            return None
-
-        # Process query result into course
-        result = data[0]
-        course = GolfCourse(result[0], name, result[1])
-        course.address = result[2]
-        course.city = result[3]
-        course.state = result[4]
-        course.zip_code = result[5]
-        course.phone = result[6]
-        course.website = result[7]
-        course.date_updated = result[8]
-        
-        # TODO: Gather track, tee set, and hole data for this course
-        # hole_numbers = self.get_hole_numbers_for_course(course.id, verbose=verbose)
-        # for hole_number in hole_numbers:
-        #     hole = self.get_hole(course.id, hole_number, verbose=verbose)
-        #     course.add_hole(hole)
-
-        # Return course
-        return course
     
     def put_course(self, course: GolfCourse, update=False, verbose=False):
         r"""
@@ -249,6 +278,90 @@ class APLGolfLeagueDatabase(object):
             if track.course_id is None:
                 track.course_id = course_id
             self.put_track(track, update=update, verbose=verbose)
+
+    def get_tracks(self, id: int = None, course_id: int = None, name: str = None, verbose=False):
+        r"""
+        Fetches golf course track data for tracks matching the given parameters.
+
+        Also calls 'get_tee_sets' to populate list of tee sets for each track.
+
+        If a matching track cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        id : int, optional
+            track identifier
+            Default: None (not used in filtering database results)
+        course_id : int, optional
+            course identifier
+            Default: None (not used in filtering database results)
+        name : string, optional
+            track name
+            Default: None (not used in filtering database results)
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        tracks : list of GolfTracks
+            golf course track data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT id, course_id, name, abbreviation FROM tracks"
+        if any(val is not None for val in (id, course_id, name)):
+            query += " WHERE"
+            condition_count = 0
+            if id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " id = {:d}".format(id)
+            if course_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " course_id = {:d}".format(course_id)
+            if name is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " name = '{:s}'".format(name)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching track not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into tracks
+        tracks = []
+        for track_data in data:
+            track = GolfTrack(
+                id=track_data[0],
+                course_id=track_data[1],
+                name=track_data[2],
+                abbreviation=track_data[3]
+            )
+            
+            # Gather tee set data for this track
+            track.tee_sets = self.get_tee_sets(track_id=track.id)
+
+            # Append track to tracks list
+            tracks.append(track)
+
+        # Return tracks
+        return tracks
 
     def get_track_id(self, course_id: int, name: str, verbose=False):
         r"""
@@ -352,6 +465,102 @@ class APLGolfLeagueDatabase(object):
             if tee_set.track_id is None:
                 tee_set.track_id = track_id
             self.put_tee_set(tee_set, update=update, verbose=verbose)
+
+    def get_tee_sets(self, id: int = None, track_id: int = None, name: str = None, gender: str = None, verbose=False):
+        r"""
+        Fetches golf tee set data for tee sets matching the given parameters.
+
+        Also calls 'get_holes' to populate list of holes for each tee set.
+
+        If a matching tee set cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        id : int, optional
+            tee set identifier
+            Default: None (not used in filtering database results)
+        track_id : int, optional
+            track identifier
+            Default: None (not used in filtering database results)
+        name : string, optional
+            tee set name
+            Default: None (not used in filtering database results)
+        gender : string, optional
+            tee set gender used for ratings and handicaps
+            Options: 'M', 'F', None
+            Default: None (not used in filtering database results)
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        tee_sets : list of GolfTeeSets
+            golf tee set data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT id, track_id, name, gender, rating, slope, color FROM tee_sets"
+        if any(val is not None for val in (id, track_id, name)):
+            query += " WHERE"
+            condition_count = 0
+            if id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " id = {:d}".format(id)
+            if track_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " track_id = {:d}".format(track_id)
+            if name is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " name = '{:s}'".format(name)
+            if gender is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " gender = '{:s}'".format(gender)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching tee set not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into tee sets
+        tee_sets = []
+        for tee_set_data in data:
+            tee_set = GolfTeeSet(
+                id=tee_set_data[0],
+                track_id=tee_set_data[1],
+                name=tee_set_data[2],
+                gender=tee_set_data[3],
+                rating=tee_set_data[4],
+                slope=tee_set_data[5]
+            )
+            tee_set.color = tee_set_data[6]
+            
+            # Gather hole data for this tee set
+            tee_set.holes = self.get_holes(tee_set_id=tee_set.id)
+
+            # Append tee set to tee set list
+            tee_sets.append(tee_set)
+
+        # Return tee sets
+        return tee_sets
 
     def get_tee_set_id(self, track_id: int, name: str, gender: str, verbose=False):
         r"""
@@ -457,6 +666,87 @@ class APLGolfLeagueDatabase(object):
             if hole.tee_set_id is None:
                 hole.tee_set_id = tee_set_id
             self.put_hole(hole, update=update, verbose=verbose)
+
+    def get_holes(self, id: int = None, tee_set_id: int = None, number: int = None, verbose=False):
+        r"""
+        Fetches golf hole data for holes matching the given parameters.
+
+        If a matching hole cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        id : int, optional
+            hole identifier
+            Default: None (not used in filtering database results)
+        tee_set_id : int, optional
+            tee set identifier
+            Default: None (not used in filtering database results)
+        number : int, optional
+            hole number
+            Default: None (not used in filtering database results)
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        holes : list of GolfHoles
+            golf hole data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT id, tee_set_id, number, par, handicap, yardage FROM holes"
+        if any(val is not None for val in (id, tee_set_id, number)):
+            query += " WHERE"
+            condition_count = 0
+            if id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " id = {:d}".format(id)
+            if tee_set_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " tee_set_id = {:d}".format(tee_set_id)
+            if number is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " number = {:d}".format(number)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching hole not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into holes
+        holes = []
+        for hole_data in data:
+            hole = GolfHole(
+                id=hole_data[0],
+                tee_set_id=hole_data[1],
+                number=hole_data[2],
+                par=hole_data[3],
+                handicap=hole_data[4],
+                yardage=hole_data[5]
+            )
+
+            # Append hole to holes list
+            holes.append(hole)
+
+        # Return holes
+        return holes
     
     def get_hole_id(self, tee_set_id: int, number: int, verbose=False):
         r"""
