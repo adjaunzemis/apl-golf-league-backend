@@ -35,6 +35,32 @@ class GolfHole(object):
             return "{:d} (Par={:d}, Handicap={:d}, Yardage={:d})".format(self.number, self.par, self.handicap, self.yardage)
         return "{:d} (Par={:d}, Handicap={:d}, Yardage=n/a)".format(self.number, self.par, self.handicap)
     
+    @classmethod
+    def from_dict(cls, hole_data):
+        r"""
+        Initializes hole from dictionary representation.
+
+        Parameters
+        ----------
+        hole_data : dict
+            dictionary of hole data
+
+        Returns
+        -------
+        hole : GolfHole
+            hole parsed from given data
+
+        """
+        hole = cls(
+            hole_data['id'],
+            hole_data['teeSetId'],
+            hole_data['number'],
+            hole_data['par'],
+            hole_data['handicap'],
+            hole_data['yardage']
+        )
+        return hole
+    
     def as_dict(self):
         r"""
         Creates dictionary representation of this hole.

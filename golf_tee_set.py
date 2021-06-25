@@ -39,6 +39,40 @@ class GolfTeeSet(object):
         """
         return "{:s} ({:s}: {:.1f}/{:.1f})".format(self.name, self.gender, self.rating, self.slope)
     
+    @classmethod
+    def from_dict(cls, tee_set_data):
+        r"""
+        Initializes tee set from dictionary representation.
+
+        Parameters
+        ----------
+        tee_set_data : dict
+            dictionary of tee set data
+
+        Returns
+        -------
+        tee_set : GolfTeeSet
+            tee set parsed from given data
+
+        """
+        tee_set = cls(
+            tee_set_data['id'],
+            tee_set_data['trackId'],
+            tee_set_data['name'],
+            tee_set_data['gender'],
+            tee_set_data['rating'],
+            tee_set_data['slope']
+        )
+
+        for key in ['color']:
+            if key in tee_set_data:
+                setattr(tee_set, key, tee_set_data[key])
+
+        for hole_data in tee_set_data['holes']:
+            tee_set.add_hole(GolfHole.from_dict(hole_data))
+
+        return tee_set
+    
     def as_dict(self):
         r"""
         Creates dictionary representation of this tee set.

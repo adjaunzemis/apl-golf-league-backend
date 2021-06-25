@@ -33,6 +33,34 @@ class GolfTrack(object):
 
         """
         return "{:s}".format(self.name)
+
+    @classmethod
+    def from_dict(cls, track_data):
+        r"""
+        Initializes track from dictionary representation.
+
+        Parameters
+        ----------
+        track_data : dict
+            dictionary of track data
+
+        Returns
+        -------
+        track : GolfTrack
+            track parsed from given data
+
+        """
+        track = cls(
+            track_data['id'],
+            track_data['courseId'],
+            track_data['name'],
+            track_data['abbreviation']
+        )
+
+        for tee_set_data in track_data['teeSets']:
+            track.add_tee_set(GolfTeeSet.from_dict(tee_set_data))
+
+        return track
     
     def as_dict(self):
         r"""
@@ -110,6 +138,7 @@ class GolfTrack(object):
         """
         if tee_set.track_id != self.id:
             raise ValueError("Cannot add tee set with track id={:d} to track with id={:d}".format(tee_set.track_id, self.id))
-        if tee_set.name in [t.name for t in self.tee_sets] and tee_set.gender in [t.gender for t in self.tee_sets]:
-            raise ValueError("Track '{:s}' (id={:d}) already contains a tee set with name='{:s}' and gender='{:s}'".format(self.name, self.id, tee_set.name, tee_set.gender))
+        for t in self.tee_sets:
+            if (t.name == tee_set.name) and (t.gender == tee_set.gender):
+                raise ValueError("Track '{:s}' (id={:d}) already contains a tee set with name='{:s}' and gender='{:s}'".format(self.name, self.id, tee_set.name, tee_set.gender))
         self.tee_sets.append(tee_set)

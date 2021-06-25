@@ -39,6 +39,37 @@ class GolfCourse(object):
 
         """
         return "{:s}".format(self.name)
+
+    @classmethod
+    def from_dict(cls, course_data):
+        r"""
+        Initializes course from dictionary representation.
+
+        Parameters
+        ----------
+        course_data : dict
+            dictionary of course data
+
+        Returns
+        -------
+        course : GolfCourse
+            course parsed from given data
+
+        """
+        course = cls(
+            course_data['id'],
+            course_data['name'],
+            course_data['abbreviation']
+        )
+
+        for key in ['address', 'city', 'state', 'zip_code', 'phone', 'website']:
+            if key in course_data:
+                setattr(course, key, course_data[key])
+
+        for track_data in course_data['tracks']:
+            course.add_track(GolfTrack.from_dict(track_data))
+
+        return course
     
     def as_dict(self):
         r"""
