@@ -242,7 +242,7 @@ class APLGolfLeagueDatabase(object):
         """
         # Check input data integrity before adding to database.
         if not isinstance(course, GolfCourse):
-            raise Exception("Input must be a GolfCourse")
+            raise TypeError("Input must be a GolfCourse")
 
         # Check if course already exists in database
         course_id = self.get_course_id(course.name, city=course.city, state=course.state, verbose=verbose)
@@ -429,7 +429,7 @@ class APLGolfLeagueDatabase(object):
         """
         # Check input data integrity before adding to database.
         if not isinstance(track, GolfTrack):
-            raise Exception("Input must be a GolfTrack")
+            raise TypeError("Input must be a GolfTrack")
 
         # Check if track already exists in database
         track_id = self.get_track_id(track.course_id, track.name, verbose=verbose)
@@ -630,7 +630,7 @@ class APLGolfLeagueDatabase(object):
         """
         # Check input data integrity before adding to database.
         if not isinstance(tee_set, GolfTeeSet):
-            raise Exception("Input must be a GolfTeeSet")
+            raise TypeError("Input must be a GolfTeeSet")
 
         # Check if tee set already exists in database
         tee_set_id = self.get_tee_set_id(tee_set.track_id, tee_set.name, tee_set.gender, verbose=verbose)
@@ -812,7 +812,7 @@ class APLGolfLeagueDatabase(object):
         """
         # Check input data integrity before adding to database.
         if not isinstance(hole, GolfHole):
-            raise Exception("Input must be a GolfHole")
+            raise TypeError("Input must be a GolfHole")
 
         # Check if tee set already exists in database
         hole_id = self.get_hole_id(hole.tee_set_id, hole.number, verbose=verbose)
