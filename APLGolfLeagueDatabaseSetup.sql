@@ -24,7 +24,7 @@ CREATE TABLE courses (
     address VARCHAR(255),
     city VARCHAR(255),
     state VARCHAR(7),
-    zip_code SMALLINT UNSIGNED,
+    zip_code SMALLINT UNSIGNED, # TODO: make MEDIUMINT!
     phone VARCHAR(255),
     website VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
