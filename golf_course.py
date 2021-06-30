@@ -57,14 +57,17 @@ class GolfCourse(object):
 
         """
         course = cls(
-            course_data['id'],
+            course_data['id'] if course_data['id'] != -1 else None,
             course_data['name'],
             course_data['abbreviation']
         )
 
-        for key in ['address', 'city', 'state', 'zip_code', 'phone', 'website']:
+        for key in ['address', 'city', 'state', 'phone', 'website']:
             if key in course_data:
                 setattr(course, key, course_data[key])
+
+        if 'zipCode' in course_data:
+            setattr(course, 'zip_code', course_data['zipCode'])
 
         for track_data in course_data['tracks']:
             course.add_track(GolfTrack.from_dict(track_data))

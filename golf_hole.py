@@ -52,8 +52,8 @@ class GolfHole(object):
 
         """
         hole = cls(
-            hole_data['id'],
-            hole_data['teeSetId'],
+            hole_data['id'] if hole_data['id'] != -1 else None,
+            hole_data['teeSetId'] if hole_data['teeSetId'] != -1 else None,
             hole_data['number'],
             hole_data['par'],
             hole_data['handicap'],

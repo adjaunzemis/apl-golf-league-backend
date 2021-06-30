@@ -51,8 +51,8 @@ class GolfTrack(object):
 
         """
         track = cls(
-            track_data['id'],
-            track_data['courseId'],
+            track_data['id'] if track_data['id'] != -1 else None,
+            track_data['courseId'] if track_data['courseId'] != -1 else None,
             track_data['name'],
             track_data['abbreviation']
         )

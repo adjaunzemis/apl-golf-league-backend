@@ -56,8 +56,8 @@ class GolfTeeSet(object):
 
         """
         tee_set = cls(
-            tee_set_data['id'],
-            tee_set_data['trackId'],
+            tee_set_data['id'] if tee_set_data['id'] != -1 else None,
+            tee_set_data['trackId'] if tee_set_data['trackId'] != -1 else None,
             tee_set_data['name'],
             tee_set_data['gender'],
             tee_set_data['rating'],
