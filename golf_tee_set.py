@@ -15,16 +15,16 @@ class GolfTeeSet(object):
 
     """
 
-    def __init__(self, id: int, track_id: int, name: str, gender: str, rating: float, slope: float, color: str = None):
+    def __init__(self, name: str, gender: str, rating: float, slope: float, color: str = None, tee_set_id: int = None, track_id: int = None):
         r"""
         """
-        self.id = id
-        self.track_id = track_id
         self.name = name
         self.gender = gender
         self.rating = rating
         self.slope = slope
         self.color = color
+        self.tee_set_id = tee_set_id
+        self.track_id = track_id
         self.holes = []
 
     def __str__(self):
@@ -56,8 +56,8 @@ class GolfTeeSet(object):
 
         """
         tee_set = cls(
-            tee_set_data['id'] if tee_set_data['id'] != -1 else None,
-            tee_set_data['trackId'] if tee_set_data['trackId'] != -1 else None,
+            tee_set_data['tee_set_id'] if tee_set_data['tee_set_id'] != -1 else None,
+            tee_set_data['track_id'] if tee_set_data['track_id'] != -1 else None,
             tee_set_data['name'],
             tee_set_data['gender'],
             tee_set_data['rating'],
@@ -84,8 +84,8 @@ class GolfTeeSet(object):
 
         """
         tee_set_dict = {
-            'id': self.id,
-            'trackId': self.track_id,
+            'tee_set_id': self.tee_set_id,
+            'track_id': self.track_id,
             'name': self.name,
             'gender': self.gender,
             'rating': self.rating,
@@ -138,8 +138,8 @@ class GolfTeeSet(object):
             fieldValues += ", color = '{:s}'".format(self.color)
             
         # Construct conditions
-        if self.id is not None:
-            conditions = "id = {:d}".format(self.id)
+        if self.tee_set_id is not None:
+            conditions = "tee_set_id = {:d}".format(self.tee_set_id)
         else:
             conditions = "track_id = {:d} AND name = '{:s}' AND gender = '{:s}'".format(self.track_id, self.name, self.gender)
 
@@ -164,8 +164,8 @@ class GolfTeeSet(object):
         """
         if not isinstance(hole, GolfHole):
             raise ValueError("")
-        if hole.tee_set_id != self.id:
-            raise ValueError("Cannot add hole with tee set id={:d} to tee set with id={:d}".format(hole.tee_set_id, self.id))
+        if hole.tee_set_id != self.tee_set_id:
+            raise ValueError("Cannot add hole with tee set id={:d} to tee set with id={:d}".format(hole.tee_set_id, self.tee_set_id))
         if hole.number in [h.number for h in self.holes]:
-            raise ValueError("Tee set '{:s}' (id={:d}) already contains a hole with number={:d}".format(self.name, self.id, hole.number))
+            raise ValueError("Tee set '{:s}' (id={:d}) already contains a hole with number={:d}".format(self.name, self.tee_set_id, hole.number))
         self.holes.append(hole)

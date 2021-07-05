@@ -7,7 +7,7 @@ USE apl_golf_league;
 
 DROP TABLE players;
 CREATE TABLE players (
-	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+	player_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     first_name VARCHAR(255) NOT NULL,
     middle_initial VARCHAR(255),
     last_name VARCHAR(255) NOT NULL,
@@ -21,60 +21,55 @@ CREATE TABLE players (
 
 DROP TABLE courses;
 CREATE TABLE courses (
-	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to course_id
+	course_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(7) NOT NULL, # TODO: remove this?
     address VARCHAR(255),
     city VARCHAR(255),
     state VARCHAR(7),
-    zip_code SMALLINT UNSIGNED, # TODO: make MEDIUMINT!
+    zip_code MEDIUMINT UNSIGNED,
     phone VARCHAR(255),
     website VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
+    PRIMARY KEY (course_id),
     UNIQUE (name, city, state)
 );
 
 DROP TABLE tracks;
 CREATE TABLE tracks (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to track_id
+    track_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     course_id INT UNSIGNED NOT NULL,
     name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(7) NOT NULL, # TODO: remove this?
-    PRIMARY KEY (id),
-    FOREIGN KEY (course_id) REFERENCES courses(id), # TODO: update with id field change
+    PRIMARY KEY (track_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id),
     UNIQUE (course_id, name)
 );
-ALTER TABLE tracks ADD FOREIGN KEY (course_id) REFERENCES courses(id);
 
 DROP TABLE tee_sets;
 CREATE TABLE tee_sets (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to tee_set_id
+    tee_set_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     track_id INT UNSIGNED NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender ENUM("M", "F") NOT NULL,
     rating FLOAT NOT NULL,
     slope FLOAT NOT NULL,
     color VARCHAR(6),
-    PRIMARY KEY (id),
-    FOREIGN KEY (track_id) REFERENCES tracks(id), # TODO: update with id field change
+    PRIMARY KEY (tee_set_id),
+    FOREIGN KEY (track_id) REFERENCES tracks(track_id),
     UNIQUE (track_id, name, gender)
 );
-ALTER TABLE tee_sets ADD FOREIGN KEY (track_id) REFERENCES tracks(id);
 
 DROP TABLE holes;
 CREATE TABLE holes (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to hole_id
+    hole_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
 	tee_set_id INT UNSIGNED NOT NULL,
     number TINYINT UNSIGNED NOT NULL,
     par TINYINT UNSIGNED NOT NULL,
     handicap TINYINT UNSIGNED NOT NULL,
     yardage SMALLINT UNSIGNED,
-    PRIMARY KEY (id),
-    FOREIGN KEY (tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
+    PRIMARY KEY (hole_id),
+    FOREIGN KEY (tee_set_id) REFERENCES tee_sets(tee_set_id),
     UNIQUE (tee_set_id, number)
 );
-ALTER TABLE holes ADD FOREIGN KEY (tee_set_id) REFERENCES tee_sets(id);
 
 DROP TABLE flights;
 CREATE TABLE flights (
@@ -87,10 +82,10 @@ CREATE TABLE flights (
     forward_tee_set_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    FOREIGN KEY (middle_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
-    FOREIGN KEY (senior_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
-    FOREIGN KEY (super_senior_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
-    FOREIGN KEY (forward_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
+    FOREIGN KEY (middle_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (super_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (forward_tee_set_id) REFERENCES tee_sets(tee_set_id),
     UNIQUE (name, year)
 );
 
@@ -118,7 +113,7 @@ CREATE TABLE team_golfers (
 
 DROP TABLE matches;
 CREATE TABLE matches (
-	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	match_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     team_1_id INT UNSIGNED NOT NULL,
     team_2_id INT UNSIGNED NOT NULL,
     week TINYINT UNSIGNED NOT NULL,
@@ -127,7 +122,7 @@ CREATE TABLE matches (
     team_1_score TINYINT UNSIGNED,
     team_2_score TINYINT UNSIGNED,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (match_id)
 );
 
 DROP TABLE match_rounds;

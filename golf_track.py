@@ -15,11 +15,10 @@ class GolfTrack(object):
 
     """
 
-    def __init__(self, id: int, course_id: int, name: str, abbreviation: str):
-        self.id = id
-        self.course_id = course_id
+    def __init__(self, name: str = None, track_id: int = None, course_id: int = None):
         self.name = name
-        self.abbreviation = abbreviation
+        self.track_id = track_id
+        self.course_id = course_id
         self.tee_sets = []
 
     def __str__(self):
@@ -51,13 +50,12 @@ class GolfTrack(object):
 
         """
         track = cls(
-            track_data['id'] if track_data['id'] != -1 else None,
-            track_data['courseId'] if track_data['courseId'] != -1 else None,
-            track_data['name'],
-            track_data['abbreviation']
+            track_data['track_id'] if track_data['track_id'] != -1 else None,
+            track_data['course_id'] if track_data['course_id'] != -1 else None,
+            track_data['name']
         )
 
-        for tee_set_data in track_data['teeSets']:
+        for tee_set_data in track_data['tee_sets']:
             track.add_tee_set(GolfTeeSet.from_dict(tee_set_data))
 
         return track
@@ -73,10 +71,9 @@ class GolfTrack(object):
 
         """
         track_dict = {
-            'id': self.id,
-            'courseId': self.course_id,
+            'track_id': self.track_id,
+            'course_id': self.course_id,
             'name': self.name,
-            'abbreviation': self.abbreviation,
             'teeSets': [tee_set.as_dict() for tee_set in self.tee_sets]
         }
         return track_dict
@@ -92,8 +89,8 @@ class GolfTrack(object):
 
         """
         # Add required fields
-        fields = "course_id, name, abbreviation"
-        values = "{:d}, '{:s}', '{:s}'".format(self.course_id, self.name, self.abbreviation)
+        fields = "course_id, name"
+        values = "{:d}, '{:s}'".format(self.course_id, self.name)
 
         # Construct query
         return "INSERT INTO tracks ({:s}) VALUES ({:s});".format(fields, values)
@@ -109,11 +106,11 @@ class GolfTrack(object):
 
         """
         # Add required fields
-        fieldValues = "course_id = {:d}, name = '{:s}', abbreviation = '{:s}'".format(self.course_id, self.name, self.abbreviation)
+        fieldValues = "course_id = {:d}, name = '{:s}'".format(self.course_id, self.name)
 
         # Construct conditions
-        if self.id is not None:
-            conditions = "id = {:d}".format(self.id)
+        if self.track_id is not None:
+            conditions = "track_id = {:d}".format(self.track_id)
         else:
             conditions = "course_id = {:d} AND name = '{:s}'".format(self.course_id, self.name)
 
@@ -136,9 +133,9 @@ class GolfTrack(object):
             if this track already contains a tee set with the given name and gender
         
         """
-        if tee_set.track_id != self.id:
-            raise ValueError("Cannot add tee set with track id={:d} to track with id={:d}".format(tee_set.track_id, self.id))
+        if tee_set.track_id != self.track_id:
+            raise ValueError("Cannot add tee set with track id={:d} to track with id={:d}".format(tee_set.track_id, self.track_id))
         for t in self.tee_sets:
             if (t.name == tee_set.name) and (t.gender == tee_set.gender):
-                raise ValueError("Track '{:s}' (id={:d}) already contains a tee set with name='{:s}' and gender='{:s}'".format(self.name, self.id, tee_set.name, tee_set.gender))
+                raise ValueError("Track '{:s}' (id={:d}) already contains a tee set with name='{:s}' and gender='{:s}'".format(self.name, self.track_id, tee_set.name, tee_set.gender))
         self.tee_sets.append(tee_set)

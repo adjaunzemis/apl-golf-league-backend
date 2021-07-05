@@ -22,371 +22,104 @@ def init_db():
     return APLGolfLeagueDatabase(CONFIG_FILE, verbose=False)
     
 def test_woodholme():
-    # Create Woodholme course
+    # Create course: Woodholme Country Club
     course = GolfCourse(
-        None, # id (assigned by database)
-        "Woodholme Country Club", # name
-        "WCC" # abbreviation
+        name = "Woodholme Country Club",
+        address = "300 Woodholme Ave",
+        city = "Pikesville",
+        state = "MD",
+        zip_code = 21208,
+        phone = "410-486-3700",
+        website = "www.woodholme.org"
     )
-    course.address = "300 Woodholme Ave"
-    course.city = "Pikesville"
-    course.state = "MD"
-    course.zip_code = 21208
-    course.phone = "410-486-3700"
-    course.website = "www.woodholme.org"
 
-    # Add front track
-    track_front = GolfTrack(
-        None, # id (assigned by database)
-        None, # course_id (assigned by database)
-        "Front", # name
-        "F", # abbreviation
-    )
+    # Add track: Front
+    track_front = GolfTrack(name="Front")
     course.add_track(track_front)
 
-    # Add blue (M, front) tee set
+    # Add tee set: Blue, M (Front)
     tee_set_blue_m_front = GolfTeeSet(
-        None, # id (assigned by database)
-        None, # track_id (assigned by database)
-        "Blue", # name
-        "M", # gender
-        34.8, # rating
-        133, # slope
-        color="0000ff" # color (optional)
+        name = "Blue",
+        gender = "M",
+        rating = 34.8,
+        slope = 133,
+        color = "0000ff"
     )
     track_front.add_tee_set(tee_set_blue_m_front)
 
-    # Add holes to blue (M, front) tee set
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        1, # number
-        4, # par
-        17, # handicap
-        yardage=325, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        2, # number
-        5, # par
-        7, # handicap
-        yardage=529, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        3, # number
-        3, # par
-        11, # handicap
-        yardage=164, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        4, # number
-        4, # par
-        1, # handicap
-        yardage=401, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        5, # number
-        3, # par
-        13, # handicap
-        yardage=186, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        6, # number
-        4, # par
-        5, # handicap
-        yardage=404, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        7, # number
-        4, # par
-        9, # handicap
-        yardage=337, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        8, # number
-        4, # par
-        15, # handicap
-        yardage=306, # yardage (optional)
-    ))
-    tee_set_blue_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        9, # number
-        4, # par
-        3, # handicap
-        yardage=366, # yardage (optional)
-    ))
+    # Add holes to tee set: Blue, M (Front)
+    tee_set_blue_m_front.add_hole(GolfHole(number=1, par=4, handicap=17, yardage=325))
+    tee_set_blue_m_front.add_hole(GolfHole(number=2, par=5, handicap=7, yardage=529))
+    tee_set_blue_m_front.add_hole(GolfHole(number=3, par=3, handicap=11, yardage=164))
+    tee_set_blue_m_front.add_hole(GolfHole(number=4, par=4, handicap=1, yardage=401))
+    tee_set_blue_m_front.add_hole(GolfHole(number=5, par=3, handicap=13, yardage=186))
+    tee_set_blue_m_front.add_hole(GolfHole(number=6, par=4, handicap=5, yardage=404))
+    tee_set_blue_m_front.add_hole(GolfHole(number=7, par=4, handicap=9, yardage=337))
+    tee_set_blue_m_front.add_hole(GolfHole(number=8, par=4, handicap=15, yardage=306))
+    tee_set_blue_m_front.add_hole(GolfHole(number=9, par=4, handicap=3, yardage=366))
 
-    # Add white (M, front) tee set
+    # Add tee set: White, M (Front)
     tee_set_white_m_front = GolfTeeSet(
-        None, # id (assigned by database)
-        None, # track_id (assigned by database)
-        "White", # name
-        "M", # gender
-        33.6, # rating
-        131, # slope
-        color="ffffff" # color (optional)
+        name = "White",
+        gender = "M",
+        rating = 33.6,
+        slope = 131,
+        color = "ffffff"
     )
     track_front.add_tee_set(tee_set_white_m_front)
-
-    # Add holes to white (M, front) tee set
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        1, # number
-        4, # par
-        17, # handicap
-        yardage=318, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        2, # number
-        5, # par
-        7, # handicap
-        yardage=496, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        3, # number
-        3, # par
-        11, # handicap
-        yardage=125, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        4, # number
-        4, # par
-        1, # handicap
-        yardage=361, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        5, # number
-        3, # par
-        13, # handicap
-        yardage=181, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        6, # number
-        4, # par
-        5, # handicap
-        yardage=359, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        7, # number
-        4, # par
-        9, # handicap
-        yardage=320, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        8, # number
-        4, # par
-        15, # handicap
-        yardage=291, # yardage (optional)
-    ))
-    tee_set_white_m_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        9, # number
-        4, # par
-        3, # handicap
-        yardage=334, # yardage (optional)
-    ))
+    
+    # Add holes to tee set: White, M (Front)
+    tee_set_white_m_front.add_hole(GolfHole(number=1, par=4, handicap=17, yardage=318))
+    tee_set_white_m_front.add_hole(GolfHole(number=2, par=5, handicap=7, yardage=496))
+    tee_set_white_m_front.add_hole(GolfHole(number=3, par=3, handicap=11, yardage=125))
+    tee_set_white_m_front.add_hole(GolfHole(number=4, par=4, handicap=1, yardage=361))
+    tee_set_white_m_front.add_hole(GolfHole(number=5, par=3, handicap=13, yardage=181))
+    tee_set_white_m_front.add_hole(GolfHole(number=6, par=4, handicap=5, yardage=359))
+    tee_set_white_m_front.add_hole(GolfHole(number=7, par=4, handicap=9, yardage=320))
+    tee_set_white_m_front.add_hole(GolfHole(number=8, par=4, handicap=15, yardage=291))
+    tee_set_white_m_front.add_hole(GolfHole(number=9, par=4, handicap=3, yardage=334))
 
     # Add white (F, front) tee set
     tee_set_white_f_front = GolfTeeSet(
-        None, # id (assigned by database)
-        None, # track_id (assigned by database)
-        "White", # name
-        "F", # gender
-        36.1, # rating
-        133, # slope
-        color="ffffff" # color (optional)
+        name = "White",
+        gender = "F",
+        rating = 36.1,
+        slope = 133,
+        color = "ffffff"
     )
     track_front.add_tee_set(tee_set_white_f_front)
-
-    # Add holes to white (F, front) tee set
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        1, # number
-        4, # par
-        13, # handicap
-        yardage=318, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        2, # number
-        5, # par
-        1, # handicap
-        yardage=496, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        3, # number
-        3, # par
-        17, # handicap
-        yardage=125, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        4, # number
-        4, # par
-        5, # handicap
-        yardage=361, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        5, # number
-        3, # par
-        11, # handicap
-        yardage=181, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        6, # number
-        4, # par
-        7, # handicap
-        yardage=359, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        7, # number
-        4, # par
-        9, # handicap
-        yardage=320, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        8, # number
-        4, # par
-        15, # handicap
-        yardage=291, # yardage (optional)
-    ))
-    tee_set_white_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        9, # number
-        4, # par
-        3, # handicap
-        yardage=334, # yardage (optional)
-    ))
+    
+    # Add holes to tee set: White, F (Front)
+    tee_set_white_f_front.add_hole(GolfHole(number=1, par=4, handicap=13, yardage=318))
+    tee_set_white_f_front.add_hole(GolfHole(number=2, par=5, handicap=1, yardage=496))
+    tee_set_white_f_front.add_hole(GolfHole(number=3, par=3, handicap=17, yardage=125))
+    tee_set_white_f_front.add_hole(GolfHole(number=4, par=4, handicap=5, yardage=361))
+    tee_set_white_f_front.add_hole(GolfHole(number=5, par=3, handicap=11, yardage=181))
+    tee_set_white_f_front.add_hole(GolfHole(number=6, par=4, handicap=7, yardage=359))
+    tee_set_white_f_front.add_hole(GolfHole(number=7, par=4, handicap=9, yardage=320))
+    tee_set_white_f_front.add_hole(GolfHole(number=8, par=4, handicap=15, yardage=291))
+    tee_set_white_f_front.add_hole(GolfHole(number=9, par=4, handicap=3, yardage=334))
 
     # Add green (F, front) tee set
     tee_set_green_f_front = GolfTeeSet(
-        None, # id (assigned by database)
-        None, # track_id (assigned by database)
-        "Green", # name
-        "F", # gender
-        34.9, # rating
-        127, # slope
-        color="00ff00" # color (optional)
+        name = "Green",
+        gender = "F",
+        rating = 34.9,
+        slope = 127,
+        color = "00ff00"
     )
     track_front.add_tee_set(tee_set_green_f_front)
 
-    # Add holes to green (F, front) tee set
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        1, # number
-        4, # par
-        13, # handicap
-        yardage=302, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        2, # number
-        5, # par
-        1, # handicap
-        yardage=469, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        3, # number
-        3, # par
-        17, # handicap
-        yardage=130, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        4, # number
-        4, # par
-        5, # handicap
-        yardage=338, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        5, # number
-        3, # par
-        11, # handicap
-        yardage=178, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        6, # number
-        4, # par
-        7, # handicap
-        yardage=308, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        7, # number
-        4, # par
-        9, # handicap
-        yardage=265, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        8, # number
-        4, # par
-        15, # handicap
-        yardage=253, # yardage (optional)
-    ))
-    tee_set_green_f_front.add_hole(GolfHole(
-        None, # id (assigned by database)
-        None, # tee_set_id (assigned by database)
-        9, # number
-        4, # par
-        3, # handicap
-        yardage=318, # yardage (optional)
-    ))
+    # Add holes to tee set: White, F (Front)
+    tee_set_green_f_front.add_hole(GolfHole(number=1, par=4, handicap=13, yardage=302))
+    tee_set_green_f_front.add_hole(GolfHole(number=2, par=5, handicap=1, yardage=469))
+    tee_set_green_f_front.add_hole(GolfHole(number=3, par=3, handicap=17, yardage=130))
+    tee_set_green_f_front.add_hole(GolfHole(number=4, par=4, handicap=5, yardage=338))
+    tee_set_green_f_front.add_hole(GolfHole(number=5, par=3, handicap=11, yardage=178))
+    tee_set_green_f_front.add_hole(GolfHole(number=6, par=4, handicap=7, yardage=308))
+    tee_set_green_f_front.add_hole(GolfHole(number=7, par=4, handicap=9, yardage=265))
+    tee_set_green_f_front.add_hole(GolfHole(number=8, par=4, handicap=15, yardage=253))
+    tee_set_green_f_front.add_hole(GolfHole(number=9, par=4, handicap=3, yardage=318))
 
     # Display course data
     print(course)
@@ -394,7 +127,7 @@ def test_woodholme():
     
     # Add/update course in database
     db = init_db()
-    db.put_course(course, update=True, verbose=True)
+    db.put_course(course, update=False, verbose=True)
 
 def main():
     # TODO: Rework for new database schema

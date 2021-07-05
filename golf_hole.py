@@ -13,8 +13,8 @@ class GolfHole(object):
 
     """
 
-    def __init__(self, id: int, tee_set_id: int, number: int, par: int, handicap: int, yardage: int = None):
-        self.id = id
+    def __init__(self, number: int, par: int, handicap: int, yardage: int = None, hole_id: int = None, tee_set_id: int = None):
+        self.hole_id = hole_id
         self.tee_set_id = tee_set_id
         self.number = number
         self.par = par
@@ -52,8 +52,8 @@ class GolfHole(object):
 
         """
         hole = cls(
-            hole_data['id'] if hole_data['id'] != -1 else None,
-            hole_data['teeSetId'] if hole_data['teeSetId'] != -1 else None,
+            hole_data['hole_id'] if hole_data['id'] != -1 else None,
+            hole_data['tee_set_id'] if hole_data['tee_set_id'] != -1 else None,
             hole_data['number'],
             hole_data['par'],
             hole_data['handicap'],
@@ -72,8 +72,8 @@ class GolfHole(object):
 
         """
         hole_dict = {
-            'id': self.id,
-            'teeSetId': self.tee_set_id,
+            'hole_id': self.hole_id,
+            'tee_set_id': self.tee_set_id,
             'number': self.number,
             'par': self.par,
             'handicap': self.handicap
@@ -124,8 +124,8 @@ class GolfHole(object):
             fieldValues += ", yardage = {:d}".format(self.yardage)
             
         # Construct conditions
-        if self.id is not None:
-            conditions = "id = {:d}".format(self.id)
+        if self.hole_id is not None:
+            conditions = "hole_id = {:d}".format(self.hole_id)
         else:
             conditions = "tee_set_id = {:d} AND number = {:d}".format(self.tee_set_id, self.number)
 

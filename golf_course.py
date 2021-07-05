@@ -7,6 +7,8 @@ Andris Jaunzemis
 
 """
 
+from datetime import datetime
+
 from golf_track import GolfTrack
 
 class GolfCourse(object):
@@ -15,17 +17,16 @@ class GolfCourse(object):
 
     """
 
-    def __init__(self, id: int, name: str, abbreviation: str):
-        self.id = id
+    def __init__(self, name: str, address: str = None, city: str = None, state: str = None, zip_code: int = None, phone: str = None, website: str = None, course_id: int = None, date_updated: datetime = None):
         self.name = name
-        self.abbreviation = abbreviation
-        self.address: str = None
-        self.city: str = None
-        self.state: str = None
-        self.zip_code: int = None
-        self.phone: str = None
-        self.website: str = None
-        self.date_updated = None
+        self.address = address
+        self.city = city
+        self.state = state
+        self.zip_code = zip_code
+        self.phone = phone
+        self.website = website
+        self.course_id = course_id
+        self.date_updated = date_updated
         self.tracks = []
 
     def __str__(self):
@@ -57,17 +58,13 @@ class GolfCourse(object):
 
         """
         course = cls(
-            course_data['id'] if course_data['id'] != -1 else None,
-            course_data['name'],
-            course_data['abbreviation']
+            course_data['course_id'] if course_data['course_id'] != -1 else None,
+            course_data['name']
         )
 
-        for key in ['address', 'city', 'state', 'phone', 'website']:
+        for key in ['address', 'city', 'state', 'zip_code', 'phone', 'website']:
             if key in course_data:
                 setattr(course, key, course_data[key])
-
-        if 'zipCode' in course_data:
-            setattr(course, 'zip_code', course_data['zipCode'])
 
         for track_data in course_data['tracks']:
             course.add_track(GolfTrack.from_dict(track_data))
@@ -85,9 +82,8 @@ class GolfCourse(object):
 
         """
         course_dict = {
-            'id': self.id,
+            'course_id': self.course_id,
             'name': self.name,
-            'abbreviation': self.abbreviation,
             'tracks': [track.as_dict() for track in self.tracks]
         }
 
@@ -98,13 +94,13 @@ class GolfCourse(object):
         if self.state is not None:
             course_dict['state'] = self.state
         if self.zip_code is not None:
-            course_dict['zipCode'] = self.zip_code
+            course_dict['zip_code'] = self.zip_code
         if self.phone is not None:
             course_dict['phone'] = self.phone
         if self.website is not None:
             course_dict['website'] = self.website
         if self.date_updated is not None:
-            course_dict['dateUpdated'] = self.date_updated.strftime("%Y-%m-%d")
+            course_dict['date_updated'] = self.date_updated.strftime("%Y-%m-%d")
 
         return course_dict
 
@@ -119,8 +115,8 @@ class GolfCourse(object):
 
         """
         # Add required fields
-        fields = "name, abbreviation"
-        values = "'{:s}', '{:s}'".format(self.name, self.abbreviation)
+        fields = "name"
+        values = "'{:s}'".format(self.name)
 
         # Add optional fields if defined
         if self.address is not None:
@@ -156,7 +152,7 @@ class GolfCourse(object):
 
         """
         # Add required fields
-        fieldValues = "name = '{:s}', abbreviation = '{:s}'".format(self.name, self.abbreviation)
+        fieldValues = "name = '{:s}'".format(self.name)
 
         # Add optional fields if defined
         if self.address is not None:
@@ -173,8 +169,8 @@ class GolfCourse(object):
             fieldValues += ", website = '{:s}'".format(self.website)
 
         # Construct conditions
-        if self.id is not None:
-            conditions = "id = {:d}".format(self.id)
+        if self.course_id is not None:
+            conditions = "id = {:d}".format(self.course_id)
         else:
             conditions = "name = '{:s}'".format(self.name)
 
@@ -197,8 +193,8 @@ class GolfCourse(object):
             if this course already contains a track with the given name
         
         """
-        if track.course_id != self.id:
-            raise ValueError("Cannot add track with course id={:d} to course with id={:d}".format(track.course_id, self.id))
+        if track.course_id != self.course_id:
+            raise ValueError("Cannot add track with course id={:d} to course with id={:d}".format(track.course_id, self.course_id))
         if track.name in [t.name for t in self.tracks]:
-            raise ValueError("Course '{:s}' (id={:d}) already contains a track with name='{:s}'".format(self.name, self.id, track.name))
+            raise ValueError("Course '{:s}' (id={:d}) already contains a track with name='{:s}'".format(self.name, self.course_id, track.name))
         self.tracks.append(track)
