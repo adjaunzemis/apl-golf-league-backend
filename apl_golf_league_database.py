@@ -107,11 +107,11 @@ class APLGolfLeagueDatabase(object):
         if any(val is not None for val in (course_id, name, city, state)):
             query += " WHERE"
             condition_count = 0
-            if id is not None:
+            if course_id is not None:
                 condition_count += 1
                 if condition_count > 1:
                     query += " AND"
-                query += " id = {:d}".format(id)
+                query += " course_id = {:d}".format(course_id)
             if name is not None:
                 condition_count += 1
                 if condition_count > 1:
@@ -146,16 +146,16 @@ class APLGolfLeagueDatabase(object):
         courses = []
         for course_data in data:
             course = GolfCourse(
-                course_id=course_data[0],
-                name=course_data[1]
+                course_id = course_data[0],
+                name = course_data[1],
+                address = course_data[2],
+                city = course_data[3],
+                state = course_data[4],
+                zip_code = course_data[5],
+                phone = course_data[6],
+                website = course_data[7],
+                date_updated = course_data[8]
             )
-            course.address = course_data[3]
-            course.city = course_data[4]
-            course.state = course_data[5]
-            course.zip_code = course_data[6]
-            course.phone = course_data[7]
-            course.website = course_data[8]
-            course.date_updated = course_data[9]
             
             # Gather track data for this course
             course.tracks = self.get_tracks(course_id=course.course_id)
@@ -309,11 +309,11 @@ class APLGolfLeagueDatabase(object):
         
         """
         # Build query
-        query = "SELECT track_id, course_id, name, abbreviation FROM tracks"
+        query = "SELECT track_id, course_id, name FROM tracks"
         if any(val is not None for val in (track_id, course_id, name)):
             query += " WHERE"
             condition_count = 0
-            if id is not None:
+            if track_id is not None:
                 condition_count += 1
                 if condition_count > 1:
                     query += " AND"
@@ -347,10 +347,9 @@ class APLGolfLeagueDatabase(object):
         tracks = []
         for track_data in data:
             track = GolfTrack(
-                track_id=track_data[0],
-                course_id=track_data[1],
-                name=track_data[2],
-                abbreviation=track_data[3]
+                track_id = track_data[0],
+                course_id = track_data[1],
+                name = track_data[2]
             )
             
             # Gather tee set data for this track
@@ -508,7 +507,7 @@ class APLGolfLeagueDatabase(object):
                 condition_count += 1
                 if condition_count > 1:
                     query += " AND"
-                query += " id = {:d}".format(tee_set_id)
+                query += " tee_set_id = {:d}".format(tee_set_id)
             if track_id is not None:
                 condition_count += 1
                 if condition_count > 1:
@@ -543,14 +542,14 @@ class APLGolfLeagueDatabase(object):
         tee_sets = []
         for tee_set_data in data:
             tee_set = GolfTeeSet(
-                tee_set_id=tee_set_data[0],
-                track_id=tee_set_data[1],
-                name=tee_set_data[2],
-                gender=tee_set_data[3],
-                rating=tee_set_data[4],
-                slope=tee_set_data[5]
+                tee_set_id = tee_set_data[0],
+                track_id = tee_set_data[1],
+                name = tee_set_data[2],
+                gender = tee_set_data[3],
+                rating = tee_set_data[4],
+                slope = tee_set_data[5],
+                color = tee_set_data[6]
             )
-            tee_set.color = tee_set_data[6]
             
             # Gather hole data for this tee set
             tee_set.holes = self.get_holes(tee_set_id=tee_set.tee_set_id)
@@ -699,7 +698,7 @@ class APLGolfLeagueDatabase(object):
         if any(val is not None for val in (id, tee_set_id, number)):
             query += " WHERE"
             condition_count = 0
-            if id is not None:
+            if hole_id is not None:
                 condition_count += 1
                 if condition_count > 1:
                     query += " AND"
@@ -733,12 +732,12 @@ class APLGolfLeagueDatabase(object):
         holes = []
         for hole_data in data:
             hole = GolfHole(
-                hole_id=hole_data[0],
-                tee_set_id=hole_data[1],
-                number=hole_data[2],
-                par=hole_data[3],
-                handicap=hole_data[4],
-                yardage=hole_data[5]
+                hole_id = hole_data[0],
+                tee_set_id = hole_data[1],
+                number = hole_data[2],
+                par = hole_data[3],
+                handicap = hole_data[4],
+                yardage = hole_data[5]
             )
 
             # Append hole to holes list

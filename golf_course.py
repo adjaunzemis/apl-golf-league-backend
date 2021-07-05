@@ -58,8 +58,8 @@ class GolfCourse(object):
 
         """
         course = cls(
-            course_data['course_id'] if course_data['course_id'] != -1 else None,
-            course_data['name']
+            course_id = course_data['course_id'] if course_data['course_id'] != -1 else None,
+            name = course_data['name']
         )
 
         for key in ['address', 'city', 'state', 'zip_code', 'phone', 'website']:

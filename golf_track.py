@@ -50,9 +50,9 @@ class GolfTrack(object):
 
         """
         track = cls(
-            track_data['track_id'] if track_data['track_id'] != -1 else None,
-            track_data['course_id'] if track_data['course_id'] != -1 else None,
-            track_data['name']
+            track_id = track_data['track_id'] if track_data['track_id'] != -1 else None,
+            course_id = track_data['course_id'] if track_data['course_id'] != -1 else None,
+            name = track_data['name']
         )
 
         for tee_set_data in track_data['tee_sets']:
@@ -74,7 +74,7 @@ class GolfTrack(object):
             'track_id': self.track_id,
             'course_id': self.course_id,
             'name': self.name,
-            'teeSets': [tee_set.as_dict() for tee_set in self.tee_sets]
+            'tee_sets': [tee_set.as_dict() for tee_set in self.tee_sets]
         }
         return track_dict
 

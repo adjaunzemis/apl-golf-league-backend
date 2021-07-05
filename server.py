@@ -21,11 +21,11 @@ class Courses(Resource):
         parser.add_argument('name', type=str, default=None, required=False, help='Course name')
 
         args = parser.parse_args()
-        id = args['id']
+        course_id = args['id']
         name = args['name']
 
         db = APLGolfLeagueDatabase('./config/admin.user', verbose=False)
-        courses = db.get_courses(id=id, name=name, verbose=False)
+        courses = db.get_courses(course_id=course_id, name=name, verbose=False)
         if courses is None:
             return []
         return [course.as_dict() for course in courses]

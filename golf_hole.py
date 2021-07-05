@@ -52,12 +52,12 @@ class GolfHole(object):
 
         """
         hole = cls(
-            hole_data['hole_id'] if hole_data['id'] != -1 else None,
-            hole_data['tee_set_id'] if hole_data['tee_set_id'] != -1 else None,
-            hole_data['number'],
-            hole_data['par'],
-            hole_data['handicap'],
-            hole_data['yardage']
+            hole_id = hole_data['hole_id'] if hole_data['hole_id'] != -1 else None,
+            tee_set_id = hole_data['tee_set_id'] if hole_data['tee_set_id'] != -1 else None,
+            number = hole_data['number'],
+            par = hole_data['par'],
+            handicap = hole_data['handicap'],
+            yardage = hole_data['yardage']
         )
         return hole
     
