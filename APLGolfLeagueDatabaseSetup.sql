@@ -2,6 +2,9 @@ CREATE DATABASE apl_golf_league;
 SHOW DATABASES;
 USE apl_golf_league;
 
+# Example join query using foreign keys
+# SELECT courses.name, tracks.name, tee_sets.name, tee_sets.rating, tee_sets.slope FROM courses JOIN tracks ON tracks.course_id = courses.id JOIN tee_sets ON tee_sets.track_id = tracks.id;
+
 DROP TABLE players;
 CREATE TABLE players (
 	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
@@ -18,9 +21,9 @@ CREATE TABLE players (
 
 DROP TABLE courses;
 CREATE TABLE courses (
-	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+	id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to course_id
     name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(7) NOT NULL,
+    abbreviation VARCHAR(7) NOT NULL, # TODO: remove this?
     address VARCHAR(255),
     city VARCHAR(255),
     state VARCHAR(7),
@@ -34,17 +37,19 @@ CREATE TABLE courses (
 
 DROP TABLE tracks;
 CREATE TABLE tracks (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to track_id
     course_id INT UNSIGNED NOT NULL,
     name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(7) NOT NULL,
+    abbreviation VARCHAR(7) NOT NULL, # TODO: remove this?
     PRIMARY KEY (id),
+    FOREIGN KEY (course_id) REFERENCES courses(id), # TODO: update with id field change
     UNIQUE (course_id, name)
 );
+ALTER TABLE tracks ADD FOREIGN KEY (course_id) REFERENCES courses(id);
 
 DROP TABLE tee_sets;
 CREATE TABLE tee_sets (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to tee_set_id
     track_id INT UNSIGNED NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender ENUM("M", "F") NOT NULL,
@@ -52,49 +57,57 @@ CREATE TABLE tee_sets (
     slope FLOAT NOT NULL,
     color VARCHAR(6),
     PRIMARY KEY (id),
+    FOREIGN KEY (track_id) REFERENCES tracks(id), # TODO: update with id field change
     UNIQUE (track_id, name, gender)
 );
+ALTER TABLE tee_sets ADD FOREIGN KEY (track_id) REFERENCES tracks(id);
 
 DROP TABLE holes;
 CREATE TABLE holes (
-    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT, # TODO: change to hole_id
 	tee_set_id INT UNSIGNED NOT NULL,
     number TINYINT UNSIGNED NOT NULL,
     par TINYINT UNSIGNED NOT NULL,
     handicap TINYINT UNSIGNED NOT NULL,
     yardage SMALLINT UNSIGNED,
     PRIMARY KEY (id),
+    FOREIGN KEY (tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
     UNIQUE (tee_set_id, number)
 );
+ALTER TABLE holes ADD FOREIGN KEY (tee_set_id) REFERENCES tee_sets(id);
 
 DROP TABLE flights;
 CREATE TABLE flights (
-	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	flight_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
-    abbreviation VARCHAR(255) NOT NULL,
-    middle_teeset_id INT UNSIGNED NOT NULL,
-    senior_teeset_id INT UNSIGNED NOT NULL,
-	super_senior_teeset_id INT UNSIGNED NOT NULL,
-    womens_teeset_id INT UNSIGNED NOT NULL,
+    middle_tee_set_id INT UNSIGNED NOT NULL,
+    senior_tee_set_id INT UNSIGNED NOT NULL,
+	super_senior_tee_set_id INT UNSIGNED NOT NULL,
+    forward_tee_set_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    FOREIGN KEY (middle_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
+    FOREIGN KEY (senior_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
+    FOREIGN KEY (super_senior_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
+    FOREIGN KEY (forward_tee_set_id) REFERENCES tee_sets(id), # TODO: update with id field change
     UNIQUE (name, year)
 );
 
-DROP TABLE teams;
-CREATE TABLE teams (
-	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+DROP TABLE flight_teams;
+CREATE TABLE flight_teams (
+	flight_team_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     flight_id INT UNSIGNED NOT NULL,
     number SMALLINT UNSIGNED NOT NULL,
     name VARCHAR(255),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    FOREIGN KEY (flight_id) REFERENCES flights(flight_id),
     UNIQUE(flight_id, number)
 );
 
-DROP TABLE team_players;
-CREATE TABLE team_players (
+DROP TABLE flight_team_golfers;
+CREATE TABLE team_golfers (
 	team_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
     role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
