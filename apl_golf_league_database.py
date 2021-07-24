@@ -14,7 +14,8 @@ from golf_course import GolfCourse
 from golf_track import GolfTrack
 from golf_tee_set import GolfTeeSet
 from golf_hole import GolfHole
-from golf_models import GolfFlight, GolfPlayer, GolfTeam
+from golf_player import GolfPlayer
+from golf_models import GolfFlight
 
 class APLGolfLeagueDatabase(object):
     r"""
@@ -962,51 +963,6 @@ class APLGolfLeagueDatabase(object):
         if verbose:
             print("Added/updated flight '{:s}' to flights table".format(str(flight)))
 
-    def get_player_by_name(self, first_name, last_name, verbose=False):
-        r"""
-        Fetches golf player data for the player matching the given parameters.
-
-        If a matching player cannot be found in the database, returns None.
-
-        Parameters
-        ----------
-        first_name : string
-            player first name
-        last_name : int
-            player last name
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-        
-        Returns
-        -------
-        player : GolfPlayer
-            golf player data
-            if no match is found, returns None
-
-        """
-        # Build query
-        query = "SELECT classification, email, phone, location, employee_id FROM players WHERE first_name='{:s}' AND last_name='{:s}';".format(first_name, last_name)
-        if verbose:
-            print("Executing query: {:s}".format(query))
-
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-
-        # Return matched golf player or None (if not found)
-        if len(data) == 0:
-            return None
-        result = data[0]
-        
-        player = GolfPlayer(first_name, last_name, result[0], result[1])
-        player.phone = result[2]
-        player.location = result[3]
-        player.employee_id = result[4]
-        return player
-
     def get_player_by_id(self, player_id, verbose=False):
         r"""
         Fetches golf player data using the given player identifier.
@@ -1029,7 +985,7 @@ class APLGolfLeagueDatabase(object):
 
         """
         # Build query
-        query = "SELECT first_name, last_name, classification, email, phone, location, employee_id FROM players WHERE id={:d};".format(player_id)
+        query = "SELECT last_name, first_name, middle_name, affiliation FROM players WHERE player_id={:d};".format(player_id)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -1044,13 +1000,15 @@ class APLGolfLeagueDatabase(object):
             return None
         result = data[0]
         
-        player = GolfPlayer(result[0], result[1], result[2], result[3])
-        player.phone = result[4]
-        player.location = result[5]
-        player.employee_id = result[6]
+        player = GolfPlayer(
+            last_name = result[0],
+            first_name = result[1],
+            middle_name = result[2],
+            affiliation = result[3]
+        )
         return player
 
-    def get_player_id(self, first_name, last_name, verbose=False):
+    def get_player_id(self, last_name, first_name, verbose=False):
         r"""
         Fetches player identifier for the player matching the given parameters.
 
@@ -1058,10 +1016,10 @@ class APLGolfLeagueDatabase(object):
 
         Parameters
         ----------
-        first_name : string
-            player first name
         last_name : string
             player last name
+        first_name : string
+            player first name
         verbose : boolean, optional
             if true, prints details to console
             Default: False
@@ -1074,7 +1032,7 @@ class APLGolfLeagueDatabase(object):
 
         """
         # Build query
-        query = "SELECT id FROM players WHERE first_name='{:s}' AND last_name='{:s}';".format(first_name, last_name)
+        query = "SELECT player_id FROM players WHERE last_name='{:s}' AND first_name='{:s}';".format(last_name, first_name)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -1085,6 +1043,7 @@ class APLGolfLeagueDatabase(object):
         cursor.close()
 
         # Return matched player id or None (if not found)
+        # TODO: Handle multiple results for same name?
         if len(data) == 0:
             return None
         result = data[0]
@@ -1096,8 +1055,8 @@ class APLGolfLeagueDatabase(object):
 
         Parameters
         ----------
-        flight : GolfFlight
-            golf flight data to add
+        flight : GolfPlayer
+            golf player data to add
         update : boolean, optional
             if true, allows updating of existing database entries
             Default: False
@@ -1106,18 +1065,25 @@ class APLGolfLeagueDatabase(object):
             Default: False
 
         """
-        # Check if flight already exists in database
-        player_id = self.get_player_id(player.first_name, player.last_name, verbose=verbose)
+        # Check if player already exists in database
+        player_id = self.get_player_id(player.last_name, player.first_name, verbose=verbose)
         if player_id is None:
-            # Build flight insert query
+            # Build player insert query
             query = player._create_database_insert_query()
         else:
+            # Set local id (if necessary)
+            if player.player_id is None:
+                player.player_id = player_id
+            else:
+                if player_id != player.player_id:
+                    raise ValueError("Player '{:s}' already exists in database with id={:d}, but has local id={:d}".format(str(player), player.player_id, player_id))
+
             # If existing entry updates are not allowed, raise exception
             if not update:
                 raise ValueError("Player '{:s}' already exists in database, id={:d}".format(str(player), player_id))
 
-            # Build flight update query
-            query = player._create_database_update_query(player_id)
+            # Build player update query
+            query = player._create_database_update_query()
 
         if verbose:
             print("Executing query: {:s}".format(query))

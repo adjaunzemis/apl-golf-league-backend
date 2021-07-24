@@ -3,20 +3,26 @@ SHOW DATABASES;
 USE apl_golf_league;
 
 # Example join query using foreign keys
-# SELECT courses.name, tracks.name, tee_sets.name, tee_sets.rating, tee_sets.slope FROM courses JOIN tracks ON tracks.course_id = courses.id JOIN tee_sets ON tee_sets.track_id = tracks.id;
+# SELECT courses.name, tracks.name, tee_sets.name, tee_sets.rating, tee_sets.slope FROM courses JOIN tracks ON tracks.course_id = courses.course_id JOIN tee_sets ON tee_sets.track_id = tracks.track_id;
 
 DROP TABLE players;
 CREATE TABLE players (
 	player_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
-    first_name VARCHAR(255) NOT NULL,
-    middle_initial VARCHAR(255),
     last_name VARCHAR(255) NOT NULL,
-    affiliation ENUM("APL_EMPLOYEE", "APL_FAMILY_MEMBER", "APL_RETIREE", "NON_APL_EMPLOYEE") NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(255),
+    first_name VARCHAR(255) NOT NULL,
+    middle_name VARCHAR(255),
+    affiliation ENUM("APL_EMPLOYEE", "APL_RETIREE", "APL_FAMILY_MEMBER", "NON_APL_EMPLOYEE", "UNKNOWN") NOT NULL,
+    date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE (first_name, last_name, email)
+    PRIMARY KEY (player_id)
+);
+
+DROP TABLE player_contacts;
+CREATE TABLE player_contacts (
+	player_id INT UNSIGNED NOT NULL,
+    type ENUM("PHONE", "EMAIL") NOT NULL,
+    contact VARCHAR(255) NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES players(player_id)
 );
 
 DROP TABLE courses;
