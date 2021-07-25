@@ -87,6 +87,7 @@ class GolfPlayerContact(object):
         -------
         query : string
             database insert query for contact information
+            
         """
         # Add required fields
         fields = "player_id, type, contact"

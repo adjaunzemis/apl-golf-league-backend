@@ -24,7 +24,7 @@ DROP TABLE player_contacts;
 CREATE TABLE player_contacts (
 	contact_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
 	player_id INT UNSIGNED NOT NULL,
-    type ENUM("PHONE", "EMAIL") NOT NULL,
+    type ENUM("PHONE", "EMAIL", "OFFICE") NOT NULL,
     contact VARCHAR(255) NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (contact_id),
@@ -86,25 +86,34 @@ CREATE TABLE holes (
 
 DROP TABLE flights;
 CREATE TABLE flights (
-	flight_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	flight_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
-    middle_tee_set_id INT UNSIGNED NOT NULL,
-    senior_tee_set_id INT UNSIGNED NOT NULL,
-	super_senior_tee_set_id INT UNSIGNED NOT NULL,
-    forward_tee_set_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    FOREIGN KEY (middle_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (super_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (forward_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    PRIMARY KEY (flight_id),
+    FOREIGN KEY (mens_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (mens_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (mens_super_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (womens_tee_set_id) REFERENCES tee_sets(tee_set_id),
     UNIQUE (name, year)
+);
+
+DROP TABLE flight_divisions;
+CREATE TABLE flight_divisions (
+	division_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    flight_id INT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    gender ENUM("M", "F") NOT NULL,
+    home_tee_set_id INT UNSIGNED NOT NULL,
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (division_id),
+    FOREIGN KEY (flight_id) REFERENCES flights(flight_id),
+    FOREIGN KEY (home_tee_set_id) REFERENCES tee_sets(tee_set_id)
 );
 
 DROP TABLE flight_teams;
 CREATE TABLE flight_teams (
-	flight_team_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	team_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     flight_id INT UNSIGNED NOT NULL,
     number SMALLINT UNSIGNED NOT NULL,
     name VARCHAR(255),
@@ -114,14 +123,17 @@ CREATE TABLE flight_teams (
     UNIQUE(flight_id, number)
 );
 
-DROP TABLE flight_team_golfers;
-CREATE TABLE team_golfers (
+DROP TABLE flight_players;
+CREATE TABLE flight_players (
 	team_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
+    division_id INT UNSIGNED NOT NULL,
     role ENUM("CAPTAIN", "MEMBER", "SUBSTITUTE"),
-    classification ENUM("MIDDLE", "SENIOR", "SUPER_SENIOR", "FORWARD"),
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (team_id, player_id)
+    PRIMARY KEY (team_id, player_id),
+    FOREIGN KEY (team_id) REFERENCES flight_teams(team_id),
+    FOREIGN KEY (player_id) REFERENCES players(player_id),
+    FOREIGN KEY (division_id) REFERENCES flight_divisions(division_id)
 );
 
 DROP TABLE matches;

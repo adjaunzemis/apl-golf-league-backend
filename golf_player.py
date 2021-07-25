@@ -8,6 +8,7 @@ Andris Jaunzemis
 """
 
 from datetime import datetime
+
 from golf_player_contact import GolfPlayerContact
 
 class GolfPlayer(object):
@@ -127,7 +128,7 @@ class GolfPlayer(object):
 
         Returns
         -------
-        query :string
+        query : string
             database update query for player
 
         """
@@ -155,12 +156,12 @@ class GolfPlayer(object):
         Parameters
         ----------
         contact : GolfPlayerContact
-            contact info to add
+            contact information to add
         
         Raises
         ------
         ValueError :
-            if player identifier for given contact does not mat this player identifier
+            if player identifier for given contact does not match this player identifier
 
         """
         if contact.player_id != self.player_id:

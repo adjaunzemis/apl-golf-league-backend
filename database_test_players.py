@@ -40,6 +40,7 @@ def test_mock_players():
     )
     andris.add_contact(GolfPlayerContact(type="Phone", contact="x22088"))
     andris.add_contact(GolfPlayerContact(type="Email", contact="Andris.Jaunzemis@jhuapl.edu"))
+    andris.add_contact(GolfPlayerContact(type="Office", contact="200-E342"))
     players.append(andris)
 
     samantha = GolfPlayer(
