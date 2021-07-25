@@ -16,6 +16,8 @@ from golf_tee_set import GolfTeeSet
 from golf_hole import GolfHole
 from golf_player import GolfPlayer
 from golf_player_contact import GolfPlayerContact
+from golf_flight import GolfFlight
+from golf_flight_division import GolfFlightDivision
 
 class APLGolfLeagueDatabase(object):
     r"""
@@ -127,7 +129,7 @@ class APLGolfLeagueDatabase(object):
                 condition_count += 1
                 if condition_count > 1:
                     query += " AND"
-                state += " state = '{:s}'".format(state)
+                query += " state = '{:s}'".format(state)
 
         query += ";"
         if verbose:
@@ -813,29 +815,29 @@ class APLGolfLeagueDatabase(object):
         if not isinstance(hole, GolfHole):
             raise TypeError("Input must be a GolfHole")
 
-        # Check if tee set already exists in database
+        # Check if hole already exists in database
         hole_id = self.get_hole_id(hole.tee_set_id, hole.number, verbose=verbose)
         if hole_id is None:
-            # Build tee set insert query
+            # Build hole insert query
             query = hole._create_database_insert_query()
         else:
             # If existing entry updates are not allowed, raise exception
             if not update:
                 raise ValueError("Hole '{:s}' already exists in database, id={:d}".format(str(hole), hole_id))
 
-            # Build tee set update query
+            # Build hole update query
             query = hole._create_database_update_query()
 
         if verbose:
             print("Executing query: {:s}".format(query))
 
-        # Execute query to add/update tee set data
+        # Execute query to add/update hole data
         cursor = self._connection.cursor()
         cursor.execute(query)
         self._connection.commit()
         cursor.close()
 
-        # Retrieve tee set id for this tee set (if necessary)
+        # Retrieve hole id for this hole (if necessary)
         hole_id = hole.hole_id
         if hole_id is None:
             hole_id = self.get_hole_id(hole.tee_set_id, hole.number, verbose=verbose)
@@ -864,7 +866,7 @@ class APLGolfLeagueDatabase(object):
 
         """
         # Build query
-        query = "SELECT last_name, first_name, middle_name, affiliation FROM players WHERE player_id={:d};".format(player_id)
+        query = "SELECT last_name, first_name, middle_name, affiliation, date_created, date_updated FROM players WHERE player_id={:d};".format(player_id)
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -883,7 +885,9 @@ class APLGolfLeagueDatabase(object):
             last_name = result[0],
             first_name = result[1],
             middle_name = result[2],
-            affiliation = result[3]
+            affiliation = result[3],
+            date_created = result[4],
+            date_updated = result[5]
         )
         return player
 
@@ -1007,7 +1011,7 @@ class APLGolfLeagueDatabase(object):
 
         """
         # Build query
-        query = "SELECT contact_id, type, contact FROM player_contacts WHERE player_id = {:d};".format(player_id)
+        query = "SELECT contact_id, type, contact, date_updated FROM player_contacts WHERE player_id = {:d};".format(player_id)
 
         if verbose:
             print("Executing query: {:s}".format(query))
@@ -1025,7 +1029,8 @@ class APLGolfLeagueDatabase(object):
                 contact_id = contact_data[0],
                 player_id = player_id,
                 type = contact_data[1],
-                contact = contact_data[2]
+                contact = contact_data[2],
+                date_updated = contact_data[3]
             )
 
             # Append contact to contacts list
@@ -1105,28 +1110,370 @@ class APLGolfLeagueDatabase(object):
         # Check if contact already exists in database
         contact_db = self.get_player_contact_by_type(contact.player_id, contact.type, verbose=verbose)
         if contact_db is None:
-            # Build tee set insert query
+            # Build contact insert query
             query = contact._create_database_insert_query()
         else:
             # If existing entry updates are not allowed, raise exception
             if not update:
                 raise ValueError("Contact '{:s}' already exists in database, id={:d}".format(str(contact), contact_db.contact_id))
 
-            # Build tee set update query
+            # Build contact update query
             query = contact._create_database_update_query()
 
         if verbose:
             print("Executing query: {:s}".format(query))
 
-        # Execute query to add/update tee set data
+        # Execute query to add/update contact data
         cursor = self._connection.cursor()
         cursor.execute(query)
         self._connection.commit()
         cursor.close()
 
-        # Retrieve tee set id for this tee set (if necessary)
+        # Retrieve contact id for this contact (if necessary)
         if contact.contact_id is None:
             contact_db = self.get_player_contact_by_type(contact.player_id, contact.type, verbose=verbose)
             contact.contact_id = contact_db.contact_id
         if verbose:
             print("Added/updated contact '{:s}' (id={:d}) in player_contacts table".format(str(contact), contact.contact_id))
+
+    def get_flight_id(self, name: str, year: int, verbose=False):
+        r"""
+        Fetches flight identifier for the flight matching the given parameters.
+
+        If a matching flight cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        name : string
+            flight name
+        year : int
+            flight year
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        flight_id : int
+            flight identifier from database
+            if matching flight not found, returns None
+
+        """
+        # Build query
+        query = "SELECT flight_id FROM flights WHERE name='{:s}' AND year={:d}".format(name, year)
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return matched flight id or None (if not found)
+        # TODO: Handle condition where multiple matches are found?
+        if len(data) == 0:
+            return None
+        result = data[0]
+        return result[0]
+
+    def get_flights(self, flight_id: int = None, name: str = None, year: int = None, home_course_id: int = None, verbose=False):
+        r"""
+        Fetches flight data for flights matching the given parameters.
+
+        Also calls 'get_flight_divisions' to populate list of divisons for each flight.
+
+        If a matching flight cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        flight_id : int, optional
+            flight identifier
+            Default: None (not used in filtering database results)
+        name : string, optional
+            flight name
+            Default: None (not used in filtering database results)
+        year : int, optional
+            flight year
+            Default: None (not used in filtering database results)
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        flights : list of GolfFlights
+            golf flight data
+            if no match is found, returns None
+        
+        """
+        # Build query
+        query = "SELECT flight_id, name, year, home_course_id, date_updated FROM courses"
+        if any(val is not None for val in (flight_id, name, year, home_course_id)):
+            query += " WHERE"
+            condition_count = 0
+            if flight_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " flight_id = {:d}".format(flight_id)
+            if name is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " name = '{:s}'".format(name)
+            if year is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " year = '{:s}'".format(year)
+            if home_course_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " home_course_id = {:d}".format(home_course_id)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return None if matching flight not found
+        if len(data) == 0:
+            return None
+
+        # Process query result into flights
+        flights = []
+        for flight_data in data:
+            flight = GolfFlight(
+                flight_id = flight_data[0],
+                name = flight_data[1],
+                year = flight_data[2],
+                home_course_id = flight_data[3],
+                date_updated = flight_data[4]
+            )
+            
+            # Gather division data for this flight
+            flight.divisions = self.get_flight_divisions(flight_id=flight.flight_id, )
+
+            # Add course to flight list
+            flights.append(flight)
+
+        # Return flights
+        return flights
+
+    def put_flight(self, flight: GolfFlight, update=False, verbose=False):
+        r"""
+        Adds/updates flight data in database, populating 'flights' table.
+        
+        Also calls 'put_flight_division' for each division in this flight.
+
+        Parameters
+        ----------
+        flight : GolfFlight
+            flight data to add
+        update : boolean, optional
+            if true, allows updating of existing database entries
+            Default: False
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Raises
+        ------
+        ValueError :
+            if flight already exists in database and 'update' is false
+
+        """
+        # Check input data integrity before adding to database.
+        if not isinstance(flight, GolfFlight):
+            raise TypeError("Input must be a GolfFlight")
+
+        # Check if flight already exists in database
+        flight_id = self.get_flight_id(name=flight.name, year=flight.year, verbose=verbose)
+        if flight_id is None:
+            # Build flight insert query
+            query = flight._create_database_insert_query()
+        else:
+            # Set local id (if necessary)
+            if flight.flight_id is None:
+                flight.flight_id = flight_id
+            else:
+                if flight_id != flight.flight_id:
+                    raise ValueError("Flight '{:s}' already exists in database with id={:d}, but has local id={:d}".format(str(flight), flight.flight_id, flight_id))
+
+            # If existing entry updates are not allowed, raise exception
+            if not update:
+                raise ValueError("Flight '{:s}' already exists in database, id={:d}".format(str(flight), flight_id))
+
+            # Build flight update query
+            query = flight._create_database_update_query()
+
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query to add/update course data
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        self._connection.commit()
+        cursor.close()
+
+        # Retrieve flight id for this course (if necessary)
+        flight_id = flight.flight_id
+        if flight_id is None:
+            flight_id = self.get_flight_id(name=flight.name, year=flight.year, verbose=verbose)
+        if verbose:
+            print("Added/updated flight '{:s}' (id={:d}) in flights table".format(str(flight), flight_id))
+
+        # Build and execute queries to add tracks to database
+        for division in flight.divisions:
+            if division.flight_id is None:
+                division.flight_id = flight_id
+            self.put_flight_division(division, update=update, verbose=verbose)
+
+    def get_flight_divisions(self, division_id: int = None, flight_id: int = None, name: str = None, gender: str = None, home_tee_set_id: int = None, verbose=False):
+        r"""
+        Fetches division information for a specific flight.
+
+        If a matching division cannot be found in the database, returns None.
+
+        Parameters
+        ----------
+        flight_id : int, optional
+            flight identifier in database
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+        
+        Returns
+        -------
+        divisions : list of GolfFlightDivisions
+            division information
+            if no match found, returns None
+
+        """
+        # Build query
+        query = "SELECT division_id, flight_id, name, gender, home_tee_set_id, date_updated FROM flight_divisions"
+        if any(val is not None for val in (division_id, flight_id, name, gender, home_tee_set_id)):
+            query += " WHERE"
+            condition_count = 0
+            if division_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " division_id = {:d}".format(division_id)
+            if flight_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " flight_id = {:d}".format(flight_id)
+            if name is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " name = '{:s}'".format(name)
+            if gender is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " gender = '{:s}'".format(gender)
+            if home_tee_set_id is not None:
+                condition_count += 1
+                if condition_count > 1:
+                    query += " AND"
+                query += " home_tee_set_id = {:d}".format(home_tee_set_id)
+
+        query += ";"
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+        
+        # Return None if matching division not found
+        if len(data) == 0:
+            return None
+
+        # Return matched division information
+        divisions = []
+        for division_data in data:
+            division = GolfFlightDivision(
+                division_id = division_data[0],
+                flight_id = division_data[1],
+                name = division_data[2],
+                gender = division_data[3],
+                home_tee_set_id = division_data[4],
+                date_updated = division_data[5],
+            )
+
+            # Append division to divisions list
+            divisions.append(division)
+
+        # Return divisions
+        return divisions
+
+    def put_flight_division(self, division: GolfFlightDivision, update=False, verbose=False):
+        r"""
+        Adds/updates flight division information in database, populating 'flight_divisions' table.
+
+        Parameters
+        ----------
+        division : GolfFlightDivision
+            flight division information to add
+        update : boolean, optional
+            if true, allows updating of existing database entries
+            Default: False
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+
+        """
+        # Check input data integrity before adding to database.
+        if not isinstance(division, GolfFlightDivision):
+            raise TypeError("Input must be a GolfFlightDivision")
+
+        # Check if division already exists in database
+        division_db = self.get_flight_divisions(flight_id=division.flight_id, name=division.name, verbose=verbose)
+        if division_db is None:
+            # Build division insert query
+            query = division._create_database_insert_query()
+        else:
+            division_db = division_db[0] # take only first result if multiple matches (shouldn't happen)
+            # Set local id (if necessary)
+            if division.division_id is None:
+                division.division_id = division_db.division_id
+            else:
+                if division_db.division_id != division.division_id:
+                    raise ValueError("Flight division '{:s}' already exists in database with id={:d}, but has local id={:d}".format(str(division), division.division_id, division_id))
+
+            # If existing entry updates are not allowed, raise exception
+            if not update:
+                raise ValueError("Division '{:s}' already exists in database, id={:d}".format(str(division), division_db.division_id))
+
+            # Build division update query
+            query = division._create_database_update_query()
+
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query to add/update division data
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        self._connection.commit()
+        cursor.close()
+
+        # Retrieve division id for this division (if necessary)
+        if division.division_id is None:
+            division_db = self.get_flight_divisions(flight_id=division.flight_id, name=division.name, verbose=verbose)
+            division_db = division_db[0] # take only first result if multiple matches (shouldn't happen)
+            division.division_id = division_db.division_id
+        if verbose:
+            print("Added/updated division '{:s}' (id={:d}) in flight_divisions table".format(str(division), division.division_id))

@@ -6,7 +6,10 @@ USE apl_golf_league;
 # SELECT courses.name, tracks.name, tee_sets.name, tee_sets.rating, tee_sets.slope FROM courses JOIN tracks ON tracks.course_id = courses.course_id JOIN tee_sets ON tee_sets.track_id = tracks.track_id;
 
 # Example filtered join query using foreign keys and where-clause
-# SELECT players.last_name, players.first_name, player_contacts.type, player_contacts.contact FROM players JOIN player_contacts ON player_contacts.player_id = players.player_id WHERE players.player_id = 3;
+# SELECT players.last_name, players.first_name, player_contacts.type, player_contacts.contact FROM players JOIN player_contacts ON player_contacts.player_id = players.player_id WHERE players.player_id = 2;
+
+# Example complex join query using foreign keys to get all flight division information
+# SELECT flights.name AS flight_name, flights.year, courses.name AS course_name, flight_divisions.name AS  division_name, flight_divisions.gender AS division_gender, tee_sets.name AS tee_set_name, tee_sets.gender AS tee_set_gender, tee_sets.rating, tee_sets.slope FROM flights JOIN courses ON flights.home_course_id = courses.course_id JOIN flight_divisions ON flights.flight_id = flight_divisions.flight_id JOIN tee_sets ON flight_divisions.home_tee_set_id = tee_sets.tee_set_id;
 
 DROP TABLE players;
 CREATE TABLE players (
@@ -89,12 +92,10 @@ CREATE TABLE flights (
 	flight_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     year SMALLINT UNSIGNED NOT NULL,
+    home_course_id INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (flight_id),
-    FOREIGN KEY (mens_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (mens_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (mens_super_senior_tee_set_id) REFERENCES tee_sets(tee_set_id),
-    FOREIGN KEY (womens_tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (home_course_id) REFERENCES courses(course_id),
     UNIQUE (name, year)
 );
 

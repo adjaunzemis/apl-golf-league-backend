@@ -7,10 +7,10 @@ Andris Jaunzemis
 
 """
 
-from golf_player_contact import GolfPlayerContact
 import pandas as pd
 
 from golf_player import GolfPlayer
+from golf_player_contact import GolfPlayerContact
 from apl_golf_league_database import APLGolfLeagueDatabase
 
 
