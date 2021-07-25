@@ -8,6 +8,7 @@ Andris Jaunzemis
 """
 
 from datetime import datetime
+from golf_player_contact import GolfPlayerContact
 
 class GolfPlayer(object):
     r"""
@@ -23,6 +24,7 @@ class GolfPlayer(object):
         self.player_id = player_id
         self.date_created = date_created
         self.date_updated = date_updated
+        self.contacts = []
 
     def __str__(self):
         r"""
@@ -65,6 +67,9 @@ class GolfPlayer(object):
             if key in player_data:
                 setattr(player, key, player_data[key])
 
+        for contact_data in player_data['contacts']:
+            player.add_contact(GolfPlayerContact.from_dict(contact_data))
+
         return player
 
     def as_dict(self):
@@ -81,11 +86,12 @@ class GolfPlayer(object):
             'player_id': self.player_id,
             'last_name': self.last_name,
             'first_name': self.first_name,
-            'affiliation': self.affiliation
+            'affiliation': self.affiliation,
+            'contacts': [contact.as_dict() for contact in self.contacts]
         }
 
         if self.middle_name is not None:
-            player_dict['middle_initial'] = self.middle_name
+            player_dict['middle_name'] = self.middle_name
         if self.date_created is not None:
             player_dict['date_created'] = self.date_created
         if self.date_updated is not None:
@@ -141,3 +147,23 @@ class GolfPlayer(object):
 
         # Construct query
         return "UPDATE players SET {:s} WHERE {:s};".format(fieldValues, conditions)
+
+    def add_contact(self, contact: GolfPlayerContact):
+        r"""
+        Add contact information to this player.
+        
+        Parameters
+        ----------
+        contact : GolfPlayerContact
+            contact info to add
+        
+        Raises
+        ------
+        ValueError :
+            if player identifier for given contact does not mat this player identifier
+
+        """
+        if contact.player_id != self.player_id:
+            raise ValueError("Cannot add contact with player_id={:d} to player with id={:d}".format(contact.player_id, self.player_id))
+        self.contacts.append(contact)
+    

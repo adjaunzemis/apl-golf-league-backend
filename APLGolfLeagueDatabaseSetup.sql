@@ -5,6 +5,9 @@ USE apl_golf_league;
 # Example join query using foreign keys
 # SELECT courses.name, tracks.name, tee_sets.name, tee_sets.rating, tee_sets.slope FROM courses JOIN tracks ON tracks.course_id = courses.course_id JOIN tee_sets ON tee_sets.track_id = tracks.track_id;
 
+# Example filtered join query using foreign keys and where-clause
+# SELECT players.last_name, players.first_name, player_contacts.type, player_contacts.contact FROM players JOIN player_contacts ON player_contacts.player_id = players.player_id WHERE players.player_id = 3;
+
 DROP TABLE players;
 CREATE TABLE players (
 	player_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
@@ -19,10 +22,14 @@ CREATE TABLE players (
 
 DROP TABLE player_contacts;
 CREATE TABLE player_contacts (
+	contact_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
 	player_id INT UNSIGNED NOT NULL,
     type ENUM("PHONE", "EMAIL") NOT NULL,
     contact VARCHAR(255) NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES players(player_id)
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (contact_id),
+    FOREIGN KEY (player_id) REFERENCES players(player_id),
+    UNIQUE (player_id, type)
 );
 
 DROP TABLE courses;

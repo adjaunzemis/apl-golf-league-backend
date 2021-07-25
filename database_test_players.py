@@ -7,6 +7,7 @@ Andris Jaunzemis
 
 """
 
+from golf_player_contact import GolfPlayerContact
 import pandas as pd
 
 from golf_player import GolfPlayer
@@ -20,31 +21,42 @@ def init_db():
 
 def test_mock_players():
     # Create list of mock players
-    players = [
-        GolfPlayer(
-            last_name = "Burdell",
-            first_name = "George",
-            middle_name = "P",
-            affiliation = "UNKNOWN"
-        ),
-        GolfPlayer(
-            last_name = "Jaunzemis",
-            first_name = "Andris",
-            middle_name = "Davis",
-            affiliation = "APL_EMPLOYEE"
-        ),
-        GolfPlayer(
-            last_name = "Jaunzemis",
-            first_name = "Samantha",
-            middle_name = "Elizabeth",
-            affiliation = "APL_FAMILY_MEMBER"
-        ),
-        GolfPlayer(
-            last_name = "Mickelson",
-            first_name = "Phil",
-            affiliation = "NON_APL_EMPLOYEE"
-        )
-    ]
+    players = []
+
+    burdell = GolfPlayer(
+        last_name = "Burdell",
+        first_name = "George",
+        middle_name = "P",
+        affiliation = "UNKNOWN"
+    )
+    burdell.add_contact(GolfPlayerContact(type="Email", contact="gpburdell@gatech.edu"))
+    players.append(burdell)
+
+    andris = GolfPlayer(
+        last_name = "Jaunzemis",
+        first_name = "Andris",
+        middle_name = "Davis",
+        affiliation = "APL_EMPLOYEE"
+    )
+    andris.add_contact(GolfPlayerContact(type="Phone", contact="x22088"))
+    andris.add_contact(GolfPlayerContact(type="Email", contact="Andris.Jaunzemis@jhuapl.edu"))
+    players.append(andris)
+
+    samantha = GolfPlayer(
+        last_name = "Jaunzemis",
+        first_name = "Samantha",
+        middle_name = "Elizabeth",
+        affiliation = "APL_FAMILY_MEMBER"
+    )
+    players.append(samantha)
+
+    mickelson = GolfPlayer(
+        last_name = "Mickelson",
+        first_name = "Phil",
+        affiliation = "NON_APL_EMPLOYEE"
+    )
+    mickelson.add_contact(GolfPlayerContact(type="Phone", contact="123-456-7890"))
+    players.append(mickelson)
 
     # Initialize database connection
     db = init_db()

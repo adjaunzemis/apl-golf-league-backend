@@ -15,7 +15,7 @@ from golf_track import GolfTrack
 from golf_tee_set import GolfTeeSet
 from golf_hole import GolfHole
 from golf_player import GolfPlayer
-from golf_models import GolfFlight
+from golf_player_contact import GolfPlayerContact
 
 class APLGolfLeagueDatabase(object):
     r"""
@@ -842,127 +842,6 @@ class APLGolfLeagueDatabase(object):
         if verbose:
             print("Added/updated hole '{:s}' (id={:d}) in holes table".format(str(hole), hole_id))
 
-    def get_flight(self, name, year, verbose=False):
-        r"""
-        Fetches golf league flight data for the flight matching the given parameters.
-
-        If a matching flight cannot be found in the database, returns None.
-
-        Parameters
-        ----------
-        name : string
-            flight name
-        year : int
-            flight year
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-        
-        Returns
-        -------
-        flight : GolfFlight
-            golf league flight data
-            if no match is found, returns None
-
-        """
-        # Build query
-        query = "SELECT abbreviation, mens_course_id, senior_course_id, super_senior_course_id, womens_course_id FROM flights WHERE name='{:s}' AND year={:d};".format(name, year)
-        if verbose:
-            print("Executing query: {:s}".format(query))
-
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-
-        # Return matched golf flight or None (if not found)
-        if len(data) == 0:
-            return None
-        result = data[0]
-        return GolfFlight(name, year, result[0], result[1], result[2], result[3], result[4])
-
-    def get_flight_id(self, name, year, verbose=False):
-        r"""
-        Fetches flight identifier for the flight matching the given parameters.
-
-        If a matching flight cannot be found in the database, returns None.
-
-        Parameters
-        ----------
-        name : string
-            flight name
-        year : int
-            flight year
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-        
-        Returns
-        -------
-        flight_id : int
-            golf league flight identifier from database
-            if matching flight not found, returns None
-
-        """
-        # Build query
-        query = "SELECT id FROM flights WHERE name='{:s}' AND year={:d};".format(name, year)
-        if verbose:
-            print("Executing query: {:s}".format(query))
-
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-
-        # Return matched flight id or None (if not found)
-        if len(data) == 0:
-            return None
-        result = data[0]
-        return result[0]
-
-    def put_flight(self, flight: GolfFlight, update=False, verbose=False):
-        r"""
-        Adds/updates golf flight data in database, populating 'flights' table.
-
-        Parameters
-        ----------
-        flight : GolfFlight
-            golf flight data to add
-        update : boolean, optional
-            if true, allows updating of existing database entries
-            Default: False
-        verbose : boolean, optional
-            if true, prints details to console
-            Default: False
-
-        """
-        # Check if flight already exists in database
-        flight_id = self.get_flight_id(flight.name, flight.year, verbose=verbose)
-        if flight_id is None:
-            # Build flight insert query
-            query = flight._create_database_insert_query()
-        else:
-            # If existing entry updates are not allowed, raise exception
-            if not update:
-                raise ValueError("Flight '{:s}' already exists in database, id={:d}".format(str(flight), flight_id))
-
-            # Build flight update query
-            query = flight._create_database_update_query(flight_id)
-
-        if verbose:
-            print("Executing query: {:s}".format(query))
-        
-        # Execute query
-        cursor = self._connection.cursor()
-        cursor.execute(query)
-        self._connection.commit()
-        cursor.close()
-        
-        if verbose:
-            print("Added/updated flight '{:s}' to flights table".format(str(flight)))
-
     def get_player_by_id(self, player_id, verbose=False):
         r"""
         Fetches golf player data using the given player identifier.
@@ -1053,9 +932,11 @@ class APLGolfLeagueDatabase(object):
         r"""
         Adds/updates golf player data in database, populating 'players' table.
 
+        Also calls 'put_player_contact' for each contact in this player.
+
         Parameters
         ----------
-        flight : GolfPlayer
+        player : GolfPlayer
             golf player data to add
         update : boolean, optional
             if true, allows updating of existing database entries
@@ -1093,35 +974,41 @@ class APLGolfLeagueDatabase(object):
         cursor.execute(query)
         self._connection.commit()
         cursor.close()
-        
+
+        # Retrieve player id for this player (if necessary)
+        player_id = player.player_id
+        if player_id is None:
+            player_id = self.get_player_id(last_name=player.last_name, first_name=player.first_name, verbose=verbose)
         if verbose:
-            print("Added/updated player '{:s}' to players table".format(str(player)))
+            print("Added/updated player '{:s}' (id={:d}) in players table".format(str(player), player_id))
 
-    def get_team(self, flight_id: int, number: int, verbose=False):
+        # Build and execute queries to add player contacts to database
+        for contact in player.contacts:
+            if contact.player_id is None:
+                contact.player_id = player_id
+            self.put_player_contact(contact, update=update, verbose=verbose)
+
+    def get_player_contacts(self, player_id: int, verbose=False):
         r"""
-        Fetches golf league team information matching the given parameters.
-
-        If a matching team cannot be found in the database, returns None.
+        Fetches contact information for a specific player.
 
         Parameters
         ----------
-        flight_id : int
-            flight identifier in database
-        number : int
-            team number
+        player_id : int
+            player identifier in database
         verbose : boolean, optional
             if true, prints details to console
             Default: False
         
         Returns
         -------
-        team : GolfTeam
-            golf team data
-            if no match is found, returns None
+        contacts : list of GolfPlayerContacts
+            contact information
 
         """
         # Build query
-        query = "SELECT name FROM teams WHERE flight_id={:d} AND number={:d};".format(flight_id, number)
+        query = "SELECT contact_id, type, contact FROM player_contacts WHERE player_id = {:d};".format(player_id)
+
         if verbose:
             print("Executing query: {:s}".format(query))
 
@@ -1131,11 +1018,115 @@ class APLGolfLeagueDatabase(object):
         data = cursor.fetchall()
         cursor.close()
 
-        # Return matched team or None (if not found)
+        # Return matched contact information
+        contacts = []
+        for contact_data in data:
+            contact = GolfPlayerContact(
+                contact_id = contact_data[0],
+                player_id = player_id,
+                type = contact_data[1],
+                contact = contact_data[2]
+            )
+
+            # Append contact to contacts list
+            contacts.append(contact)
+
+        # Return contacts
+        return contacts
+
+    def get_player_contact_by_type(self, player_id: int, type: str, verbose):
+        r"""
+        Fetches player contact information of a specific type for a specific player.
+        
+        If no matching contact information is found, returns None.
+
+        Parameters
+        ----------
+        player_id : int
+            player identifier
+        type : str
+            contact type
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+
+        Returns
+        -------
+        contact : GolfPlayerContact
+            player contact information
+            if no match is found, returns None
+
+        """
+        # Build query
+        query = "SELECT contact_id, contact FROM player_contacts WHERE player_id = {:d} AND type = '{:s}';".format(player_id, type)
+        
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Return matched contact information
         if len(data) == 0:
             return None
-        result = data[0]
         
-        team = GolfTeam(flight, number)
-        team.name = result[0]
-        return team
+        # TODO: Handle multiple returns?
+        contact_data = data[0]
+        return GolfPlayerContact(
+            contact_id = contact_data[0],
+            player_id = player_id,
+            type = type,
+            contact = contact_data[1]
+        )
+
+    def put_player_contact(self, contact: GolfPlayerContact, update=False, verbose=False):
+        r"""
+        Adds/updates golf player contact information in database, populating 'player_contacts' table.
+
+        Parameters
+        ----------
+        contact : GolfContact
+            golf player contact information to add
+        update : boolean, optional
+            if true, allows updating of existing database entries
+            Default: False
+        verbose : boolean, optional
+            if true, prints details to console
+            Default: False
+
+        """
+        # Check input data integrity before adding to database.
+        if not isinstance(contact, GolfPlayerContact):
+            raise TypeError("Input must be a GolfPlayerContact")
+
+        # Check if contact already exists in database
+        contact_db = self.get_player_contact_by_type(contact.player_id, contact.type, verbose=verbose)
+        if contact_db is None:
+            # Build tee set insert query
+            query = contact._create_database_insert_query()
+        else:
+            # If existing entry updates are not allowed, raise exception
+            if not update:
+                raise ValueError("Contact '{:s}' already exists in database, id={:d}".format(str(contact), contact_db.contact_id))
+
+            # Build tee set update query
+            query = contact._create_database_update_query()
+
+        if verbose:
+            print("Executing query: {:s}".format(query))
+
+        # Execute query to add/update tee set data
+        cursor = self._connection.cursor()
+        cursor.execute(query)
+        self._connection.commit()
+        cursor.close()
+
+        # Retrieve tee set id for this tee set (if necessary)
+        if contact.contact_id is None:
+            contact_db = self.get_player_contact_by_type(contact.player_id, contact.type, verbose=verbose)
+            contact.contact_id = contact_db.contact_id
+        if verbose:
+            print("Added/updated contact '{:s}' (id={:d}) in player_contacts table".format(str(contact), contact.contact_id))
