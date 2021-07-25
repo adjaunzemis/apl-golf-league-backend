@@ -1452,7 +1452,7 @@ class APLGolfLeagueDatabase(object):
                 division.division_id = division_db.division_id
             else:
                 if division_db.division_id != division.division_id:
-                    raise ValueError("Flight division '{:s}' already exists in database with id={:d}, but has local id={:d}".format(str(division), division.division_id, division_id))
+                    raise ValueError("Flight division '{:s}' already exists in database with id={:d}, but has local id={:d}".format(str(division), division_db.division_id, division.division_id))
 
             # If existing entry updates are not allowed, raise exception
             if not update:
