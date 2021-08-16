@@ -161,25 +161,30 @@ CREATE TABLE match_rounds (
 
 DROP TABLE rounds;
 CREATE TABLE rounds (
-	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    course_id INT UNSIGNED NOT NULL,
+	round_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+    tee_set_id INT UNSIGNED NOT NULL,
     player_id INT UNSIGNED NOT NULL,
     date_played DATE NOT NULL,
     player_handicap_index FLOAT NOT NULL,
-    player_course_handicap FLOAT NOT NULL,
-    gross_score TINYINT UNSIGNED NOT NULL,
-    adjusted_gross_score TINYINT UNSIGNED NOT NULL,
-    net_score TINYINT UNSIGNED NOT NULL,
-    score_differential FLOAT NOT NULL,
+    player_playing_handicap FLOAT NOT NULL,
+    gross_score TINYINT UNSIGNED,
+    adjusted_gross_score TINYINT UNSIGNED,
+    net_score TINYINT UNSIGNED,
+    score_differential FLOAT,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (round_id),
+    FOREIGN KEY (tee_set_id) REFERENCES tee_sets(tee_set_id),
+    FOREIGN KEY (player_id) REFERENCES players(player_id)
 );
 
-DROP TABLE round_hole_scores;
-CREATE TABLE round_hole_scores (
+DROP TABLE round_results;
+CREATE TABLE round_results (
+	result_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
 	round_id INT UNSIGNED NOT NULL,
-    hole_number TINYINT UNSIGNED NOT NULL,
-    strokes TINYINT UNSIGNED NOT NULL,
+    hole_id INT UNSIGNED NOT NULL,
+    strokes INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (round_id, hole_number)
+    PRIMARY KEY (result_id),
+    FOREIGN KEY (round_id) REFERENCES rounds(round_id),
+    FOREIGN KEY (hole_id) REFERENCES holes(hole_id)
 );
