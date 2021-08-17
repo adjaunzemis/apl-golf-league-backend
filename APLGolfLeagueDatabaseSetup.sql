@@ -177,14 +177,14 @@ CREATE TABLE rounds (
     FOREIGN KEY (player_id) REFERENCES players(player_id)
 );
 
-DROP TABLE round_results;
-CREATE TABLE round_results (
-	result_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
+DROP TABLE hole_results;
+CREATE TABLE hole_results (
+	hole_result_id INT UNSIGNED UNIQUE NOT NULL AUTO_INCREMENT,
 	round_id INT UNSIGNED NOT NULL,
     hole_id INT UNSIGNED NOT NULL,
     strokes INT UNSIGNED NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (result_id),
+    PRIMARY KEY (hole_result_id),
     FOREIGN KEY (round_id) REFERENCES rounds(round_id),
     FOREIGN KEY (hole_id) REFERENCES holes(hole_id)
 );

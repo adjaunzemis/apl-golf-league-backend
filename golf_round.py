@@ -9,6 +9,8 @@ Andris Jaunzemis
 
 from datetime import datetime
 
+from golf_hole_result import GolfHoleResult
+
 class GolfRound(object):
     r"""
     Container class for a golf round.
@@ -93,20 +95,56 @@ class GolfRound(object):
         return round_dict
 
     def _create_database_insert_query(self):
-        raise NotImplementedError("TODO: Implement _create_database_insert_query()")
+        r"""
+        Creates query for inserting this round into database.
+        
+        Returns
+        -------
+        query : string
+            database insert query for round
+            
+        """
+        # Add required fields
+        fields = "round_id, tee_set_id, player_id, date_played, player_handicap_index, player_playing_handicap, gross_score, adjusted_gross_score, net_score, score_differential"
+        values = "{:d}, {:d}, {:d}, '{:s}', {:f}, {:f}, {:d}, {:d}, {:d}, {:f}".format(self.round_id, self.tee_set_id, self.player_id, self.date_played, self.player_handicap_index, self.player_playing_handicap, self.gross_score, self.adjusted_gross_score, self.net_score, self.score_differential)
+
+        # Construct query
+        return "INSERT INTO rounds ({:s}) VALUES ({:s});".format(fields, values)
 
     def _create_database_update_query(self):
-        raise NotImplementedError("TODO: Implement _create_database_update_query")
+        r"""
+        Creates query for updating this round in database.
+        
+        Returns
+        -------
+        query : string
+            database update query for round
 
-    def add_result(self, result: GolfHoleResult)
+        """
+        # Add required fields
+        fieldValues = "tee_set_id = {:d}, player_id = {:d}, date_played = '{:s}', player_handicap_index = {:f}, player_playing_handicap = {:f}, gross_score = {:d}, adjusted_gross_score = {:d}, net_score = {:d}, score_differential = {:f}".format(
+            self.tee_set_id, self.player_id, self.date_played, self.player_handicap_index, self.player_playing_handicap, self.gross_score, self.adjusted_gross_score, self.net_score, self.score_differential
+        )
+
+        # Construct conditions
+        if self.round_id is None:
+            raise ValueError("Cannot update round data in database without round_id")
+        conditions = "round_id = {:d}".format(self.round_id)
+
+        # Construct query
+        return "UPDATE rounds SET {:s} WHERE {:s};".format(fieldValues, conditions)
+
+    def add_result(self, hole_result: GolfHoleResult):
         r"""
         Add a hole result to this round.
 
         Parameters
         ----------
-        result : GolfHoleResult
-            result to add
+        hole_result : GolfHoleResult
+            hole result to add
         
         """
-        raise NotImplementedError("TODO: Implement add_result()")
+        if hole_result.round_id != self.round_id:
+            raise ValueError("Cannot add hole result with round_id={:d} to round with id={:d}".format(hole_result.round_id, self.round_id))
+        self.hole_results.append(hole_result)
         
