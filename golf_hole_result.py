@@ -8,19 +8,20 @@ Andris Jaunzemis
 """
 
 from datetime import datetime
+from dataclasses import dataclass
 
+@dataclass
 class GolfHoleResult(object):
     r"""
     Container class for results from a hole in a golf round.
     
     """
 
-    def __init__(self, strokes: int, round_id: int, hole_id: int, hole_result_id: int = None, date_updated: datetime = None):
-        self.strokes = strokes
-        self.round_id = round_id
-        self.hole_id = hole_id
-        self.hole_result_id = hole_result_id
-        self.date_updated = date_updated
+    round_id: int
+    hole_id: int
+    strokes: int
+    hole_result_id: int = None
+    date_updated: int = None
     
     def __str__(self):
         r"""

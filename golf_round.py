@@ -8,24 +8,25 @@ Andris Jaunzemis
 """
 
 from datetime import datetime
+from dataclasses import dataclass
+from typing import List
 
+from golf_tee_set import GolfTeeSet
+from golf_player import GolfPlayer
 from golf_hole_result import GolfHoleResult
 
-class GolfRound(object):
-    r"""
-    Container class for a golf round.
+@dataclass
+class GolfRound:
+    r""" Golf round data """
 
-    """
-
-    def __init__(self, date_played: datetime, player_handicap_index: int, player_playing_handicap: float, tee_set_id: int, player_id: int, round_id: int = None, date_updated: datetime = None):
-        self.date_played = date_played
-        self.player_handicap_index = player_handicap_index
-        self.player_playing_handicap = player_playing_handicap
-        self.tee_set_id = tee_set_id
-        self.player_id = player_id
-        self.round_id = round_id
-        self.date_updated = date_updated
-        self.results = []
+    date_played: datetime
+    player_handicap_index: float
+    player_playing_handicap: float
+    tee_set: GolfTeeSet
+    player: GolfPlayer
+    hole_results: List[GolfHoleResult] = []
+    round_id: int = None
+    date_updated: datetime = None
 
     def __str__(self):
         r"""
@@ -134,7 +135,7 @@ class GolfRound(object):
         # Construct query
         return "UPDATE rounds SET {:s} WHERE {:s};".format(fieldValues, conditions)
 
-    def add_result(self, hole_result: GolfHoleResult):
+    def add_hole_result(self, hole_result: GolfHoleResult):
         r"""
         Add a hole result to this round.
 
