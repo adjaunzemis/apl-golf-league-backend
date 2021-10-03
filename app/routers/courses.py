@@ -2,11 +2,11 @@ from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
-from sqlmodel.main import Relationship
 
 from ..dependencies import get_session
 from ..models.course import Course, CourseCreate, CourseUpdate, CourseRead, CourseReadWithTracks
-from ..models.track import Track, TrackCreate, TrackUpdate, TrackRead
+from ..models.track import Track, TrackCreate, TrackUpdate, TrackRead, TrackReadWithTees
+from ..models.tee import Tee, TeeCreate, TeeUpdate, TeeRead
 
 router = APIRouter(
     prefix="/courses",
@@ -66,9 +66,9 @@ async def create_track(*, session: Session = Depends(get_session), track: TrackC
     session.refresh(track_db)
     return track_db
 
-@router.get("/tracks/{track_id}", response_model=TrackRead) # TODO: TrackReadWithTees
+@router.get("/tracks/{track_id}", response_model=TrackReadWithTees)
 async def read_track(*, session: Session = Depends(get_session), track_id: int):
-    track_db = session.get(Course, track_id)
+    track_db = session.get(Track, track_id)
     if not track_db:
         raise HTTPException(status_code=404, detail="Track not found")
     return track_db
@@ -92,5 +92,46 @@ async def delete_track(*, session: Session = Depends(get_session), track_id: int
     if not track_db:
         raise HTTPException(status_code=404, detail="Track not found")
     session.delete(track_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/tees/", response_model=List[TeeRead])
+async def read_tees(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Tee).offset(offset).limit(limit)).all()
+    
+@router.post("/tees/", response_model=TeeRead)
+async def create_tee(*, session: Session = Depends(get_session), tee: TeeCreate):
+    tee_db = Tee.from_orm(tee)
+    session.add(tee_db)
+    session.commit()
+    session.refresh(tee_db)
+    return tee_db
+
+@router.get("/tees/{tee_id}", response_model=TeeRead) # TODO: TeeReadWithHoles
+async def read_tee(*, session: Session = Depends(get_session), tee_id: int):
+    tee_db = session.get(Tee, tee_id)
+    if not tee_db:
+        raise HTTPException(status_code=404, detail="Tee not found")
+    return tee_db
+
+@router.patch("/tees/{tee_id}", response_model=TeeRead)
+async def update_tee(*, session: Session = Depends(get_session), tee_id: int, tee: TeeUpdate):
+    tee_db = session.get(Tee, tee_id)
+    if not tee_db:
+        raise HTTPException(status_code=404, detail="Tee not found")
+    tee_data = tee.dict(exclude_unset=True)
+    for key, value in tee_data.items():
+        setattr(tee_db, key, value)
+    session.add(tee_db)
+    session.commit()
+    session.refresh(tee_db)
+    return tee_db
+
+@router.delete("/tees/{tee_id}")
+async def delete_tee(*, session: Session = Depends(get_session), tee_id: int):
+    tee_db = session.get(Tee, tee_id)
+    if not tee_db:
+        raise HTTPException(status_code=404, detail="Tee not found")
+    session.delete(tee_db)
     session.commit()
     return {"ok": True}

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .track import Track
+from .track import Track, TrackReadWithTees
 
 class CourseBase(SQLModel):
     name: str
@@ -26,4 +26,4 @@ class CourseRead(CourseBase):
     id: int
 
 class CourseReadWithTracks(CourseRead):
-    tracks: List[Track] = None
+    tracks: List[TrackReadWithTees] = None
