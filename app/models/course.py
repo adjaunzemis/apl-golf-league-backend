@@ -1,5 +1,7 @@
 from typing import List, Optional
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
+
+from .track import Track
 
 class CourseBase(SQLModel):
     name: str
@@ -9,12 +11,10 @@ class CourseBase(SQLModel):
 
 class Course(CourseBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    tracks: List[Track] = Relationship(back_populates="course")
 
 class CourseCreate(CourseBase):
     pass
-
-class CourseRead(CourseBase):
-    id: int
 
 class CourseUpdate(SQLModel):
     name: Optional[str] = None
@@ -22,4 +22,8 @@ class CourseUpdate(SQLModel):
     phone: Optional[str] = None
     website: Optional[str] = None
 
-# TODO: CourseReadWithTracks
+class CourseRead(CourseBase):
+    id: int
+
+class CourseReadWithTracks(CourseRead):
+    tracks: List[Track] = None
