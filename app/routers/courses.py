@@ -6,11 +6,12 @@ from sqlmodel import Session, select
 from ..dependencies import get_session
 from ..models.course import Course, CourseCreate, CourseUpdate, CourseRead, CourseReadWithTracks
 from ..models.track import Track, TrackCreate, TrackUpdate, TrackRead, TrackReadWithTees
-from ..models.tee import Tee, TeeCreate, TeeUpdate, TeeRead
+from ..models.tee import Tee, TeeCreate, TeeUpdate, TeeRead, TeeReadWithHoles
+from ..models.hole import Hole, HoleCreate, HoleUpdate, HoleRead
 
 router = APIRouter(
     prefix="/courses",
-    tags=["courses"]
+    tags=["Courses"]
 )
 
 @router.get("/", response_model=List[CourseRead])
@@ -107,7 +108,7 @@ async def create_tee(*, session: Session = Depends(get_session), tee: TeeCreate)
     session.refresh(tee_db)
     return tee_db
 
-@router.get("/tees/{tee_id}", response_model=TeeRead) # TODO: TeeReadWithHoles
+@router.get("/tees/{tee_id}", response_model=TeeReadWithHoles)
 async def read_tee(*, session: Session = Depends(get_session), tee_id: int):
     tee_db = session.get(Tee, tee_id)
     if not tee_db:
@@ -133,5 +134,46 @@ async def delete_tee(*, session: Session = Depends(get_session), tee_id: int):
     if not tee_db:
         raise HTTPException(status_code=404, detail="Tee not found")
     session.delete(tee_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/holes/", response_model=List[HoleRead])
+async def read_holes(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Hole).offset(offset).limit(limit)).all()
+
+@router.post("/holes/", response_model=HoleRead)
+async def create_hole(*, session: Session = Depends(get_session), hole: HoleCreate):
+    hole_db = Hole.from_orm(hole)
+    session.add(hole_db)
+    session.commit()
+    session.refresh(hole_db)
+    return hole_db
+
+@router.get("/holes/{hole_id}", response_model=HoleRead) # TODO: HoleReadWithTee
+async def read_hole(*, session: Session = Depends(get_session), hole_id: int):
+    hole_db = session.get(Hole, hole_id)
+    if not hole_db:
+        raise HTTPException(status_code=404, detail="Hole not found")
+    return hole_db
+
+@router.patch("/holes/{hole_id}", response_model=HoleRead)
+async def update_hole(*, session: Session = Depends(get_session), hole_id: int, hole: HoleUpdate):
+    hole_db = session.get(Hole, hole_id)
+    if not hole_db:
+        raise HTTPException(status_code=404, detail="Hole not found")
+    hole_data = hole.dict(exclude_unset=True)
+    for key, value in hole_data.items():
+        setattr(hole_db, key, value)
+    session.add(hole_db)
+    session.commit()
+    session.refresh(hole_db)
+    return hole_db
+
+@router.delete("/holes/{hole_id}")
+async def delete_hole(*, session: Session = Depends(get_session), hole_id: int):
+    hole_db = session.get(Hole, hole_id)
+    if not hole_db:
+        raise HTTPException(status_code=404, detail="Hole not found")
+    session.delete(hole_db)
     session.commit()
     return {"ok": True}

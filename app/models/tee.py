@@ -1,6 +1,8 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
+from .hole import Hole, HoleRead
+
 class TeeBase(SQLModel):
     name: str
     gender: str
@@ -12,6 +14,7 @@ class TeeBase(SQLModel):
 class Tee(TeeBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     track: Optional["Track"] = Relationship(back_populates="tees")
+    holes: List[Hole] = Relationship(back_populates="tee")
 
 class TeeCreate(TeeBase):
     pass
@@ -27,4 +30,5 @@ class TeeUpdate(SQLModel):
 class TeeRead(TeeBase):
     id: int
 
-# TODO: TeeReadWithHoles
+class TeeReadWithHoles(TeeRead):
+    holes: List[HoleRead] = None
