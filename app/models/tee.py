@@ -3,6 +3,10 @@ from sqlmodel import SQLModel, Field, Relationship
 
 class TeeBase(SQLModel):
     name: str
+    gender: str
+    rating: float
+    slope: float
+    color: Optional[str]
     track_id: Optional[int] = Field(default=None, foreign_key="track.id")
 
 class Tee(TeeBase, table=True):
@@ -14,6 +18,10 @@ class TeeCreate(TeeBase):
 
 class TeeUpdate(SQLModel):
     name: Optional[str] = None
+    gender: Optional[str] = None
+    rating: Optional[float] = None
+    slope: Optional[float] = None
+    color: Optional[str] = None
     track_id: Optional[int] = None
 
 class TeeRead(TeeBase):
