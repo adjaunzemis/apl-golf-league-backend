@@ -6,6 +6,9 @@ from sqlmodel.pool import StaticPool
 from ..main import app
 from ..dependencies import get_session
 from ..models.course import Course
+from ..models.track import Track
+from ..models.tee import Tee
+from ..models.hole import Hole
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -123,3 +126,92 @@ def test_delete_course(session: Session, client: TestClient):
 
     course_db = session.get(Course, course.id)
     assert course_db is None
+
+@pytest.mark.parametrize(
+    "name, course_id", [
+        ("Test Track Name", 1),
+        ("Test Track Name", None)
+    ])
+def test_create_track(client: TestClient, name: str, course_id: int):
+    response = client.post("/courses/tracks/", json={
+        "name": name, "course_id": course_id
+    })
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["name"] == name
+    assert data["course_id"] == course_id
+    assert data["id"] is not None
+
+def test_create_track_incomplete(client: TestClient):
+    # Missing required 'name' field
+    response = client.post("/courses/tracks/", json={"course_id": 1})
+    assert response.status_code == 422
+
+@pytest.mark.parametrize(
+    "name, course_id", [
+        ({"key": "value"}, 1),
+        ("Test Track Name", {"key": "value"})
+    ])
+def test_create_track_invalid(client: TestClient, name: str, course_id: int):
+    # Invalid input data types
+    response = client.post("/courses/tracks/", json={
+        "name": name, "course_id": course_id
+    })
+    assert response.status_code == 422
+
+def test_read_tracks(session: Session, client: TestClient):
+    tracks = [
+        Track(name="Test Track 1", course_id=1),
+        Track(name="Test Track 2", course_id=1)
+    ]
+    for track in tracks:
+        session.add(track)
+    session.commit()
+
+    response = client.get("/courses/tracks/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == len(tracks)
+    for dIdx in range(len(data)):
+        assert data[dIdx]["name"] == tracks[dIdx].name
+        assert data[dIdx]["course_id"] == tracks[dIdx].course_id
+        assert data[dIdx]["id"] == tracks[dIdx].id
+
+def test_read_track(session: Session, client: TestClient):
+    track = Track(name="Test Track 1", course_id=1)
+    session.add(track)
+    session.commit()
+
+    response = client.get(f"/courses/tracks/{track.id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["name"] == track.name
+    assert data["course_id"] == track.course_id
+    assert data["id"] == track.id
+
+def test_update_track(session: Session, client: TestClient):
+    track = Track(name="Test Track 1", course_id=1)
+    session.add(track)
+    session.commit()
+
+    response = client.patch(f"/courses/tracks/{track.id}", json={"name": "Awesome Track"})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["name"] == "Awesome Track"
+    assert data["course_id"] == track.course_id
+    assert data["id"] == track.id
+
+def test_delete_track(session: Session, client: TestClient):
+    track = Track(name="Test Track 1", course_id=1)
+    session.add(track)
+    session.commit()
+
+    response = client.delete(f"/courses/tracks/{track.id}")
+    assert response.status_code == 200
+
+    track_db = session.get(Track, track.id)
+    assert track_db is None
