@@ -100,6 +100,7 @@ def test_read_course(session: Session, client: TestClient):
     assert data["phone"] == course.phone
     assert data["website"] == course.website
     assert data["id"] == course.id
+    assert len(data["tracks"]) == 0
 
 def test_update_course(session: Session, client: TestClient):
     course = Course(name="Test Course 1", location="Test Location 1", phone="111-111-1111", website="google.com")
@@ -191,6 +192,7 @@ def test_read_track(session: Session, client: TestClient):
     assert data["name"] == track.name
     assert data["course_id"] == track.course_id
     assert data["id"] == track.id
+    assert len(data["tees"]) == 0
 
 def test_update_track(session: Session, client: TestClient):
     track = Track(name="Test Track 1", course_id=1)
@@ -307,6 +309,7 @@ def test_read_tee(session: Session, client: TestClient):
     assert data["color"] == tee.color
     assert data["track_id"] == tee.track_id
     assert data["id"] == tee.id
+    assert len(data["holes"]) == 0
 
 def test_update_tee(session: Session, client: TestClient):
     tee = Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1)
@@ -450,3 +453,70 @@ def test_delete_hole(session: Session, client: TestClient):
 
     hole_db = session.get(Hole, hole.id)
     assert hole_db is None
+
+def test_read_course_with_data(session: Session, client: TestClient):
+    course = Course(name="Test Course", location="Test Street, Test City, ST 12345", phone="123-456-7890", website="google.com")
+    session.add(course)
+    session.commit()
+
+    track = Track(name="Test Track", course_id=course.id)
+    session.add(track)
+    session.commit()
+
+    tee = Tee(name="Test Tee", gender="M", rating=72.3, slope=128, color="Blue", track_id=track.id)
+    session.add(tee)
+    session.commit()
+
+    holes = [
+        Hole(number=1, par=4, yardage=385, stroke_index=9, tee_id=tee.id),
+        Hole(number=2, par=4, yardage=385, stroke_index=8, tee_id=tee.id),
+        Hole(number=3, par=4, yardage=385, stroke_index=7, tee_id=tee.id),
+        Hole(number=4, par=4, yardage=385, stroke_index=6, tee_id=tee.id),
+        Hole(number=5, par=4, yardage=385, stroke_index=5, tee_id=tee.id),
+        Hole(number=6, par=3, yardage=175, stroke_index=4, tee_id=tee.id),
+        Hole(number=7, par=3, yardage=175, stroke_index=3, tee_id=tee.id),
+        Hole(number=8, par=5, yardage=495, stroke_index=2, tee_id=tee.id),
+        Hole(number=9, par=5, yardage=495, stroke_index=1, tee_id=tee.id),
+    ]
+    for hole in holes:
+        session.add(hole)
+    session.commit()
+
+    response = client.get(f"/courses/{course.id}")
+    assert response.status_code == 200
+
+    course_data = response.json()
+    assert course_data["name"] == course.name
+    assert course_data["location"] == course.location
+    assert course_data["phone"] == course.phone
+    assert course_data["website"] == course.website
+    assert course_data["id"] == course.id
+    assert len(course_data["tracks"]) == 1
+
+    track_data = course_data["tracks"][0]
+    assert track_data["name"] == track.name
+    assert track_data["course_id"] == track.course_id
+    assert track_data["course_id"] == course.id
+    assert track_data["id"] == track.id
+    assert len(track_data["tees"]) == 1
+
+    tee_data = track_data["tees"][0]
+    assert tee_data["name"] == tee.name
+    assert tee_data["gender"] == tee.gender
+    assert tee_data["rating"] == tee.rating
+    assert tee_data["slope"] == tee.slope
+    assert tee_data["color"] == tee.color
+    assert tee_data["track_id"] == tee.track_id
+    assert tee_data["track_id"] == track.id
+    assert tee_data["id"] == tee.id
+    assert len(tee_data["holes"]) == 9
+
+    for hIdx in range(len(tee_data["holes"])):
+        hole_data = tee_data["holes"][hIdx]
+        assert hole_data["number"] == holes[hIdx].number
+        assert hole_data["par"] == holes[hIdx].par
+        assert hole_data["yardage"] == holes[hIdx].yardage
+        assert hole_data["stroke_index"] == holes[hIdx].stroke_index
+        assert hole_data["tee_id"] == holes[hIdx].tee_id
+        assert hole_data["tee_id"] == tee.id
+        assert hole_data["id"] == holes[hIdx].id
