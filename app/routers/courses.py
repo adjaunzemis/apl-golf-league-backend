@@ -17,7 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=List[CourseRead])
 async def read_courses(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     return session.exec(select(Course).offset(offset).limit(limit)).all()
-    
+
 @router.post("/", response_model=CourseRead)
 async def create_course(*, session: Session = Depends(get_session), course: CourseCreate):
     course_db = Course.from_orm(course)
@@ -99,7 +99,7 @@ async def delete_track(*, session: Session = Depends(get_session), track_id: int
 @router.get("/tees/", response_model=List[TeeRead])
 async def read_tees(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     return session.exec(select(Tee).offset(offset).limit(limit)).all()
-    
+
 @router.post("/tees/", response_model=TeeRead)
 async def create_tee(*, session: Session = Depends(get_session), tee: TeeCreate):
     tee_db = Tee.from_orm(tee)
