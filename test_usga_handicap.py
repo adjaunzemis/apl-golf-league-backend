@@ -50,11 +50,3 @@ def test_compute_adjusted_gross_score(par, handicap, score, index, adjusted_scor
     ])
 def test_compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index, course_handicap):
     assert pytest.approx(compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index), abs=1e-2) == course_handicap
-
-@pytest.mark.parametrize(
-    "value, digits, result", [
-        (8.49, 0, 8),
-        (8.49, 1, 8.5),
-    ])
-def test_round_toward_zero(value, digits, result):
-    assert round_toward_zero(value, digits) == result

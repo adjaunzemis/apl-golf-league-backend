@@ -157,27 +157,3 @@ def compute_score_differential(rating, slope, score, conditions_adjustment=0.0):
     """
     score_diff = (113 / slope) * (score - rating - conditions_adjustment)
     return int(score_diff * 10) / 10
-
-def round_toward_zero(value, digits=0):
-    r"""
-    Rounds given value toward zero.
-
-    Parameters
-    ----------
-    value : float
-        value to round
-    digits : int
-        number of decimal point digits to preserve
-        Default: 0 (round to nearest integer)
-
-    Returns
-    -------
-    result : float
-        rounded value
-
-    """
-    scale = pow(10.0, digits)
-    if ((((scale * value) % 10) / scale) <= 0.5):
-        return int(value * scale) / scale
-    else:
-        return int(value * scale + 1) / scale
