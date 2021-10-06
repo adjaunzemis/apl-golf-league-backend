@@ -7,7 +7,7 @@ class TeeBase(SQLModel):
     name: str
     gender: str
     rating: float
-    slope: float
+    slope: int
     color: Optional[str]
     track_id: Optional[int] = Field(default=None, foreign_key="track.id")
 
@@ -23,7 +23,7 @@ class TeeUpdate(SQLModel):
     name: Optional[str] = None
     gender: Optional[str] = None
     rating: Optional[float] = None
-    slope: Optional[float] = None
+    slope: Optional[int] = None
     color: Optional[str] = None
     track_id: Optional[int] = None
 
