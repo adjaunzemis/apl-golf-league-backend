@@ -325,7 +325,7 @@ def test_update_tee(session: Session, client: TestClient):
     assert data["track_id"] == tee.track_id
     assert data["id"] == tee.id
 
-def test_delete_track(session: Session, client: TestClient):
+def test_delete_tee(session: Session, client: TestClient):
     tee = Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1)
     session.add(tee)
     session.commit()
@@ -333,5 +333,120 @@ def test_delete_track(session: Session, client: TestClient):
     response = client.delete(f"/courses/tees/{tee.id}")
     assert response.status_code == 200
 
-    tee_db = session.get(Track, tee.id)
+    tee_db = session.get(Tee, tee.id)
     assert tee_db is None
+
+@pytest.mark.parametrize(
+    "number, par, yardage, stroke_index, tee_id", [
+        (1, 4, 385, 3, 1),
+        (1, 4, 385, 3, None)
+    ])
+def test_create_hole(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
+    response = client.post("/courses/holes/", json={
+        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
+    })
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["number"] == number
+    assert data["par"] == par
+    assert data["yardage"] == yardage
+    assert data["stroke_index"] == stroke_index
+    assert data["tee_id"] == tee_id
+    assert data["id"] is not None
+
+@pytest.mark.parametrize(
+    "number, par, yardage, stroke_index, tee_id", [
+        (None, 4, 385, 3, 1),
+        (1, None, 385, 3, 1),
+        (1, 4, None, 3, 1),
+        (1, 4, 385, None, 1)
+    ]
+)
+def test_create_hole_incomplete(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
+    # Missing required fields
+    response = client.post("/courses/holes/", json={
+        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
+    })
+    assert response.status_code == 422
+
+@pytest.mark.parametrize(
+    "number, par, yardage, stroke_index, tee_id", [
+        ({"key": "value"}, 4, 385, 3, 1),
+        (1, {"key": "value"}, 385, 3, 1),
+        (1, 4, {"key": "value"}, 3, 1),
+        (1, 4, 385, {"key": "value"}, 1),
+        (1, 4, 385, 3, {"key": "value"})
+    ]
+)
+def test_create_hole_invalid(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
+    # Invalid input data types
+    response = client.post("/courses/holes/", json={
+        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
+    })
+    assert response.status_code == 422
+
+def test_read_holes(session: Session, client: TestClient):
+    holes = [
+        Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1),
+        Hole(number=2, par=5, yardage=495, stroke_index=15, tee_id=1)
+    ]
+    for hole in holes:
+        session.add(hole)
+    session.commit()
+
+    response = client.get("/courses/holes/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == len(holes)
+    for dIdx in range(len(data)):
+        assert data[dIdx]["number"] == holes[dIdx].number
+        assert data[dIdx]["par"] == holes[dIdx].par
+        assert data[dIdx]["yardage"] == holes[dIdx].yardage
+        assert data[dIdx]["stroke_index"] == holes[dIdx].stroke_index
+        assert data[dIdx]["tee_id"] == holes[dIdx].tee_id
+        assert data[dIdx]["id"] == holes[dIdx].id
+
+def test_read_hole(session: Session, client: TestClient):
+    hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
+    session.add(hole)
+    session.commit()
+
+    response = client.get(f"/courses/holes/{hole.id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["number"] == hole.number
+    assert data["par"] == hole.par
+    assert data["yardage"] == hole.yardage
+    assert data["stroke_index"] == hole.stroke_index
+    assert data["tee_id"] == hole.tee_id
+    assert data["id"] == hole.id
+
+def test_update_hole(session: Session, client: TestClient):
+    hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
+    session.add(hole)
+    session.commit()
+
+    response = client.patch(f"/courses/holes/{hole.id}", json={"number": 3})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["number"] == 3
+    assert data["par"] == hole.par
+    assert data["yardage"] == hole.yardage
+    assert data["stroke_index"] == hole.stroke_index
+    assert data["tee_id"] == hole.tee_id
+    assert data["id"] == hole.id
+
+def test_delete_hole(session: Session, client: TestClient):
+    hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
+    session.add(hole)
+    session.commit()
+
+    response = client.delete(f"/courses/holes/{hole.id}")
+    assert response.status_code == 200
+
+    hole_db = session.get(Hole, hole.id)
+    assert hole_db is None
