@@ -221,7 +221,7 @@ def test_delete_track(session: Session, client: TestClient):
 @pytest.mark.parametrize(
     "name, gender, rating, slope, color, track_id", [
         ("Test Tee Name", "M", 72.3, 128, "Blue", 1),
-        ("Test Tee Name", "M", 72.3, 128, "Blue", None),
+        ("Test Tee Name", "F", 72.3, 128, "Blue", None),
         ("Test Tee Name", "M", 72.3, 128, None, 1)
     ])
 def test_create_tee(client: TestClient, name: str, gender: str, rating: float, slope: int, color: str, track_id: int):
@@ -261,7 +261,8 @@ def test_create_tee_incomplete(client: TestClient, name: str, gender: str, ratin
         ("Test Tee Name", "M", {"key": "value"}, 128, "Blue", 1),
         ("Test Tee Name", "M", 72.3, {"key": "value"}, "Blue", 1),
         ("Test Tee Name", "M", 72.3, 128, {"key": "value"}, 1),
-        ("Test Tee Name", "M", 72.3, 128, "Blue", {"key": "value"})
+        ("Test Tee Name", "M", 72.3, 128, "Blue", {"key": "value"}),
+        ("Test Tee Name", "INVALID GENDER", 72.3, 128, "Blue", 1)
     ])
 def test_create_tee_invalid(client: TestClient, name: str, gender: str, rating: float, slope: int, color: str, track_id: int):
     # Invalid input data types

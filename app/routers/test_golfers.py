@@ -25,7 +25,7 @@ def client_fixture(session: Session):
 
 @pytest.mark.parametrize(
     "name, affiliation", [
-        ("Test Golfer", "Test Affiliation"),
+        ("Test Golfer", "APL_EMPLOYEE"),
         ("Test Golfer", None),
     ])
 def test_create_golfer(client: TestClient, name: str, affiliation: str):
@@ -41,13 +41,14 @@ def test_create_golfer(client: TestClient, name: str, affiliation: str):
 
 def test_create_golfer_incomplete(client: TestClient):
     # Missing required fields
-    response = client.post("/golfers/", json={"affiliation": "Test Affiliation"})
+    response = client.post("/golfers/", json={"affiliation": "NON_APL_EMPLOYEE"})
     assert response.status_code == 422
 
 @pytest.mark.parametrize(
     "name, affiliation", [
-        ({"key": "value"}, "Test Affiliation"),
+        ({"key": "value"}, "NON_APL_EMPLOYEE"),
         ("Test Golfer", {"key": "value"}),
+        ("Test Golfer", "BAD_AFFILIATION")
     ])
 def test_create_golfer_invalid(client: TestClient, name: str, affiliation: str):
     response = client.post("/golfers/", json={
@@ -57,8 +58,8 @@ def test_create_golfer_invalid(client: TestClient, name: str, affiliation: str):
 
 def test_read_golfers(session: Session, client: TestClient):
     golfers = [
-        Golfer(name="Test Golfer A", affiliation="Test Affiliation"),
-        Golfer(name="Test Golfer B", affiliation="Other Affiliation")
+        Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE"),
+        Golfer(name="Test Golfer B", affiliation="APL_EMPLOYEE")
     ]
     for golfer in golfers:
         session.add(golfer)
@@ -75,7 +76,7 @@ def test_read_golfers(session: Session, client: TestClient):
         assert data[dIdx]["id"] == golfers[dIdx].id
 
 def test_read_golfer(session: Session, client: TestClient):
-    golfer = Golfer(name="Test Golfer A", affiliation="Test Affiliation")
+    golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")
     session.add(golfer)
     session.commit()
 
@@ -88,7 +89,7 @@ def test_read_golfer(session: Session, client: TestClient):
     assert data["id"] == golfer.id
 
 def test_update_golfer(session: Session, client: TestClient):
-    golfer = Golfer(name="Test Golfer A", affiliation="Test Affiliation")
+    golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")
     session.add(golfer)
     session.commit()
 
@@ -101,7 +102,7 @@ def test_update_golfer(session: Session, client: TestClient):
     assert data["id"] == golfer.id
 
 def test_delete_golfer(session: Session, client: TestClient):
-    golfer = Golfer(name="Test Golfer A", affiliation="Test Affiliation")
+    golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")
     session.add(golfer)
     session.commit()
 
