@@ -4,6 +4,7 @@ from datetime import date
 
 from ..models.tee import Tee, TeeRead
 from ..models.golfer import Golfer, GolferRead
+from ..models.hole_result import HoleResult, HoleResultReadWithHole
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
@@ -16,6 +17,7 @@ class Round(RoundBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tee: Tee = Relationship()
     golfer: Golfer = Relationship()
+    hole_results: List[HoleResult] = Relationship(back_populates="round")
 
 class RoundCreate(RoundBase):
     pass
@@ -33,3 +35,4 @@ class RoundRead(RoundBase):
 class RoundReadWithTeeAndGolfer(RoundRead):
     tee: Optional[TeeRead] = None
     golfer: Optional[GolferRead] = None
+    hole_results: Optional[List[HoleResultReadWithHole]] = None

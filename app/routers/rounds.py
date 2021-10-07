@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from ..dependencies import get_session
 from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithTeeAndGolfer
-
+from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
 router = APIRouter(
     prefix="/rounds",
     tags=["Rounds"]
@@ -49,5 +49,46 @@ async def delete_round(*, session: Session = Depends(get_session), round_id: int
     if not round_db:
         raise HTTPException(status_code=404, detail="Round not found")
     session.delete(round_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/hole_results/", response_model=List[HoleResultRead])
+async def read_hole_results(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(HoleResult).offset(offset).limit(limit)).all()
+
+@router.post("/hole_results/", response_model=HoleResultRead)
+async def create_hole_result(*, session: Session = Depends(get_session), hole_result: HoleResultCreate):
+    hole_result_db = HoleResult.from_orm(hole_result)
+    session.add(hole_result_db)
+    session.commit()
+    session.refresh(hole_result_db)
+    return hole_result_db
+
+@router.get("/hole_result/{hole_result_id}", response_model=HoleResultReadWithHole)
+async def read_hole_result(*, session: Session = Depends(get_session), hole_result_id: int):
+    hole_result_db = session.get(HoleResult, hole_result_id)
+    if not hole_result_db:
+        raise HTTPException(status_code=404, detail="Hole result not found")
+    return hole_result_db
+
+@router.patch("/hole_results/{hole_result_id}", response_model=RoundRead)
+async def update_hole_result(*, session: Session = Depends(get_session), hole_result_id: int, hole_result: HoleResultUpdate):
+    hole_result_db = session.get(HoleResult, hole_result_id)
+    if not hole_result_db:
+        raise HTTPException(status_code=404, detail="Hole result not found")
+    round_data = hole_result.dict(exclude_unset=True)
+    for key, value in round_data.items():
+        setattr(hole_result_db, key, value)
+    session.add(hole_result_db)
+    session.commit()
+    session.refresh(hole_result_db)
+    return hole_result_db
+
+@router.delete("/hole_results/{hole_result_id}")
+async def delete_hole_result(*, session: Session = Depends(get_session), hole_result_id: int):
+    hole_result_db = session.get(HoleResult, hole_result_id)
+    if not hole_result_db:
+        raise HTTPException(status_code=404, detail="Hole result not found")
+    session.delete(hole_result_db)
     session.commit()
     return {"ok": True}
