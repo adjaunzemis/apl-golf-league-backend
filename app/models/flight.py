@@ -1,9 +1,9 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from ..models.course import Course
-from ..models.division import Division, DivisionRead
-from ..models.team import Team, TeamRead
+from .course import Course
+from .division import Division, DivisionRead
+from .team import Team, TeamRead
 
 class FlightBase(SQLModel):
     name: str

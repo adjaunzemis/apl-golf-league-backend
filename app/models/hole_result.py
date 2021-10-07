@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from ..models.hole import Hole, HoleRead
+from .hole import Hole, HoleRead
 
 class HoleResultBase(SQLModel):
     round_id: int = Field(foreign_key="round.id")

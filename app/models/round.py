@@ -2,9 +2,9 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import date
 
-from ..models.tee import Tee, TeeRead
-from ..models.golfer import Golfer, GolferRead
-from ..models.hole_result import HoleResult, HoleResultReadWithHole
+from .tee import Tee, TeeRead
+from .golfer import Golfer, GolferRead
+from .hole_result import HoleResult, HoleResultReadWithHole
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")

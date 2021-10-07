@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from ..models.tee import TeeGender
+from .tee import TeeGender
 
 class DivisionBase(SQLModel):
     name: str

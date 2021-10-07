@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from ..models.player import Player, PlayerRead
+from .player import Player, PlayerRead
 
 class TeamBase(SQLModel):
     name: Optional[str] = None
