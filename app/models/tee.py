@@ -1,11 +1,16 @@
 from typing import List, Optional
+from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 
 from .hole import Hole, HoleRead
 
+class TeeGender(str, Enum):
+    MALE = "M"
+    FEMALE = "F"
+
 class TeeBase(SQLModel):
     name: str
-    gender: str
+    gender: TeeGender
     rating: float
     slope: int
     color: Optional[str]
@@ -21,7 +26,7 @@ class TeeCreate(TeeBase):
 
 class TeeUpdate(SQLModel):
     name: Optional[str] = None
-    gender: Optional[str] = None
+    gender: Optional[TeeGender] = None
     rating: Optional[float] = None
     slope: Optional[int] = None
     color: Optional[str] = None
