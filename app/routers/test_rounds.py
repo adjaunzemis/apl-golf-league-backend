@@ -7,6 +7,7 @@ from datetime import date
 from ..main import app
 from ..dependencies import get_session
 from ..models.round import Round
+from ..models.hole_result import HoleResult
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -135,3 +136,103 @@ def test_delete_round(session: Session, client: TestClient):
 
     round_db = session.get(Round, round.id)
     assert round_db is None
+
+@pytest.mark.parametrize(
+    "round_id, hole_id, strokes", [
+        (1, 1, 4)
+    ])
+def test_create_hole_result(client: TestClient, round_id: int, hole_id: int, strokes: int):
+    response = client.post("/rounds/hole_results/", json={
+        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
+    })
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["round_id"] == round_id
+    assert data["hole_id"] == hole_id
+    assert data["strokes"] == strokes
+    assert data["id"] is not None
+
+@pytest.mark.parametrize(
+    "round_id, hole_id, strokes", [
+        (1, 1, None),
+        (1, None, 4),
+        (None, 1, 4),
+    ])
+def test_create_hole_result_incomplete(client: TestClient, round_id: int, hole_id: int, strokes: int):
+    # Missing required fields
+    response = client.post("/rounds/hole_results/", json={
+        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
+    })
+    assert response.status_code == 422
+
+@pytest.mark.parametrize(
+    "round_id, hole_id, strokes", [
+        (1, 1, {"key": "value"}),
+        (1, {"key": "value"}, 4),
+        ({"key": "value"}, 1, 4),
+    ])
+def test_create_hole_result_invalid(client: TestClient, round_id: int, hole_id: int, strokes: int):
+    response = client.post("/rounds/hole_results/", json={
+        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
+    })
+    assert response.status_code == 422
+
+def test_read_hole_results(session: Session, client: TestClient):
+    hole_results = [
+        HoleResult(round_id=1, hole_id=1, strokes=4),
+        HoleResult(round_id=1, hole_id=2, strokes=5)
+    ]
+    for hole_result in hole_results:
+        session.add(hole_result)
+    session.commit()
+
+    response = client.get("/rounds/hole_results/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == len(hole_results)
+    for dIdx in range(len(data)):
+        assert data[dIdx]["round_id"] == hole_results[dIdx].round_id
+        assert data[dIdx]["hole_id"] == hole_results[dIdx].hole_id
+        assert data[dIdx]["strokes"] == hole_results[dIdx].strokes
+        assert data[dIdx]["id"] == hole_results[dIdx].id
+
+def test_read_hole_result(session: Session, client: TestClient):
+    hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)
+    session.add(hole_result)
+    session.commit()
+
+    response = client.get(f"/rounds/hole_results/{hole_result.id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["round_id"] == hole_result.round_id
+    assert data["hole_id"] == hole_result.hole_id
+    assert data["strokes"] == hole_result.strokes
+    assert data["id"] == hole_result.id
+
+def test_update_hole_result(session: Session, client: TestClient):
+    hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)
+    session.add(hole_result)
+    session.commit()
+
+    response = client.patch(f"/rounds/hole_results/{hole_result.id}", json={"strokes": 5})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["round_id"] == hole_result.round_id
+    assert data["hole_id"] == hole_result.hole_id
+    assert data["strokes"] == 5
+    assert data["id"] == hole_result.id
+
+def test_delete_hole_result(session: Session, client: TestClient):
+    hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)
+    session.add(hole_result)
+    session.commit()
+
+    response = client.delete(f"/rounds/hole_results/{hole_result.id}")
+    assert response.status_code == 200
+
+    hole_result_db = session.get(HoleResult, hole_result.id)
+    assert hole_result_db is None

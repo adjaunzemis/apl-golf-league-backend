@@ -64,14 +64,14 @@ async def create_hole_result(*, session: Session = Depends(get_session), hole_re
     session.refresh(hole_result_db)
     return hole_result_db
 
-@router.get("/hole_result/{hole_result_id}", response_model=HoleResultReadWithHole)
+@router.get("/hole_results/{hole_result_id}", response_model=HoleResultReadWithHole)
 async def read_hole_result(*, session: Session = Depends(get_session), hole_result_id: int):
     hole_result_db = session.get(HoleResult, hole_result_id)
     if not hole_result_db:
         raise HTTPException(status_code=404, detail="Hole result not found")
     return hole_result_db
 
-@router.patch("/hole_results/{hole_result_id}", response_model=RoundRead)
+@router.patch("/hole_results/{hole_result_id}", response_model=HoleResultRead)
 async def update_hole_result(*, session: Session = Depends(get_session), hole_result_id: int, hole_result: HoleResultUpdate):
     hole_result_db = session.get(HoleResult, hole_result_id)
     if not hole_result_db:
