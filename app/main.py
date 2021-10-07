@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, rounds
+from .routers import courses, golfers, rounds, flights
 
 description = """
 APLGolfLeague API
@@ -20,6 +20,7 @@ app = FastAPI(
 app.include_router(courses.router)
 app.include_router(golfers.router)
 app.include_router(rounds.router)
+app.include_router(flights.router)
 
 @app.on_event("startup")
 def on_startup():
