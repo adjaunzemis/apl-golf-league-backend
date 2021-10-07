@@ -4,7 +4,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithTeeAndGolfer
+from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
 router = APIRouter(
     prefix="/rounds",
@@ -23,7 +23,7 @@ async def create_round(*, session: Session = Depends(get_session), round: RoundC
     session.refresh(round_db)
     return round_db
 
-@router.get("/{round_id}", response_model=RoundReadWithTeeAndGolfer)
+@router.get("/{round_id}", response_model=RoundReadWithData)
 async def read_round(*, session: Session = Depends(get_session), round_id: int):
     round_db = session.get(Round, round_id)
     if not round_db:

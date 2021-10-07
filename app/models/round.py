@@ -32,7 +32,7 @@ class RoundUpdate(SQLModel):
 class RoundRead(RoundBase):
     id: int
 
-class RoundReadWithTeeAndGolfer(RoundRead):
+class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
     golfer: Optional[GolferRead] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
