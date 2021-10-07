@@ -7,7 +7,7 @@ from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers
-from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead
+from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData
 
 router = APIRouter(
     prefix="/flights",
@@ -149,7 +149,7 @@ async def create_player(*, session: Session = Depends(get_session), player: Play
     session.refresh(player_db)
     return player_db
 
-@router.get("/players/{player_id}", response_model=PlayerRead)
+@router.get("/players/{player_id}", response_model=PlayerReadWithData)
 async def read_player(*, session: Session = Depends(get_session), player_id: int):
     player_db = session.get(Player, player_id)
     if not player_db:

@@ -34,5 +34,7 @@ class PlayerUpdate(SQLModel):
 
 class PlayerRead(PlayerBase):
     id: int
+
+class PlayerReadWithData(PlayerRead):
     golfer: Optional[GolferRead] = None
     division: Optional[DivisionRead] = None
