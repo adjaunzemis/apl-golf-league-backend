@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from ..models.course import Course
 from ..models.division import Division, DivisionRead
+from ..models.team import Team, TeamRead
 
 class FlightBase(SQLModel):
     name: str
@@ -13,6 +14,7 @@ class Flight(FlightBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     home_course: Course = Relationship()
     divisions: Optional[List[Division]] = Relationship(back_populates="flight")
+    teams: Optional[List[Team]] = Relationship(back_populates="flight")
 
 class FlightCreate(FlightBase):
     pass
@@ -25,5 +27,6 @@ class FlightUpdate(SQLModel):
 class FlightRead(FlightBase):
     id: int
 
-class FlightReadWithDivisions(FlightRead):
+class FlightReadWithData(FlightRead):
     divisions: List[DivisionRead] = []
+    teams: List[TeamRead] = []

@@ -4,8 +4,10 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithDivisions
+from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
+from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers
+from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead
 
 router = APIRouter(
     prefix="/flights",
@@ -24,7 +26,7 @@ async def create_flight(*, session: Session = Depends(get_session), flight: Flig
     session.refresh(flight_db)
     return flight_db
 
-@router.get("/{flight_id}", response_model=FlightReadWithDivisions)
+@router.get("/{flight_id}", response_model=FlightReadWithData)
 async def read_flight(*, session: Session = Depends(get_session), flight_id: int):
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
@@ -91,5 +93,87 @@ async def delete_division(*, session: Session = Depends(get_session), division_i
     if not division_db:
         raise HTTPException(status_code=404, detail="Division not found")
     session.delete(division_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/teams/", response_model=List[TeamRead])
+async def read_teams(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Team).offset(offset).limit(limit)).all()
+
+@router.post("/teams/", response_model=TeamRead)
+async def create_team(*, session: Session = Depends(get_session), team: TeamCreate):
+    team_db = Team.from_orm(team)
+    session.add(team_db)
+    session.commit()
+    session.refresh(team_db)
+    return team_db
+
+@router.get("/teams/{team_id}", response_model=TeamReadWithPlayers)
+async def read_team(*, session: Session = Depends(get_session), team_id: int):
+    team_db = session.get(Team, team_id)
+    if not team_db:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team_db
+
+@router.patch("/teams/{team_id}", response_model=TeamRead)
+async def update_team(*, session: Session = Depends(get_session), team_id: int, team: TeamUpdate):
+    team_db = session.get(Team, team_id)
+    if not team_db:
+        raise HTTPException(status_code=404, detail="Team not found")
+    team_data = team.dict(exclude_unset=True)
+    for key, value in team_data.items():
+        setattr(team_db, key, value)
+    session.add(team_db)
+    session.commit()
+    session.refresh(team_db)
+    return team_db
+
+@router.delete("/teams/{team_id}")
+async def delete_team(*, session: Session = Depends(get_session), team_id: int):
+    team_db = session.get(Team, team_id)
+    if not team_db:
+        raise HTTPException(status_code=404, detail="Team not found")
+    session.delete(team_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/players/", response_model=List[PlayerRead])
+async def read_players(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Player).offset(offset).limit(limit)).all()
+
+@router.post("/players/", response_model=PlayerRead)
+async def create_player(*, session: Session = Depends(get_session), player: PlayerCreate):
+    player_db = Player.from_orm(player)
+    session.add(player_db)
+    session.commit()
+    session.refresh(player_db)
+    return player_db
+
+@router.get("/players/{player_id}", response_model=PlayerRead)
+async def read_player(*, session: Session = Depends(get_session), player_id: int):
+    player_db = session.get(Player, player_id)
+    if not player_db:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return player_db
+
+@router.patch("/players/{player_id}", response_model=PlayerRead)
+async def update_player(*, session: Session = Depends(get_session), player_id: int, player: PlayerUpdate):
+    team_db = session.get(Player, player_id)
+    if not team_db:
+        raise HTTPException(status_code=404, detail="Player not found")
+    player_data = player.dict(exclude_unset=True)
+    for key, value in player_data.items():
+        setattr(team_db, key, value)
+    session.add(team_db)
+    session.commit()
+    session.refresh(team_db)
+    return team_db
+
+@router.delete("/players/{player_id}")
+async def delete_player(*, session: Session = Depends(get_session), player_id: int):
+    player_db = session.get(Player, player_id)
+    if not player_db:
+        raise HTTPException(status_code=404, detail="Player not found")
+    session.delete(player_db)
     session.commit()
     return {"ok": True}
