@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from .player import Player, PlayerRead
 
 class TeamBase(SQLModel):
-    name: Optional[str] = None
+    name: str
     flight_id: int = Field(default=None, foreign_key="flight.id")
 
 class Team(TeamBase, table=True):
