@@ -9,6 +9,7 @@ from ..models.flight import Flight
 from ..models.division import Division
 from ..models.team import Team
 from ..models.player import Player
+from ..models.match import Match
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -430,3 +431,120 @@ def test_delete_player(session: Session, client: TestClient):
 
     player_db = session.get(Player, player.id)
     assert player_db is None
+
+@pytest.mark.parametrize(
+    "flight_id, week, home_team_id, away_team_id, home_score, away_score", [
+        (1, 1, 1, 2, 7.5, 3.5),
+        (1, 1, 1, 2, 7.5, None),
+        (1, 1, 1, 2, None, 3.5),
+        (1, 1, 1, 2, None, None),
+    ])
+def test_create_match(client: TestClient, flight_id: int, week: int, home_team_id: int, away_team_id: int, home_score: float, away_score: float):
+    response = client.post("/flights/matches/", json={
+        "flight_id": flight_id, "week": week, "home_team_id": home_team_id, "away_team_id": away_team_id, "home_score": home_score, "away_score": away_score
+    })
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["flight_id"] == flight_id
+    assert data["week"] == week
+    assert data["home_team_id"] == home_team_id
+    assert data["away_team_id"] == away_team_id
+    assert data["home_score"] == home_score
+    assert data["away_score"] == away_score
+    assert data["id"] is not None
+
+@pytest.mark.parametrize(
+    "flight_id, week, home_team_id, away_team_id, home_score, away_score", [
+        (1, None, 1, 2, 7.5, 3.5)
+    ])
+def test_create_match_incomplete(client: TestClient, flight_id: int, week: int, home_team_id: int, away_team_id: int, home_score: float, away_score: float):
+    # Missing required fields
+    response = client.post("/flights/matches/", json={
+        "flight_id": flight_id, "week": week, "home_team_id": home_team_id, "away_team_id": away_team_id, "home_score": home_score, "away_score": away_score
+    })
+    assert response.status_code == 422
+
+@pytest.mark.parametrize(
+    "flight_id, week, home_team_id, away_team_id, home_score, away_score", [
+        ({"key": "value"}, 1, 1, 2, 7.5, 3.5),
+        (1, {"key": "value"}, 1, 2, 7.5, 3.5),
+        (1, 1, {"key": "value"}, 2, 7.5, 3.5),
+        (1, 1, 1, {"key": "value"}, 7.5, 3.5),
+        (1, 1, 1, 2, {"key": "value"}, 3.5),
+        (1, 1, 1, 2, 7.5, {"key": "value"}),
+    ])
+def test_create_match_invalid(client: TestClient, flight_id: int, week: int, home_team_id: int, away_team_id: int, home_score: float, away_score: float):
+    # Invalid input data types
+    response = client.post("/flights/matches/", json={
+        "flight_id": flight_id, "week": week, "home_team_id": home_team_id, "away_team_id": away_team_id, "home_score": home_score, "away_score": away_score
+    })
+    assert response.status_code == 422
+
+def test_read_matches(session: Session, client: TestClient):
+    matches = [
+        Match(flight_id=1, week=1, home_team_id=1, away_team_id=2),
+        Match(flight_id=1, week=2, home_team_id=2, away_team_id=1, home_score=7.5, away_score=3.5)
+    ]
+    for match in matches:
+        session.add(match)
+    session.commit()
+
+    response = client.get("/flights/matches/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == len(matches)
+    for dIdx in range(len(data)):
+        assert data[dIdx]["flight_id"] == matches[dIdx].flight_id
+        assert data[dIdx]["week"] == matches[dIdx].week
+        assert data[dIdx]["home_team_id"] == matches[dIdx].home_team_id
+        assert data[dIdx]["away_team_id"] == matches[dIdx].away_team_id
+        assert data[dIdx]["home_score"] == matches[dIdx].home_score
+        assert data[dIdx]["away_score"] == matches[dIdx].away_score
+        assert data[dIdx]["id"] == matches[dIdx].id
+
+def test_read_match(session: Session, client: TestClient):
+    match = Match(flight_id=1, week=2, home_team_id=2, away_team_id=1, home_score=7.5, away_score=3.5)
+    session.add(match)
+    session.commit()
+
+    response = client.get(f"/flights/matches/{match.id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["flight_id"] == match.flight_id
+    assert data["week"] == match.week
+    assert data["home_team_id"] == match.home_team_id
+    assert data["away_team_id"] == match.away_team_id
+    assert data["home_score"] == match.home_score
+    assert data["away_score"] == match.away_score
+    assert data["id"] == match.id
+
+def test_update_match(session: Session, client: TestClient):
+    match = Match(flight_id=1, week=1, home_team_id=1, away_team_id=2)
+    session.add(match)
+    session.commit()
+
+    response = client.patch(f"/flights/matches/{match.id}", json={"home_score": 7.5, "away_score": 3.5})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["flight_id"] == match.flight_id
+    assert data["week"] == match.week
+    assert data["home_team_id"] == match.home_team_id
+    assert data["away_team_id"] == match.away_team_id
+    assert data["home_score"] == 7.5
+    assert data["away_score"] == 3.5
+    assert data["id"] == match.id
+
+def test_delete_match(session: Session, client: TestClient):
+    match = Match(flight_id=1, week=1, home_team_id=1, away_team_id=2)
+    session.add(match)
+    session.commit()
+
+    response = client.delete(f"/flights/matches/{match.id}")
+    assert response.status_code == 200
+
+    match_db = session.get(Match, match.id)
+    assert match_db is None
