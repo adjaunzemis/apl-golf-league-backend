@@ -10,6 +10,7 @@ from ..models.division import Division
 from ..models.team import Team
 from ..models.player import Player
 from ..models.match import Match
+from ..models.match_round_link import MatchRoundLink
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -547,4 +548,83 @@ def test_delete_match(session: Session, client: TestClient):
     assert response.status_code == 200
 
     match_db = session.get(Match, match.id)
+    assert match_db is None
+
+def test_create_match_round_link(client: TestClient):
+    match_id = 1
+    round_id = 2
+    response = client.post(f"/flights/matches/{match_id}/rounds/{round_id}")
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["match_id"] == match_id
+    assert data["round_id"] == round_id
+
+@pytest.mark.parametrize(
+    "match_id, round_id", [
+        (None, 2),
+        (1, None)
+    ])
+def test_create_match_round_link_incomplete(client: TestClient, match_id: int, round_id: int):
+    # Missing required fields
+    response = client.post(f"/flights/matches/{match_id}/rounds/{round_id}")
+    assert response.status_code == 422
+
+@pytest.mark.parametrize(
+    "match_id, round_id", [
+        ({"key": "value"}, 2),
+        (1, {"key": "value"})
+    ])
+def test_create_match_round_link_invalid(client: TestClient, match_id: int, round_id: int):
+    # Invalid input data types
+    response = client.post(f"/flights/matches/{match_id}/rounds/{round_id}")
+    assert response.status_code == 422
+
+def test_read_match_round_links(session: Session, client: TestClient):
+    links = [
+        MatchRoundLink(match_id=1, round_id=1),
+        MatchRoundLink(match_id=1, round_id=2)
+    ]
+    for link in links:
+        session.add(link)
+    session.commit()
+
+    response = client.get("/flights/matches/rounds/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == len(links)
+    for dIdx in range(len(data)):
+        assert data[dIdx]["match_id"] == links[dIdx].match_id
+        assert data[dIdx]["round_id"] == links[dIdx].round_id
+
+def test_read_match_round_links_for_match(session: Session, client: TestClient):
+    links = [
+        MatchRoundLink(match_id=1, round_id=1),
+        MatchRoundLink(match_id=1, round_id=2),
+        MatchRoundLink(match_id=2, round_id=3)
+    ]
+    for link in links:
+        session.add(link)
+    session.commit()
+
+    match_id = 1
+    response = client.get(f"/flights/matches/{match_id}/rounds/")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 2
+    for dIdx in range(len(data)):
+        assert data[dIdx]["match_id"] == links[dIdx].match_id
+        assert data[dIdx]["round_id"] == links[dIdx].round_id
+
+def test_delete_match_round_link(session: Session, client: TestClient):
+    link = MatchRoundLink(match_id=1, round_id=1)
+    session.add(link)
+    session.commit()
+
+    response = client.delete(f"/flights/matches/{link.match_id}/rounds/{link.round_id}")
+    assert response.status_code == 200
+
+    match_db = session.get(MatchRoundLink, [link.match_id, link.round_id])
     assert match_db is None
