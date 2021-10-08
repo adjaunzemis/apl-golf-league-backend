@@ -1,8 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 
 from .flight import Flight, FlightRead
 from .team import Team, TeamRead
+from .round import Round, RoundReadWithData
+from .match_round_link import MatchRoundLink
 
 class MatchBase(SQLModel):
     flight_id: int = Field(default=None, foreign_key="flight.id")
@@ -17,6 +19,7 @@ class Match(MatchBase, table=True):
     flight: Flight = Relationship()
     home_team: Team = Relationship(sa_relationship_kwargs={"foreign_keys": "[Match.home_team_id]"})
     away_team: Team = Relationship(sa_relationship_kwargs={"foreign_keys": "[Match.away_team_id]"})
+    rounds: List[Round] = Relationship(link_model=MatchRoundLink)
 
 class MatchCreate(MatchBase):
     pass
@@ -32,7 +35,8 @@ class MatchUpdate(SQLModel):
 class MatchRead(MatchBase):
     id: int
 
-class MatchReadWithTeams(MatchRead):
+class MatchReadWithData(MatchRead):
     flight: FlightRead = None
     home_team: TeamRead = None
     away_team: TeamRead = None
+    rounds: List[RoundReadWithData] = []

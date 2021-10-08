@@ -1,5 +1,6 @@
-from sqlmodel import Session, SQLModel, create_engine
 import os
+from datetime import date
+from sqlmodel import Session, SQLModel, create_engine
 
 from models.course import Course
 from models.track import Track
@@ -11,6 +12,9 @@ from models.division import Division
 from models.team import Team
 from models.player import Player
 from models.match import Match
+from models.round import Round
+from models.hole_result import HoleResult
+from models.match_round_link import MatchRoundLink
 
 def add_course(session: Session, name: str):
     print(f"Adding course: {name}")
@@ -150,6 +154,28 @@ def add_match(session: Session, flight_id: int, week: int, home_team_id: int, aw
     session.add(Match(week=week, flight_id=flight_id, home_team_id=home_team_id, away_team_id=away_team_id, home_score=home_score, away_score=away_score))
     session.commit()
 
+def add_round(session: Session, golfer_id: int, tee_id: int):
+    print(f"Adding round: golfer_id={golfer_id}, tee_id={tee_id}")
+    round = Round(golfer_id=golfer_id, tee_id=tee_id, handicap_index=12.3, playing_handicap=12, date_played=date.today())
+    session.add(round)
+    session.commit()
+
+    session.add(HoleResult(round_id=round.id, hole_id=1, strokes=4))
+    session.add(HoleResult(round_id=round.id, hole_id=2, strokes=5))
+    session.add(HoleResult(round_id=round.id, hole_id=3, strokes=3))
+    session.add(HoleResult(round_id=round.id, hole_id=4, strokes=5))
+    session.add(HoleResult(round_id=round.id, hole_id=5, strokes=6))
+    session.add(HoleResult(round_id=round.id, hole_id=6, strokes=5))
+    session.add(HoleResult(round_id=round.id, hole_id=7, strokes=4))
+    session.add(HoleResult(round_id=round.id, hole_id=8, strokes=4))
+    session.add(HoleResult(round_id=round.id, hole_id=9, strokes=5))
+    session.commit()
+
+def add_match_round_link(session: Session, match_id: int, round_id: int):
+    print(f"Linking match {match_id} with round {round_id}")
+    session.add(MatchRoundLink(match_id=match_id, round_id=round_id))
+    session.commit()
+
 if __name__ == "__main__":
     DATABASE_FILE = "dev.db"
 
@@ -179,5 +205,11 @@ if __name__ == "__main__":
 
         add_match(session, 1, 1, 1, 2, 7.5, 3.5)
         add_match(session, 1, 2, 2, 1)
+
+        add_round(session, 1, 1)
+        add_round(session, 3, 2)
+
+        add_match_round_link(session, 1, 1)
+        add_match_round_link(session, 1, 2)
 
     print("Database initialized!")

@@ -8,7 +8,8 @@ from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, Flig
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers
 from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData
-from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithTeams
+from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData
+from ..models.match_round_link import MatchRoundLink
 
 router = APIRouter(
     prefix="/flights",
@@ -191,7 +192,7 @@ async def create_match(*, session: Session = Depends(get_session), match: MatchC
     session.refresh(match_db)
     return match_db
 
-@router.get("/matches/{match_id}", response_model=MatchReadWithTeams)
+@router.get("/matches/{match_id}", response_model=MatchReadWithData)
 async def read_match(*, session: Session = Depends(get_session), match_id: int):
     match_db = session.get(Match, match_id)
     if not match_db:
@@ -217,5 +218,30 @@ async def delete_match(*, session: Session = Depends(get_session), match_id: int
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
     session.delete(match_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/matches/rounds/", response_model=List[MatchRoundLink])
+async def read_match_round_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(MatchRoundLink).offset(offset).limit(limit)).all()
+
+@router.get("/matches/{match_id}/rounds/", response_model=List[MatchRoundLink])
+async def read_match_round_links_for_match(*, session: Session = Depends(get_session), match_id: int):
+    return session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_id)).all()
+
+@router.post("/matches/{match_id}/rounds/{round_id}", response_model=MatchRoundLink)
+async def create_match_round_link(*, session: Session = Depends(get_session), match_id: int, round_id: int):
+    link_db = MatchRoundLink(match_id=match_id, round_id=round_id)
+    session.add(link_db)
+    session.commit()
+    session.refresh(link_db)
+    return link_db
+
+@router.delete("/matches/{match_id}/rounds/{round_id}")
+async def delete_match_round_link(*, session: Session = Depends(get_session), match_id: int, round_id: int):
+    link_db = session.get(MatchRoundLink, [match_id, round_id])
+    if not link_db:
+        raise HTTPException(status_code=404, detail="Match-Round link not found")
+    session.delete(link_db)
     session.commit()
     return {"ok": True}
