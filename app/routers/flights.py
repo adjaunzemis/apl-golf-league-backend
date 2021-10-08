@@ -8,6 +8,7 @@ from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, Flig
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers
 from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData
+from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithTeams
 
 router = APIRouter(
     prefix="/flights",
@@ -158,16 +159,16 @@ async def read_player(*, session: Session = Depends(get_session), player_id: int
 
 @router.patch("/players/{player_id}", response_model=PlayerRead)
 async def update_player(*, session: Session = Depends(get_session), player_id: int, player: PlayerUpdate):
-    team_db = session.get(Player, player_id)
-    if not team_db:
+    player_db = session.get(Player, player_id)
+    if not player_db:
         raise HTTPException(status_code=404, detail="Player not found")
     player_data = player.dict(exclude_unset=True)
     for key, value in player_data.items():
-        setattr(team_db, key, value)
-    session.add(team_db)
+        setattr(player_db, key, value)
+    session.add(player_db)
     session.commit()
-    session.refresh(team_db)
-    return team_db
+    session.refresh(player_db)
+    return player_db
 
 @router.delete("/players/{player_id}")
 async def delete_player(*, session: Session = Depends(get_session), player_id: int):
@@ -175,5 +176,46 @@ async def delete_player(*, session: Session = Depends(get_session), player_id: i
     if not player_db:
         raise HTTPException(status_code=404, detail="Player not found")
     session.delete(player_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/matches/", response_model=List[MatchRead])
+async def read_matches(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Match).offset(offset).limit(limit)).all()
+
+@router.post("/matches/", response_model=MatchRead)
+async def create_match(*, session: Session = Depends(get_session), match: MatchCreate):
+    match_db = Match.from_orm(match)
+    session.add(match_db)
+    session.commit()
+    session.refresh(match_db)
+    return match_db
+
+@router.get("/matches/{match_id}", response_model=MatchReadWithTeams)
+async def read_match(*, session: Session = Depends(get_session), match_id: int):
+    match_db = session.get(Match, match_id)
+    if not match_db:
+        raise HTTPException(status_code=404, detail="Match not found")
+    return match_db
+
+@router.patch("/matches/{match_id}", response_model=MatchRead)
+async def update_match(*, session: Session = Depends(get_session), match_id: int, match: MatchUpdate):
+    match_db = session.get(Match, match_id)
+    if not match_db:
+        raise HTTPException(status_code=404, detail="Match not found")
+    match_data = match.dict(exclude_unset=True)
+    for key, value in match_data.items():
+        setattr(match_db, key, value)
+    session.add(match_db)
+    session.commit()
+    session.refresh(match_db)
+    return match_db
+
+@router.delete("/matches/{match_id}")
+async def delete_match(*, session: Session = Depends(get_session), match_id: int):
+    match_db = session.get(Match, match_id)
+    if not match_db:
+        raise HTTPException(status_code=404, detail="Match not found")
+    session.delete(match_db)
     session.commit()
     return {"ok": True}

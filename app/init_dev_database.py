@@ -10,6 +10,7 @@ from models.flight import Flight
 from models.division import Division
 from models.team import Team
 from models.player import Player
+from models.match import Match
 
 def add_course(session: Session, name: str):
     print(f"Adding course: {name}")
@@ -144,6 +145,11 @@ def add_team(session: Session, name: str):
     session.add(Player(team_id=team.id, golfer_id=4, division_id=3, role="PLAYER"))
     session.commit()
 
+def add_match(session: Session, flight_id: int, week: int, home_team_id: int, away_team_id: int, home_score: float = None, away_score: float = None):
+    print(f"Adding week {week} match between team ids: {home_team_id}, {away_team_id}")
+    session.add(Match(week=week, flight_id=flight_id, home_team_id=home_team_id, away_team_id=away_team_id, home_score=home_score, away_score=away_score))
+    session.commit()
+
 if __name__ == "__main__":
     DATABASE_FILE = "dev.db"
 
@@ -169,5 +175,9 @@ if __name__ == "__main__":
         add_flight(session, "Diamond Ridge")
 
         add_team(session, "DR Team 1")
+        add_team(session, "DR Team 2")
+
+        add_match(session, 1, 1, 1, 2, 7.5, 3.5)
+        add_match(session, 1, 2, 2, 1)
 
     print("Database initialized!")
