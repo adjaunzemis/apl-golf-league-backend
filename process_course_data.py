@@ -1,5 +1,11 @@
 r"""
-Processing script for course data files
+Processing script for old course data files
+
+Creates CSV files to support populating the following tables:
+- course
+- track
+- tee
+- hole
 
 Authors
 -------
@@ -7,6 +13,7 @@ Andris Jaunzemis
 
 """
 
+import os
 import pandas as pd
 
 def parse_course_data_from_file(file):
@@ -170,7 +177,7 @@ def course_data_to_dict(course):
         handicaps = course['handicaps']
     
     if ('tee_names' not in course) or (course['tee_names'] is None):
-        print(course['course_name'] + " " + course['track_name'] + ", ERROR: tee_names=None")
+        print(f"\tERROR: No tees for course {course['course_name']}")
         return None
     else:
         course_dicts = []
@@ -189,7 +196,7 @@ def course_data_to_dict(course):
             rating = course['ratings'][idx]
             slope = course['slopes'][idx]
 
-            print(course['course_name'] + " " + course['track_name'] + ", tee_name=" + str(teeSet) + ", tee_color=" + str(teeColor) + ", rating=" + str(rating) + ", slope=" + str(slope))
+            # print(course['course_name'] + " " + course['track_name'] + ", tee_name=" + str(teeSet) + ", tee_color=" + str(teeColor) + ", rating=" + str(rating) + ", slope=" + str(slope))
 
             course_dicts.append({
                 'course_name': name, 'track_name': track, 'abbreviation': abbreviation,
@@ -210,19 +217,24 @@ def course_data_to_dict(course):
         return course_dicts
 
 if __name__ == "__main__":
-    DATA_YEAR = 2019
-    COURSE_DATA_FILES = ['apl.courses.data']
+    data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
+    for data_dir in data_dirs:
+        data_year = 2000 + int(data_dir[-2:])
 
-    for course_data_file in COURSE_DATA_FILES:
-        course_data_list = parse_course_data_from_file("data/{:s}".format(course_data_file))
+        course_files = [f for f in os.listdir(f"data/{data_dir}") if f == "apl.courses.data"]
 
-        course_dict_list = []
-        for course_data in course_data_list:
-            course_dicts = course_data_to_dict(course_data)
-            if course_dicts is not None:
-                for course_dict in course_dicts:
-                    course_dict_list.append(course_dict)
+        for course_file in course_files:
+            print(f"Processing {data_year} courses file: {course_file}")
+            
+            course_data_list = parse_course_data_from_file(f"data/{data_dir}/{course_file}")
 
-        outputFile = "data/courses_{:d}.csv".format(DATA_YEAR)
-        df = pd.DataFrame(course_dict_list)
-        df.to_csv(outputFile, index=False)
+            course_dict_list = []
+            for course_data in course_data_list:
+                course_dicts = course_data_to_dict(course_data)
+                if course_dicts is not None:
+                    for course_dict in course_dicts:
+                        course_dict_list.append(course_dict)
+
+            outputFile = f"data/courses_{data_year}.csv"
+            df = pd.DataFrame(course_dict_list)
+            df.to_csv(outputFile, index=False)
