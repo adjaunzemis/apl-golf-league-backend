@@ -1,0 +1,106 @@
+r"""
+Processing script for old flight data files.
+
+Creates CSV files to support populating the following tables:
+- flight: name, year, home_course_id
+- division: name, gender, flight_id, home_tee_id
+
+Authors
+-------
+Andris Jaunzemis
+
+"""
+
+import os
+
+def parse_flight_data_from_file(file: str):
+    flights = []
+    with open(file, 'r') as fp:
+        for line in fp:
+            line = line.strip()
+            if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
+                if line[:6].lower() == 'flight':
+                    flights.append({
+                        'abbreviation': line.split()[1],
+                        'name': " ".join(line.split()[2:])
+                    })
+                elif line[:9].lower() == 'secretary':
+                    flights[-1]["secretary"] = " ".join(line.split()[1:3])
+                elif line[:6].lower() == 'course':
+                    flights[-1]["home_track"] = " ".join(line.split()[1:])
+                elif line[:5].lower() == 'teams':
+                    flights[-1]["teams"] = int(line.split()[1])
+                elif line[:4].lower() == 'type':
+                    flights[-1]["type"] = " ".join(line.split()[1:])
+    return flights
+
+def parse_flight_info(abbreviation: str, data_dir: str):
+    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "divisions": {}}
+    
+    flight_info_file = f"{data_dir}/{abbreviation}.info"
+    print(f"\tProcessing flight info file: {flight_info_file}")
+
+    with open(flight_info_file) as fp:
+        for line in fp:
+            line = line.strip()
+            if (len(line) > 0) and (line[0].lower() != '#'): #skip comment lines
+                if line[:6].lower() == 'flight':
+                    flight_info["flight"] = " ".join(line.split()[1:])
+                elif line[:6].lower() == 'course':
+                    flight_info["course"] = " ".join(line.split()[1:])
+                elif line[:6].lower() == 'street':
+                    flight_info["street"] = " ".join(line.split()[1:])
+                elif line[:9].lower() == 'citystzip':
+                    flight_info["citystzip"] = " ".join(line.split()[1:])
+                elif line[:7].lower() == 'clubpro':
+                    flight_info["clubpro"] = " ".join(line.split()[1:])
+                elif line[:8].lower() == 'director':
+                    flight_info["director"] = " ".join(line.split()[1:])
+                elif line[:5].lower() == 'super':
+                    flight_info["super"] = " ".join(line.split()[1:])
+                elif line[:5].lower() == 'phone':
+                    flight_info["phone"] = " ".join(line.split()[1:])
+                elif line[:4].lower() == 'link':
+                    flight_info["link"] = " ".join(line.split()[1:])
+                elif line[:6].lower() == "middle":
+                    flight_info["divisions"]["middle"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                elif line[:6].lower() == "senior":
+                    flight_info["divisions"]["senior"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                elif line[:7].lower() == "forward":
+                    flight_info["divisions"]["forward"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                else:
+                    print(f"WARNING: Unrecognized info line: {line}")
+    return flight_info
+
+if __name__ == "__main__":
+    data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
+    for data_dir in data_dirs:
+        data_year = 2000 + int(data_dir[-2:])
+
+        flight_files = [f for f in os.listdir(f"data/{data_dir}") if f == "apl.flights.data"]
+        for flight_file in flight_files:
+            print(f"Processing {data_year} flights file: {flight_file}")
+
+            output_file = f"data/flights_{data_year}.csv"
+
+            flight_dict_list = []
+            try:
+                flight_dict_list = parse_flight_data_from_file(f"data/{data_dir}/{flight_file}")
+            except ValueError:
+                print("\tERROR: Unable to process flight file!")
+            
+            if len(flight_dict_list) == 0:
+                print("\tNo flight data to output")
+            else:
+                for flight_dict in flight_dict_list:
+                    flight_info = parse_flight_info(abbreviation=flight_dict["abbreviation"], data_dir=f"data/{data_dir}")
+                    flight_dict.update(flight_info)
+
+                csv_data = ",".join([str(k) for k,v in flight_dict_list[0].items()])
+                for flight_dict in flight_dict_list:
+                    csv_data += "\n" + ",".join([str(v) for k,v in flight_dict.items()])
+
+                print(f"\tWriting processed data to file: {output_file}")
+                with open(output_file, "w") as fp:
+                    fp.write(csv_data)
+        
