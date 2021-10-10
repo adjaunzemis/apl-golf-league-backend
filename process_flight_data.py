@@ -18,6 +18,7 @@ def parse_flight_data_from_file(file: str):
     with open(file, 'r') as fp:
         for line in fp:
             line = line.strip()
+            line = line.replace(',', ' ')
             if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
                 if line[:6].lower() == 'flight':
                     flights.append({
@@ -35,14 +36,16 @@ def parse_flight_data_from_file(file: str):
     return flights
 
 def parse_flight_info(abbreviation: str, data_dir: str):
-    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "divisions": {}}
+    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None}
     
     flight_info_file = f"{data_dir}/{abbreviation}.info"
     print(f"\tProcessing flight info file: {flight_info_file}")
 
+    divisions = []
     with open(flight_info_file) as fp:
         for line in fp:
             line = line.strip()
+            line = line.replace(',', ' ')
             if (len(line) > 0) and (line[0].lower() != '#'): #skip comment lines
                 if line[:6].lower() == 'flight':
                     flight_info["flight"] = " ".join(line.split()[1:])
@@ -63,13 +66,23 @@ def parse_flight_info(abbreviation: str, data_dir: str):
                 elif line[:4].lower() == 'link':
                     flight_info["link"] = " ".join(line.split()[1:])
                 elif line[:6].lower() == "middle":
-                    flight_info["divisions"]["middle"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                    divisions.append({"name": "middle", "tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]})
                 elif line[:6].lower() == "senior":
-                    flight_info["divisions"]["senior"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                    divisions.append({"name": "senior", "tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]})
                 elif line[:7].lower() == "forward":
-                    flight_info["divisions"]["forward"] = {"tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]}
+                    divisions.append({"name": "forward", "tee": line.split()[1], "color1": line.split()[2], "color2": line.split()[3]})
                 else:
                     print(f"WARNING: Unrecognized info line: {line}")
+
+    # Reorganize division data
+    dIdx = 0
+    for division in divisions:
+        dIdx += 1
+        flight_info[f"division_{dIdx}_name"] = division["name"]
+        flight_info[f"division_{dIdx}_tee"] = division["tee"]
+        flight_info[f"division_{dIdx}_color1"] = division["color1"]
+        flight_info[f"division_{dIdx}_color2"] = division["color2"]
+
     return flight_info
 
 if __name__ == "__main__":
