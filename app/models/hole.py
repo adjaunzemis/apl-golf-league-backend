@@ -4,8 +4,8 @@ from sqlmodel import SQLModel, Field, Relationship
 class HoleBase(SQLModel):
     number: int
     par: int
-    yardage: int
-    stroke_index: int
+    yardage: Optional[int] = None
+    stroke_index: Optional[int] = None
     tee_id: Optional[int] = Field(default=None, foreign_key="tee.id")
 
 class Hole(HoleBase, table=True):

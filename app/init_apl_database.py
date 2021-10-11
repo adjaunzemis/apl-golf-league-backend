@@ -43,7 +43,7 @@ def add_courses(session: Session, courses_file: str):
             print(f"\tAdding new course: {row['course_name']}")
             course_db = Course(
                 name=row["course_name"],
-                location=row["address"] if pd.notna(row["address"]) else None,
+                address=row["address"] if pd.notna(row["address"]) else None,
                 phone=row["phone"] if pd.notna(row["phone"]) else None,
                 website=row["website"] if pd.notna(row["website"]) else None
             )
@@ -77,11 +77,11 @@ def add_courses(session: Session, courses_file: str):
         for holeNum in range(1, 10):
             par = int(row['par' + str(holeNum)])
 
-            hcp = 0 # TODO: make optional?
+            hcp = None
             if pd.notna(row['hcp' + str(holeNum)]):
                 hcp = int(row['hcp' + str(holeNum)])
 
-            yds = 0 # TODO: make optional?
+            yds = None
             if pd.notna(row['yd' + str(holeNum)]):
                 yds = int(row['yd' + str(holeNum)])
 
