@@ -22,6 +22,8 @@ from models.course import Course
 from models.track import Track
 from models.tee import Tee
 from models.hole import Hole
+from models.flight import Flight
+from models.division import Division
 
 def add_courses(session: Session, courses_file: str):
     """
@@ -52,13 +54,18 @@ def add_courses(session: Session, courses_file: str):
         else:
             course_db = course_db[0]
 
-        # Add track to database
-        track_db = Track(
-            course_id=course_db.id,
-            name=row["track_name"]
-        )
-        session.add(track_db)
-        session.commit()
+        # Add track to database (if not already added)
+        track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == row["track_name"])).all()
+        if not track_db:
+            print(f"\tAdding new track: {row['track_name']}")
+            track_db = Track(
+                course_id=course_db.id,
+                name=row["track_name"]
+            )
+            session.add(track_db)
+            session.commit()
+        else:
+            track_db = track_db[0]
 
         # Add tee to database
         tee_db = Tee(
@@ -95,6 +102,52 @@ def add_courses(session: Session, courses_file: str):
             session.add(hole_db)
         session.commit()
 
+def add_flights(session: Session, flights_file: str, courses_file: str):
+    """
+    Adds flight-related data in database.
+    
+    Populates the following tables: flight, division
+
+    """
+    print(f"Adding flight data from file: {flights_file}")
+
+    year = flights_file.split(".")[0][-4:]
+
+    # Read data spreadsheets
+    df_flights = pd.read_csv(flights_file)
+    df_courses = pd.read_csv(courses_file)
+
+    # For each flight entry:
+    for idx, row in df_flights.iterrows():
+        course_db = session.exec(select(Course).where(Course.name == row["course"])).all()
+        if not course_db:
+            print(f"\tERROR: Cannot match course in database: {row['course']}")
+        else:
+            course_db = course_db[0]
+
+            # TODO: Add secretary and other details
+            flight_db = Flight(
+                name=row["name"],
+                year=year,
+                home_course_id=course_db.id
+            )
+            session.add(flight_db)
+            session.commit()
+
+            track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).all()
+            if not track_db:
+                print(f"\tERROR: Cannot find track in database")
+            else:
+                track_db = track_db[0]
+
+                for divNum in range(1,4):
+                    division_db = Division(
+                        flight_id=flight_db.id,
+                        name=row[f"division_{divNum}_name"],
+                        gender="F" if row[f"division_{divNum}_name"].lower() == "forward" else "M",
+                        home_tee_id=1 # TODO: get actual tee_id for division
+                    )
+
 if __name__ == "__main__":
     DATA_DIR = "data/"
     DATA_YEAR = 2021
@@ -114,6 +167,10 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)  
 
     with Session(engine) as session:
-        add_courses(session, f"{DATA_DIR}/courses_{DATA_YEAR}.csv")
+        courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
+        add_courses(session, courses_file)
+
+        flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
+        add_flights(session, flights_file, courses_file)
 
     print("Database initialized!")
