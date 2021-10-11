@@ -135,6 +135,7 @@ dmypy.json
 data/
 database.db
 dev.db
+apl.db
 
 # Configuration files
 config/
