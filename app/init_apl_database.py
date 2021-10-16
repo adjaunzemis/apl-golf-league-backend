@@ -62,7 +62,7 @@ def add_courses(session: Session, courses_file: str):
         # Add track to database (if not already added)
         track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == row["track_name"])).all()
         if not track_db:
-            print(f"\tAdding track: {row['track_name']}")
+            print(f"Adding track: {row['track_name']}")
             track_db = Track(
                 course_id=course_db.id,
                 name=row["track_name"]
@@ -126,13 +126,13 @@ def add_flights(session: Session, flights_file: str):
         if row['abbreviation'].lower() == "playoffs":
             print(f"Skipping flight: {row['name']}")
             continue
-        
+
         print(f"Adding flight: {row['name']}")
 
         # Find home course
         course_db = session.exec(select(Course).where(Course.name == row["course"])).all()
         if not course_db:
-            print(f"\tERROR: Cannot match home course in database: {row['course']}")
+            raise ValueError(f"Cannot match home course in database: {row['course']}")
         else:
             course_db = course_db[0]
 
@@ -149,20 +149,20 @@ def add_flights(session: Session, flights_file: str):
             # Find home track
             track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).all()
             if not track_db:
-                print(f"\tERROR: Cannot match home flight in database: Front")
+                raise ValueError(f"Cannot match home flight in database: Front")
             else:
                 track_db = track_db[0]
 
                 # For each division in this flight:
                 for div_num in [1, 2, 3]:
                     division_name = row[f"division_{div_num}_name"].capitalize()
-                    print(f"\tAdding division: {division_name}")
+                    print(f"Adding division: {division_name}")
 
                     # Find home tees
                     tee_gender = "F" if division_name.lower() == "forward" else "M"
                     tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_name).where(Tee.gender == tee_gender)).all()
                     if not tee_db:
-                        print(f"\tERROR: Cannot match home tee in database: {row[f'division_{div_num}_tee']}")
+                        raise ValueError(f"Cannot match home tee in database: {row[f'division_{div_num}_tee']}")
                     else:
                         tee_db = tee_db[0]
 
@@ -178,10 +178,10 @@ def add_flights(session: Session, flights_file: str):
 
                     # Add super senior division (same tees as forward division with 'M' gender)
                     if division_name.lower() == "forward":
-                        print(f"\tAdding division: SuperSenior")
+                        print(f"Adding division: SuperSenior")
                         tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == "Super-Senior").where(Tee.gender == "M")).all()
                         if not tee_db:
-                            print(f"\tERROR: Cannot match home tee in database: Super-Senior")
+                            raise ValueError(f"Cannot match home tee in database: Super-Senior")
                         else:
                             tee_db = tee_db[0]
 
@@ -208,7 +208,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
     flight_abbreviation = roster_file.split("_")[-1][0:-4].upper()
 
     if flight_abbreviation.lower() == "playoffs":
-        print("\tSkipping playoffs roster data")
+        print("Skipping playoffs roster data")
         return
 
     # Read flights data spreadsheet
@@ -231,7 +231,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         # Find golfer
         golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).all()
         if not golfer_db:
-            print(f"\tAdding golfer: {row['name']}")
+            print(f"Adding golfer: {row['name']}")
 
             # Add golfer to database
             # TODO: Add contact info
@@ -250,7 +250,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         team_name = f"{flight_abbreviation}-{row['team']}"
         team_db = session.exec(select(Team).where(Team.name == team_name)).all()
         if not team_db:
-            print(f"\tAdding team: {team_name}")
+            print(f"Adding team: {team_name}")
             is_captain = True
             
             # Add team to database
