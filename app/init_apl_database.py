@@ -24,6 +24,9 @@ from models.tee import Tee
 from models.hole import Hole
 from models.flight import Flight
 from models.division import Division
+from models.golfer import Golfer
+from models.team import Team
+from models.player import Player
 
 def add_courses(session: Session, courses_file: str):
     """
@@ -36,6 +39,8 @@ def add_courses(session: Session, courses_file: str):
 
     # Read course data spreadsheet
     df = pd.read_csv(courses_file)
+    
+    year = int(courses_file.split(".")[0][-4:]) # TODO: Add year to course info
 
     # For each course entry:
     for idx, row in df.iterrows():
@@ -102,7 +107,7 @@ def add_courses(session: Session, courses_file: str):
             session.add(hole_db)
         session.commit()
 
-def add_flights(session: Session, flights_file: str, courses_file: str):
+def add_flights(session: Session, flights_file: str):
     """
     Adds flight-related data in database.
     
@@ -111,13 +116,17 @@ def add_flights(session: Session, flights_file: str, courses_file: str):
     """
     print(f"Adding flight data from file: {flights_file}")
 
-    year = flights_file.split(".")[0][-4:]
+    year = int(flights_file.split(".")[0][-4:])
 
     # Read flight data spreadsheet
     df_flights = pd.read_csv(flights_file)
 
     # For each flight:
     for idx, row in df_flights.iterrows():
+        if row['abbreviation'].lower() == "playoffs":
+            print(f"Skipping flight: {row['name']}")
+            continue
+        
         print(f"Adding flight: {row['name']}")
 
         # Find home course
@@ -150,7 +159,8 @@ def add_flights(session: Session, flights_file: str, courses_file: str):
                     print(f"\tAdding division: {division_name}")
 
                     # Find home tees
-                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == row[f"division_{div_num}_name"].capitalize())).all()
+                    tee_gender = "F" if division_name.lower() == "forward" else "M"
+                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_name).where(Tee.gender == tee_gender)).all()
                     if not tee_db:
                         print(f"\tERROR: Cannot match home tee in database: {row[f'division_{div_num}_tee']}")
                     else:
@@ -160,11 +170,115 @@ def add_flights(session: Session, flights_file: str, courses_file: str):
                         division_db = Division(
                             flight_id=flight_db.id,
                             name=division_name,
-                            gender="F" if division_name.lower() == "forward" else "M",
+                            gender=tee_gender,
                             home_tee_id=tee_db.id
                         )
                         session.add(division_db)
                         session.commit()
+
+                    # Add super senior division (same tees as forward division with 'M' gender)
+                    if division_name.lower() == "forward":
+                        print(f"\tAdding division: SuperSenior")
+                        tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == "Super-Senior").where(Tee.gender == "M")).all()
+                        if not tee_db:
+                            print(f"\tERROR: Cannot match home tee in database: Super-Senior")
+                        else:
+                            tee_db = tee_db[0]
+
+                            # Add division to database
+                            division_db = Division(
+                                flight_id=flight_db.id,
+                                name="SuperSenior",
+                                gender="M",
+                                home_tee_id=tee_db.id
+                            )
+                            session.add(division_db)
+                            session.commit()
+
+def add_teams(session: Session, roster_file: str, flights_file: str):
+    """
+    Adds team-related data in database.
+    
+    Populates the following tables: team, golfer, player
+
+    """
+    print(f"Adding team data from file: {roster_file}")
+
+    year = int(roster_file.split("_")[-2])
+    flight_abbreviation = roster_file.split("_")[-1][0:-4].upper()
+
+    if flight_abbreviation.lower() == "playoffs":
+        print("\tSkipping playoffs roster data")
+        return
+
+    # Read flights data spreadsheet
+    df_flights = pd.read_csv(flights_file)
+
+    # Find flight
+    flight_name = df_flights.loc[df_flights['abbreviation'] == flight_abbreviation.lower()].iloc[0]['name']
+    flight_db = session.exec(select(Flight).where(Flight.name == flight_name).where(Flight.year == year)).all()
+    if not flight_db:
+        raise ValueError(f"Unable to find flight '{flight_name}-{year}' in database")
+    flight_db = flight_db[0]
+
+    # Read roster data spreadsheet
+    df_roster = pd.read_csv(roster_file)
+
+    # For each roster entry:
+    for idx, row in df_roster.iterrows():
+        print(f"Adding player: {row['name']}")
+        
+        # Find golfer
+        golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).all()
+        if not golfer_db:
+            print(f"\tAdding golfer: {row['name']}")
+
+            # Add golfer to database
+            # TODO: Add contact info
+            affiliation = "APL_RETIREE" if row['affiliation'].lower() == "retiree" else "APL_FAMILY" if row['affiliation'].lower() == "apl_family_member" else row['affiliation'].upper()
+            golfer_db = Golfer(
+                name=row['name'],
+                affiliation=affiliation
+            )
+            session.add(golfer_db)
+            session.commit()
+        else:
+            golfer_db = golfer_db[0]
+
+        # Find team
+        is_captain = False
+        team_name = f"{flight_abbreviation}-{row['team']}"
+        team_db = session.exec(select(Team).where(Team.name == team_name)).all()
+        if not team_db:
+            print(f"\tAdding team: {team_name}")
+            is_captain = True
+            
+            # Add team to database
+            team_db = Team(
+                name=team_name,
+                flight_id=flight_db.id
+            )
+            
+            session.add(team_db)
+            session.commit()
+        else:
+            team_db = team_db[0]
+
+        # Find division
+        division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == row['division'])).all()
+        if not division_db:
+            raise ValueError(f"Unable to find division '{row['division']}' in database")
+        division_db = division_db[0]
+        
+        # Add player to database
+        player_db = Player(
+            team_id = team_db.id,
+            golfer_id=golfer_db.id,
+            division_id=division_db.id,
+            role="CAPTAIN" if is_captain else "PLAYER"
+        )
+        session.add(player_db)
+        session.commit()
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
@@ -189,6 +303,10 @@ if __name__ == "__main__":
         add_courses(session, courses_file)
 
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
-        add_flights(session, flights_file, courses_file)
+        add_flights(session, flights_file)
+
+        roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
+        for roster_file in roster_files:
+            add_teams(session, roster_file, flights_file)
 
     print("Database initialized!")
