@@ -42,7 +42,7 @@ def add_courses(session: Session, courses_file: str):
         # Add course to database (if not already added)
         course_db = session.exec(select(Course).where(Course.name == row["course_name"])).all()
         if not course_db:
-            print(f"\tAdding new course: {row['course_name']}")
+            print(f"Adding course: {row['course_name']}")
             course_db = Course(
                 name=row["course_name"],
                 address=row["address"] if pd.notna(row["address"]) else None,
@@ -57,7 +57,7 @@ def add_courses(session: Session, courses_file: str):
         # Add track to database (if not already added)
         track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == row["track_name"])).all()
         if not track_db:
-            print(f"\tAdding new track: {row['track_name']}")
+            print(f"\tAdding track: {row['track_name']}")
             track_db = Track(
                 course_id=course_db.id,
                 name=row["track_name"]
@@ -113,18 +113,21 @@ def add_flights(session: Session, flights_file: str, courses_file: str):
 
     year = flights_file.split(".")[0][-4:]
 
-    # Read data spreadsheets
+    # Read flight data spreadsheet
     df_flights = pd.read_csv(flights_file)
-    df_courses = pd.read_csv(courses_file)
 
-    # For each flight entry:
+    # For each flight:
     for idx, row in df_flights.iterrows():
+        print(f"Adding flight: {row['name']}")
+
+        # Find home course
         course_db = session.exec(select(Course).where(Course.name == row["course"])).all()
         if not course_db:
-            print(f"\tERROR: Cannot match course in database: {row['course']}")
+            print(f"\tERROR: Cannot match home course in database: {row['course']}")
         else:
             course_db = course_db[0]
 
+            # Add flight to database
             # TODO: Add secretary and other details
             flight_db = Flight(
                 name=row["name"],
@@ -134,19 +137,34 @@ def add_flights(session: Session, flights_file: str, courses_file: str):
             session.add(flight_db)
             session.commit()
 
+            # Find home track
             track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).all()
             if not track_db:
-                print(f"\tERROR: Cannot find track in database")
+                print(f"\tERROR: Cannot match home flight in database: Front")
             else:
                 track_db = track_db[0]
 
-                for divNum in range(1,4):
-                    division_db = Division(
-                        flight_id=flight_db.id,
-                        name=row[f"division_{divNum}_name"],
-                        gender="F" if row[f"division_{divNum}_name"].lower() == "forward" else "M",
-                        home_tee_id=1 # TODO: get actual tee_id for division
-                    )
+                # For each division in this flight:
+                for div_num in [1, 2, 3]:
+                    division_name = row[f"division_{div_num}_name"].capitalize()
+                    print(f"\tAdding division: {division_name}")
+
+                    # Find home tees
+                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == row[f"division_{div_num}_name"].capitalize())).all()
+                    if not tee_db:
+                        print(f"\tERROR: Cannot match home tee in database: {row[f'division_{div_num}_tee']}")
+                    else:
+                        tee_db = tee_db[0]
+
+                        # Add division to database
+                        division_db = Division(
+                            flight_id=flight_db.id,
+                            name=division_name,
+                            gender="F" if division_name.lower() == "forward" else "M",
+                            home_tee_id=tee_db.id
+                        )
+                        session.add(division_db)
+                        session.commit()
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
