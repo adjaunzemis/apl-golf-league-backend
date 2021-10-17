@@ -21,6 +21,10 @@ class Tee(TeeBase, table=True):
     track: Optional["Track"] = Relationship(back_populates="tees")
     holes: List[Hole] = Relationship(back_populates="tee")
 
+    @property
+    def par(self) -> int:
+        return sum(hole.par for hole in self.holes)
+
 class TeeCreate(TeeBase):
     pass
 
