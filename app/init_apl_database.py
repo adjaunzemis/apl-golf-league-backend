@@ -222,7 +222,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
     flight_name = df_flights.loc[df_flights['abbreviation'] == flight_abbreviation.lower()].iloc[0]['name']
     flight_db = session.exec(select(Flight).where(Flight.name == flight_name).where(Flight.year == year)).all()
     if not flight_db:
-        raise ValueError(f"Unable to find flight '{flight_name}-{year}' in database")
+        raise ValueError(f"Unable to find flight '{flight_name}-{year}'")
     flight_db = flight_db[0]
 
     # Read roster data spreadsheet
@@ -271,7 +271,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         # Find division
         division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == row['division'])).all()
         if not division_db:
-            raise ValueError(f"Unable to find division '{row['division']}' in database")
+            raise ValueError(f"Unable to find division '{row['division']}'")
         division_db = division_db[0]
         
         # Add player to database
@@ -306,7 +306,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
     flight_name = df_flights.loc[df_flights['abbreviation'] == flight_abbreviation.lower()].iloc[0]['name']
     flight_db = session.exec(select(Flight).where(Flight.name == flight_name).where(Flight.year == year)).all()
     if not flight_db:
-        raise ValueError(f"Unable to find flight '{flight_name}-{year}' in database")
+        raise ValueError(f"Unable to find flight '{flight_name}-{year}'")
     flight_db = flight_db[0]
 
     # Read courses data spreadsheet
@@ -323,18 +323,18 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
         course_name = df_courses.loc[df_courses['abbreviation'] == row['course_abbreviation']].iloc[0]['course_name']
         course_db = session.exec(select(Course).where(Course.name == course_name)).all()
         if not course_db:
-            raise ValueError(f"Unable to find course '{course_name}' ({row['course_abbreviation']}) in database")
+            raise ValueError(f"Unable to find course '{course_name}' ({row['course_abbreviation']})")
         course_db = course_db[0]
 
         # Find match teams
         home_team_db = session.exec(select(Team).where(Team.flight_id == flight_db.id).where(Team.name == f"{flight_abbreviation.upper()}-{row['team_1']}")).all()
         if not home_team_db:
-            raise ValueError(f"Unable to find home team in database")
+            raise ValueError(f"Unable to find home team")
         home_team_db = home_team_db[0]
 
         away_team_db = session.exec(select(Team).where(Team.flight_id == flight_db.id).where(Team.name == f"{flight_abbreviation.upper()}-{row['team_2']}")).all()
         if not away_team_db:
-            raise ValueError(f"Unable to find away team in database")
+            raise ValueError(f"Unable to find away team")
         away_team_db = away_team_db[0]
 
         # Add match
@@ -348,25 +348,91 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 home_score=row['team_1_score'],
                 away_score=row['team_2_score']
             )
+            session.add(match_db)
+            session.commit()
         else:
-            print(f"Match already exists in database")
+            print(f"Match already exists")
             match_db = match_db[0]
-
-        session.add(match_db)
-        session.commit()
 
         # For each round:
         for pNum in [1, 2, 3, 4]:
+            if pNum < 3:
+                team_db = home_team_db
+            else:
+                team_db = away_team_db
+                
             # Find golfer
-            golfer_db = session.exec(select(Golfer).where(Golfer.name == row[f"p{pNum}_name"])).all()
+            golfer_name = row[f"p{pNum}_name"]
+            if golfer_name[-6:] == " (sub)":
+                golfer_name = golfer_name[:-6]
+            golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer_name)).all()
             if not golfer_db:
-                raise ValueError(f"Unable to find golfer '{row[f'p{pNum}_name']}' in database")
+                raise ValueError(f"Unable to find golfer '{golfer_name}'")
             golfer_db = golfer_db[0]
 
-            # Process round date
-            date_played = datetime.strptime(row[f'p{pNum}_date_played'])
-            print(date_played)
-            print(STOP)
+            # Find player
+            player_db = session.exec(select(Player).where(Player.team_id == team_db.id).where(Player.golfer_id == golfer_db.id)).all()
+            if not player_db:
+                # Find other player entries for golfer
+                players_db = session.exec(select(Player).where(Player.golfer_id == golfer_db.id)).all()
+                if not players_db:
+                    raise ValueError(f"Unable to find any player entries for golfer '{golfer_db.name}'")
+
+                # Add player as substitute
+                print(f"Adding substitute '{golfer_db.name}' to team '{team_db.name}'")
+                player_db = Player(
+                    team_id = team_db.id,
+                    golfer_id=golfer_db.id,
+                    division_id=division_db.id, # TODO: Fix substitute division assignment
+                    role="SUBSTITUTE"
+                )
+                session.add(player_db)
+                session.commit()
+            else:
+                player_db = player_db[0]
+
+            # Find division
+            division_db = session.exec(select(Division).where(Division.id == player_db.division_id)).one()
+            if not division_db:
+                raise ValueError(f"Unable to find division with id '{player_db.division_id}'")
+
+            # Find division home tee
+            home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.home_tee_id)).one()
+            if not home_tee_db:
+                raise ValueError(f"Unable to find home tee with id '{division_db.home_tee_id}'")
+
+            # Find division home track
+            home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
+            if not home_track_db:
+                raise ValueError(f"Unable to find home track with id '{home_tee_db.track_id}' for home tee '{home_tee_db.name}'")
+
+            # Find round tee
+            if (flight_db.home_course_id == course_db.id) and (home_track_db.name[0].upper() == row['course_abbreviation'][-1].upper()):
+                # Round played at home course
+                tee_db = home_tee_db
+            else:
+                print(f"Match played at non-home course: {row['course_abbreviation']}")
+
+                # Find tracks for round course
+                tracks_db = session.exec(select(Track).where(Track.course_id == course_db.id)).all()
+                if not tracks_db:
+                    raise ValueError(f"Unable to find tracks for course '{course_db.name}'")
+
+                # Find track based on match course abbreviation
+                track_db = None
+                for tIdx in range(len(tracks_db)):
+                    if tracks_db[tIdx].name[0] == row['course_abbreviation'][-1]:
+                        track_db = tracks_db[tIdx]
+                if not track_db:
+                    raise ValueError(f"Unable to find track for course '{course_db.name}' matching abbreviation '{row['course_abbreviation']}'")
+
+                # Find found tee
+                tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == home_tee_db.name)).one()
+                if not tee_db:
+                    raise ValueError(f"Unable to find tee '{home_tee_db.name}' for track '{track_db.name}' for course '{course_db.name}'")
+
+            # Parse round date played
+            date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
 
             # Add round
             round_db = session.exec(select(Round).where(Round.golfer_id == golfer_db.id).where(Round.date_played == date_played)).all()
@@ -375,24 +441,24 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     tee_id=tee_db.id,
                     golfer_id=golfer_db.id,
                     date_played=date_played,
-                    handicap_index=row[f"p{pNum}_handicap"]
+                    handicap_index=row[f"p{pNum}_handicap"],
+                    # playing_handicap=
                 )
+                # session.add(round_db)
+                # session.commit()
             else:
-                print(f"Round already exists in database")
-                round_db = round_db[0]
-            
-        print(STOP)
-
+                print(f"Round already exists for player {pNum}")
 
 if __name__ == "__main__":
+    DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
     DATA_YEAR = 2021
 
     DATABASE_FILE = "apl.db"
 
-    # if os.path.isfile(DATABASE_FILE):
-    #     print(f"Removing existing database: {DATABASE_FILE}")
-    #     os.remove(DATABASE_FILE)
+    if DELETE_EXISTING_DATABASE and os.path.isfile(DATABASE_FILE):
+        print(f"Deleting existing database: {DATABASE_FILE}")
+        os.remove(DATABASE_FILE)
     
     print(f"Initializing database: {DATABASE_FILE}")
     engine = create_engine(
@@ -413,8 +479,10 @@ if __name__ == "__main__":
         # for roster_file in roster_files:
         #     add_teams(session, roster_file, flights_file)
 
-        scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
-        for scores_file in scores_files:
-            add_matches(session, scores_file, flights_file, courses_file)
+        # scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
+        # for scores_file in scores_files:
+        #     add_matches(session, scores_file, flights_file, courses_file)
+        add_matches(session, f"{DATA_DIR}/scores_2021_rw.csv", flights_file, courses_file)
+
 
     print("Database initialized!")
