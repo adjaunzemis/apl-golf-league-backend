@@ -133,10 +133,16 @@ def add_flights(session: Session, flights_file: str):
 
         print(f"Adding flight: {row['name']}")
 
+        # Handle misnamed home courses in flight info
+        course_name = row['course']
+        if course_name == "Northwest Park Course":
+            course_name = "Northwest Golf Course"
+            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+        
         # Find home course
-        course_db = session.exec(select(Course).where(Course.name == row["course"])).all()
+        course_db = session.exec(select(Course).where(Course.name == course_name)).all()
         if not course_db:
-            raise ValueError(f"Cannot match home course in database: {row['course']}")
+            raise ValueError(f"Cannot match home course in database: {course_name}")
         else:
             course_db = course_db[0]
 
