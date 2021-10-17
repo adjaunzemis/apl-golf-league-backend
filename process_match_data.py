@@ -7,6 +7,7 @@ Andris Jaunzemis
 
 """
 
+import os
 import re
 from datetime import datetime
 
@@ -82,23 +83,31 @@ def match_data_to_dict(match_data):
     return match_dict
 
 if __name__ == "__main__":
-    DATA_YEAR = 2019
-    SCORE_DATA_FILES = ["scores.dr.data", "scores.fh.data", "scores.nwp.data", "scores.rw.data", "scores.tat.data", "scores.playoffs.data"]
+    data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
+    for data_dir in data_dirs:
+        data_year = 2000 + int(data_dir[-2:])
 
-    for score_data_file in SCORE_DATA_FILES:
-        print("Processing {:d} score data file: {:s}".format(DATA_YEAR, score_data_file))
+        scores_files = [f for f in os.listdir(f"data/{data_dir}") if f[0:7] == "scores."]
 
-        match_data_list = parse_match_data_from_file("data/{:s}".format(score_data_file))
+        for scores_file in scores_files:
+            print(f"Processing {data_year} scores file: {scores_file}")
 
-        match_dict_list = []
-        for match_data in match_data_list:
-            match_dict_list.append(match_data_to_dict(match_data))
+            scores_flight = scores_file.split(".")[1]
 
-        csv_data = ",".join([str(k) for k,v in match_dict_list[0].items()])
-        for match_dict in match_dict_list:
-            csv_data += "\n" + ",".join([str(v) for k,v in match_dict.items()])
+            match_data_list = parse_match_data_from_file(f"data/{data_dir}/{scores_file}")
+            
+            if not match_data_list:
+                print(f"No match data found, skipping flight: {scores_flight}")
+            else:
+                match_dict_list = []
+                for match_data in match_data_list:
+                    match_dict_list.append(match_data_to_dict(match_data))
 
-        outputFile = "data/scores_{:s}_{:d}.csv".format(score_data_file.split(".")[1], DATA_YEAR)
-        with open(outputFile, "w") as fp:
-            fp.write(csv_data)
+                csv_data = ",".join([str(k) for k,v in match_dict_list[0].items()])
+                for match_dict in match_dict_list:
+                    csv_data += "\n" + ",".join([str(v) for k,v in match_dict.items()])
+
+                outputFile = f"data/scores_{data_year}_{scores_flight}.csv"
+                with open(outputFile, "w") as fp:
+                    fp.write(csv_data)
         
