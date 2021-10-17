@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import create_db_and_tables
 from .routers import courses, golfers, rounds, flights
@@ -15,6 +16,14 @@ app = FastAPI(
         "name": "Andris Jaunzemis",
         "email": "adjaunzemis@gmail.com",
     }
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost", "http://localhost:4200"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(courses.router)
