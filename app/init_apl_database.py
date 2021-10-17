@@ -488,18 +488,38 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                         index=row[f"p{pNum}_handicap"]
                     )
                 )
-                # session.add(round_db)
-                # session.commit()
+                session.add(round_db)
+                session.commit()
+            else:
+                round_db = round_db[0]
 
-                # Add match-round-link
+            # Add match-round-link
+            link_db = session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_db.id).where(MatchRoundLink.round_id == round_db.id)).all()
+            if not link_db:
+                print(f"Adding match-round link: match_id = {match_db.id}, round_id = {round_db.id}")
                 link_db = MatchRoundLink(
                     match_id=match_db.id,
                     round_id=round_db.id
                 )
-                # session.add(link_db)
-                # session.commit()
+                session.add(link_db)
+                session.commit()
 
-                # TODO: Add round hole results
+            # Add round hole results
+            hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
+
+            for hole_db in tee_db.holes:
+                if hole_db.id not in [h.hole_id for h in hole_results_db]:
+                    print(f"Adding hole #{hole_db.number} result")
+                    hNum = hole_db.number
+                    if hNum > 9:
+                        hNum -= 9
+                    hole_result_db = HoleResult(
+                        round_id=round_db.id,
+                        hole_id=hole_db.id,
+                        strokes=row[f"p{pNum}_h{hNum}_score"]
+                    )
+                    session.add(hole_result_db)
+                    session.commit()
 
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
