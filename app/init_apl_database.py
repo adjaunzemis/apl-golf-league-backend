@@ -211,8 +211,35 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
     year = int(roster_file.split("_")[-2])
     flight_abbreviation = roster_file.split("_")[-1][0:-4].upper()
 
+    # Read roster data spreadsheet
+    df_roster = pd.read_csv(roster_file)
+
+    # Skip playoffs roster
     if flight_abbreviation.lower() == "playoffs":
-        print("Skipping playoffs roster data")
+        print("Skipping playoffs roster")
+        return
+
+    # Only process golfer data for subs roster
+    if flight_abbreviation.lower() == "subs":
+        print("Only processing golfer data for subs roster")
+        
+        # For each roster entry:
+        for idx, row in df_roster.iterrows():
+            # Find golfer
+            golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).all()
+            if not golfer_db:
+                print(f"Adding golfer: {row['name']}")
+
+                # Add golfer to database
+                # TODO: Add contact info
+                affiliation = "APL_RETIREE" if row['affiliation'].lower() == "retiree" else "APL_FAMILY" if row['affiliation'].lower() == "apl_family_member" else row['affiliation'].upper()
+                golfer_db = Golfer(
+                    name=row['name'],
+                    affiliation=affiliation
+                )
+                session.add(golfer_db)
+                session.commit()
+
         return
 
     # Read flights data spreadsheet
@@ -225,12 +252,9 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         raise ValueError(f"Unable to find flight '{flight_name}-{year}'")
     flight_db = flight_db[0]
 
-    # Read roster data spreadsheet
-    df_roster = pd.read_csv(roster_file)
-
     # For each roster entry:
     for idx, row in df_roster.iterrows():
-        print(f"Adding player: {row['name']}")
+        print(f"Processing player: {row['name']}")
         
         # Find golfer
         golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).all()
@@ -475,7 +499,7 @@ if __name__ == "__main__":
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
         # add_flights(session, flights_file)
 
-        roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
+        # roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
         # for roster_file in roster_files:
         #     add_teams(session, roster_file, flights_file)
 
