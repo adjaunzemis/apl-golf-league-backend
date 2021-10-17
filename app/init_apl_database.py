@@ -31,6 +31,7 @@ from models.match import Match
 from models.round import Round
 from models.hole_result import HoleResult
 from models.match_round_link import MatchRoundLink
+from usga_handicap import compute_course_handicap
 
 def add_courses(session: Session, courses_file: str):
     """
@@ -452,7 +453,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
             else:
                 print(f"Match played at non-home course: {row['course_abbreviation']}")
 
-                # Find tracks for round course
+                # Find round track
                 tracks_db = session.exec(select(Track).where(Track.course_id == course_db.id)).all()
                 if not tracks_db:
                     raise ValueError(f"Unable to find tracks for course '{course_db.name}'")
@@ -480,18 +481,25 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     golfer_id=golfer_db.id,
                     date_played=date_played,
                     handicap_index=row[f"p{pNum}_handicap"],
-                    # playing_handicap=
+                    playing_handicap=compute_course_handicap(
+                        par=tee_db.par,
+                        rating=tee_db.rating,
+                        slope=tee_db.slope,
+                        index=row[f"p{pNum}_handicap"]
+                    )
                 )
                 # session.add(round_db)
                 # session.commit()
 
                 # Add match-round-link
-                # link_db = MatchRoundLink(
-                #     match_id=match_db.id,
-                #     round_id=round_db.id
-                # )
+                link_db = MatchRoundLink(
+                    match_id=match_db.id,
+                    round_id=round_db.id
+                )
                 # session.add(link_db)
                 # session.commit()
+
+                # TODO: Add round hole results
 
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
