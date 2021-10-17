@@ -15,7 +15,7 @@ Andris Jaunzemis
 
 import os
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from models.course import Course
@@ -27,6 +27,10 @@ from models.division import Division
 from models.golfer import Golfer
 from models.team import Team
 from models.player import Player
+from models.match import Match
+from models.round import Round
+from models.hole_result import HoleResult
+from models.match_round_link import MatchRoundLink
 
 def add_courses(session: Session, courses_file: str):
     """
@@ -280,15 +284,115 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         session.add(player_db)
         session.commit()
 
+def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str):
+    """
+    Adds match-related data in database.
+    
+    Populates the following tables: match, round, holeresult, matchroundlink
+    """
+    print(f"Adding match data from file: {scores_file}")
+
+    year = int(scores_file.split("_")[-2])
+    flight_abbreviation = scores_file.split("_")[-1][0:-4].upper()
+
+    if flight_abbreviation.lower() == "playoffs":
+        print("Skipping playoffs score data")
+        return
+
+    # Read flights data spreadsheet
+    df_flights = pd.read_csv(flights_file)
+
+    # Find flight
+    flight_name = df_flights.loc[df_flights['abbreviation'] == flight_abbreviation.lower()].iloc[0]['name']
+    flight_db = session.exec(select(Flight).where(Flight.name == flight_name).where(Flight.year == year)).all()
+    if not flight_db:
+        raise ValueError(f"Unable to find flight '{flight_name}-{year}' in database")
+    flight_db = flight_db[0]
+
+    # Read courses data spreadsheet
+    df_courses = pd.read_csv(courses_file)
+
+    # Read scores data spreadsheet
+    df_scores = pd.read_csv(scores_file)
+
+    # For each scores entry:
+    for idx, row in df_scores.iterrows():
+        print(f"Adding match: {flight_abbreviation}-{year} week {row['week']} {row['team_1']}v{row['team_2']}")
+
+        # Find match course
+        course_name = df_courses.loc[df_courses['abbreviation'] == row['course_abbreviation']].iloc[0]['course_name']
+        course_db = session.exec(select(Course).where(Course.name == course_name)).all()
+        if not course_db:
+            raise ValueError(f"Unable to find course '{course_name}' ({row['course_abbreviation']}) in database")
+        course_db = course_db[0]
+
+        # Find match teams
+        home_team_db = session.exec(select(Team).where(Team.flight_id == flight_db.id).where(Team.name == f"{flight_abbreviation.upper()}-{row['team_1']}")).all()
+        if not home_team_db:
+            raise ValueError(f"Unable to find home team in database")
+        home_team_db = home_team_db[0]
+
+        away_team_db = session.exec(select(Team).where(Team.flight_id == flight_db.id).where(Team.name == f"{flight_abbreviation.upper()}-{row['team_2']}")).all()
+        if not away_team_db:
+            raise ValueError(f"Unable to find away team in database")
+        away_team_db = away_team_db[0]
+
+        # Add match
+        match_db = session.exec(select(Match).where(Match.flight_id == flight_db.id).where(Match.week == row['week']).where(Match.home_team_id == home_team_db.id).where(Match.away_team_id == away_team_db.id)).all()
+        if not match_db:
+            match_db = Match(
+                flight_id=flight_db.id,
+                week=row['week'],
+                home_team_id=home_team_db.id,
+                away_team_id=away_team_db.id,
+                home_score=row['team_1_score'],
+                away_score=row['team_2_score']
+            )
+        else:
+            print(f"Match already exists in database")
+            match_db = match_db[0]
+
+        session.add(match_db)
+        session.commit()
+
+        # For each round:
+        for pNum in [1, 2, 3, 4]:
+            # Find golfer
+            golfer_db = session.exec(select(Golfer).where(Golfer.name == row[f"p{pNum}_name"])).all()
+            if not golfer_db:
+                raise ValueError(f"Unable to find golfer '{row[f'p{pNum}_name']}' in database")
+            golfer_db = golfer_db[0]
+
+            # Process round date
+            date_played = datetime.strptime(row[f'p{pNum}_date_played'])
+            print(date_played)
+            print(STOP)
+
+            # Add round
+            round_db = session.exec(select(Round).where(Round.golfer_id == golfer_db.id).where(Round.date_played == date_played)).all()
+            if not round_db:
+                round_db = Round(
+                    tee_id=tee_db.id,
+                    golfer_id=golfer_db.id,
+                    date_played=date_played,
+                    handicap_index=row[f"p{pNum}_handicap"]
+                )
+            else:
+                print(f"Round already exists in database")
+                round_db = round_db[0]
+            
+        print(STOP)
+
+
 if __name__ == "__main__":
     DATA_DIR = "data/"
     DATA_YEAR = 2021
 
     DATABASE_FILE = "apl.db"
 
-    if os.path.isfile(DATABASE_FILE):
-        print(f"Removing existing database: {DATABASE_FILE}")
-        os.remove(DATABASE_FILE)
+    # if os.path.isfile(DATABASE_FILE):
+    #     print(f"Removing existing database: {DATABASE_FILE}")
+    #     os.remove(DATABASE_FILE)
     
     print(f"Initializing database: {DATABASE_FILE}")
     engine = create_engine(
@@ -300,13 +404,17 @@ if __name__ == "__main__":
 
     with Session(engine) as session:
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
-        add_courses(session, courses_file)
+        # add_courses(session, courses_file)
 
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
-        add_flights(session, flights_file)
+        # add_flights(session, flights_file)
 
         roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
-        for roster_file in roster_files:
-            add_teams(session, roster_file, flights_file)
+        # for roster_file in roster_files:
+        #     add_teams(session, roster_file, flights_file)
+
+        scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
+        for scores_file in scores_files:
+            add_matches(session, scores_file, flights_file, courses_file)
 
     print("Database initialized!")
