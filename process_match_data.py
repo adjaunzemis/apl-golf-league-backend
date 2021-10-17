@@ -1,5 +1,9 @@
 r"""
-Processing script for match/score data files
+Processing script for old match/score data files.
+
+Creates CSV files to support populating the following tables:
+- match
+- round
 
 Authors
 -------
