@@ -300,7 +300,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         
         # Add player to database
         player_db = Player(
-            team_id = team_db.id,
+            team_id=team_db.id,
             golfer_id=golfer_db.id,
             division_id=division_db.id,
             role="CAPTAIN" if is_captain else "PLAYER"
@@ -401,11 +401,28 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 players_db = session.exec(select(Player).where(Player.golfer_id == golfer_db.id)).all()
                 if not players_db:
                     raise ValueError(f"Unable to find any player entries for golfer '{golfer_db.name}'")
-
+                else:
+                    division_db = None
+                    for player_db in players_db:
+                        player_division_db = session.exec(select(Division).where(Division.id == player_db.division_id)).one()
+                        player_flight_db = session.exec(select(Flight).where(Flight.id == player_division_db.flight_id)).one()
+                        if player_flight_db.year == year:
+                            player_tee_db = session.exec(select(Tee).where(Tee.id == player_division_db.home_tee_id)).one()
+                            flight_divisions_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id)).all()
+                            for flight_division_db in flight_divisions_db:
+                                division_tee_db = session.exec(select(Tee).where(Tee.id == flight_division_db.home_tee_id)).one()
+                                if player_tee_db.name.lower() == division_tee_db.name.lower():
+                                    division_db = flight_division_db
+                                    break
+                        if division_db:
+                            break
+                if not division_db:
+                    raise ValueError(f"Unable to find suitable division for golfer '{golfer_db.name}' in flight '{flight_db.name}-{year}'")
+                    
                 # Add player as substitute
                 print(f"Adding substitute '{golfer_db.name}' to team '{team_db.name}'")
                 player_db = Player(
-                    team_id = team_db.id,
+                    team_id=team_db.id,
                     golfer_id=golfer_db.id,
                     division_id=division_db.id, # TODO: Fix substitute division assignment
                     role="SUBSTITUTE"
