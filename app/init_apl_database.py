@@ -522,7 +522,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     session.commit()
 
 if __name__ == "__main__":
-    DELETE_EXISTING_DATABASE = False
+    DELETE_EXISTING_DATABASE = True
     DATA_DIR = "data/"
     DATA_YEAR = 2021
 
@@ -542,14 +542,14 @@ if __name__ == "__main__":
 
     with Session(engine) as session:
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
-        # add_courses(session, courses_file)
+        add_courses(session, courses_file)
 
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
-        # add_flights(session, flights_file)
+        add_flights(session, flights_file)
 
-        # roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
-        # for roster_file in roster_files:
-        #     add_teams(session, roster_file, flights_file)
+        roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
+        for roster_file in roster_files:
+            add_teams(session, roster_file, flights_file)
 
         scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
         for scores_file in scores_files:
