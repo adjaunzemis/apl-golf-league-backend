@@ -14,7 +14,7 @@ Andris Jaunzemis
 
 import os
 
-def parse_roster_data_from_file(file):
+def parse_roster_data_from_file(file: str):
     players = []
     currentTeam = -1
     currentCourse = ""
@@ -22,7 +22,12 @@ def parse_roster_data_from_file(file):
         for line in fp:
             line = line.strip()
             if line[:4].lower() == 'team':
-                currentTeam = int(line.split()[1])
+                if line.split()[1].lower() == "subs":
+                    currentTeam = 0
+                elif line.split()[1].lower() == "togs":
+                    currentTeam = -1
+                else:
+                    currentTeam = int(line.split()[1])
             elif line[:9].lower() == 'preferred':
                 currentCourse = " ".join(line.split()[1:])
             elif line[:6].lower() == 'golfer':
