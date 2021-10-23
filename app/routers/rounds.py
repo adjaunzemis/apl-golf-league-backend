@@ -15,6 +15,10 @@ router = APIRouter(
 async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     return session.exec(select(Round).offset(offset).limit(limit)).all()
 
+@router.get("/details/", response_model=List[RoundReadWithData])
+async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(Round).offset(offset).limit(limit)).all()
+
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):
     round_db = Round.from_orm(round)
