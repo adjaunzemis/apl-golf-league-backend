@@ -4,20 +4,31 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData
+from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundSummary
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
+from ..models.tee import Tee
+from ..models.track import Track
+from ..models.course import Course
+from ..models.golfer import Golfer
+
 router = APIRouter(
     prefix="/rounds",
     tags=["Rounds"]
 )
-
-@router.get("/", response_model=List[RoundRead])
+    
+@router.get("/", response_model=List[RoundSummary])
 async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(Round).offset(offset).limit(limit)).all()
-
-@router.get("/details/", response_model=List[RoundReadWithData])
-async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(Round).offset(offset).limit(limit)).all()
+    results = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+    return [RoundSummary(
+        round_id=round.id,
+        date_played=round.date_played,
+        golfer_name=golfer.name,
+        golfer_handicap_index=round.handicap_index,
+        course_name=course.name,
+        tee_name=tee.name,
+        tee_rating=tee.rating,
+        tee_slope=tee.slope
+    ) for round, golfer, course, tee in results]
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):

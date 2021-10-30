@@ -2,9 +2,12 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import date
 
+
 from .tee import Tee, TeeRead
 from .golfer import Golfer, GolferRead
 from .hole_result import HoleResult, HoleResultReadWithHole
+from .track import Track
+from .course import Course
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
@@ -36,3 +39,13 @@ class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
     golfer: Optional[GolferRead] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
+
+class RoundSummary(SQLModel):
+    round_id: int
+    date_played: date
+    golfer_name: str
+    golfer_handicap_index: float = None
+    course_name: str
+    tee_name: str
+    tee_rating: float
+    tee_slope: float
