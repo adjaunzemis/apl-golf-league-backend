@@ -39,13 +39,3 @@ class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
     golfer: Optional[GolferRead] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
-
-class RoundSummary(SQLModel):
-    round_id: int
-    date_played: date
-    golfer_name: str
-    golfer_handicap_index: float = None
-    course_name: str
-    tee_name: str
-    tee_rating: float
-    tee_slope: float
