@@ -1,12 +1,11 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select, SQLModel
-from datetime import date
+from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData
-from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
+from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundData, RoundDataWithCount
+from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole, HoleResultData
 from ..models.course import Course
 from ..models.track import Track
 from ..models.tee import Tee
@@ -17,61 +16,42 @@ router = APIRouter(
     prefix="/rounds",
     tags=["Rounds"]
 )
-
-class HoleResultSummary(SQLModel):
-    hole_result_id: int
-    round_id: int
-    hole_number: int
-    hole_par: int
-    hole_yardage: int = None
-    hole_stroke_index: int
-    hole_result_strokes: int
-
-class RoundSummary(SQLModel):
-    round_id: int
-    date_played: date
-    golfer_name: str
-    golfer_handicap_index: float
-    course_name: str
-    tee_name: str
-    tee_rating: float
-    tee_slope: float
-    round_holes: List[HoleResultSummary] = []
-
-class RoundSummaryWithTotal(SQLModel):
-    totalRounds: int
-    rounds: List[RoundSummary]
     
-@router.get("/", response_model=RoundSummaryWithTotal)
+@router.get("/", response_model=RoundDataWithCount)
 async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    totalRounds = len(session.exec(select(Round.id)).all())
-    rounds = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
-    roundSummaries = [RoundSummary(
+    num_rounds = len(session.exec(select(Round.id)).all())
+    result = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+    rounds = [RoundData(
         round_id=round.id,
         date_played=round.date_played,
         golfer_name=golfer.name,
         golfer_handicap_index=round.handicap_index,
+        golfer_playing_handicap=round.playing_handicap,
         course_name=course.name,
         tee_name=tee.name,
         tee_rating=tee.rating,
         tee_slope=tee.slope
-    ) for round, golfer, course, tee in rounds]
-    holes = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in roundSummaries])))
-    holeResultSummaries = [HoleResultSummary(
+    ) for round, golfer, course, tee in result]
+    holes = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in rounds])))
+    hole_results = [HoleResultData(
         hole_result_id=hole_result.id,
         round_id=hole_result.round_id,
-        hole_number=hole.number,
-        hole_par=hole.par,
-        hole_yardage=hole.yardage,
-        hole_stroke_index=hole.stroke_index,
-        hole_result_strokes=hole_result.strokes
+        number=hole.number,
+        par=hole.par,
+        yardage=hole.yardage,
+        stroke_index=hole.stroke_index,
+        handicap_strokes=1, # TODO: Compute using USGA rules
+        gross_score=hole_result.strokes,
+        adjusted_gross_score=4, # TODO: Compute using USGA rules
+        net_score=3 # TODO: Compute using USGA rules
     ) for hole_result, hole in holes]
-    for r in roundSummaries:
-        r.round_holes = [h for h in holeResultSummaries if h.round_id == r.round_id]
-    return {
-        'totalRounds': totalRounds,
-        'rounds': roundSummaries
-    }
+    for r in rounds:
+        r.holes = [h for h in hole_results if h.round_id == r.round_id]
+        r.tee_par = sum([h.par for h in r.holes])
+        r.gross_score = sum([h.gross_score for h in r.holes])
+        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
+        r.net_score = sum([h.net_score for h in r.holes])
+    return RoundDataWithCount(num_rounds=num_rounds, rounds=rounds)
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):

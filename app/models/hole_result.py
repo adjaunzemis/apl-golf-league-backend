@@ -26,3 +26,15 @@ class HoleResultRead(HoleResultBase):
 
 class HoleResultReadWithHole(HoleResultRead):
     hole: Optional[HoleRead] = None
+
+class HoleResultData(SQLModel):
+    hole_result_id: int
+    round_id: int
+    number: int
+    par: int
+    yardage: int = None
+    stroke_index: int = None
+    handicap_strokes: int = None
+    gross_score: int
+    adjusted_gross_score: int = None
+    net_score: int = None
