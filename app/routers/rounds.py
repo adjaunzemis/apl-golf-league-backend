@@ -11,6 +11,7 @@ from ..models.track import Track
 from ..models.tee import Tee
 from ..models.hole import Hole
 from ..models.golfer import Golfer
+from ..utilities.usga_handicap import compute_handicap_strokes, compute_adjusted_gross_score
 
 router = APIRouter(
     prefix="/rounds",
@@ -20,8 +21,8 @@ router = APIRouter(
 @router.get("/", response_model=RoundDataWithCount)
 async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     num_rounds = len(session.exec(select(Round.id)).all())
-    result = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
-    rounds = [RoundData(
+    round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+    round_data = [RoundData(
         round_id=round.id,
         date_played=round.date_played,
         golfer_name=golfer.name,
@@ -31,27 +32,28 @@ async def read_rounds(*, session: Session = Depends(get_session), offset: int = 
         tee_name=tee.name,
         tee_rating=tee.rating,
         tee_slope=tee.slope
-    ) for round, golfer, course, tee in result]
-    holes = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in rounds])))
-    hole_results = [HoleResultData(
+    ) for round, golfer, course, tee in round_query_data]
+    hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in round_data])))
+    hole_result_data = [HoleResultData(
         hole_result_id=hole_result.id,
         round_id=hole_result.round_id,
         number=hole.number,
         par=hole.par,
         yardage=hole.yardage,
         stroke_index=hole.stroke_index,
-        handicap_strokes=1, # TODO: Compute using USGA rules
-        gross_score=hole_result.strokes,
-        adjusted_gross_score=4, # TODO: Compute using USGA rules
-        net_score=3 # TODO: Compute using USGA rules
-    ) for hole_result, hole in holes]
-    for r in rounds:
-        r.holes = [h for h in hole_results if h.round_id == r.round_id]
+        gross_score=hole_result.strokes
+    ) for hole_result, hole in hole_query_data]
+    for r in round_data:
+        r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
         r.gross_score = sum([h.gross_score for h in r.holes])
+        for h in r.holes:
+            h.handicap_strokes = compute_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
+            h.adjusted_gross_score = compute_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, handicap_index=r.golfer_playing_handicap)
+            h.net_score = h.gross_score - h.handicap_strokes
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])
-    return RoundDataWithCount(num_rounds=num_rounds, rounds=rounds)
+    return RoundDataWithCount(num_rounds=num_rounds, rounds=round_data)
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):

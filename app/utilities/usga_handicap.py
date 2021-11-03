@@ -7,7 +7,7 @@ Andris Jaunzemis
 
 """
 
-def compute_adjusted_gross_score(par, handicap, score, index=None):
+def compute_adjusted_gross_score(par, stroke_index, score, handicap_index=None):
     r"""
     Computes adjusted gross score on a hole for handicapping purposes.
 
@@ -15,11 +15,11 @@ def compute_adjusted_gross_score(par, handicap, score, index=None):
     ----------
     par : int
         hole par
-    handicap : int
-        hole handicap
+    stroke_index : int
+        hole stroke index
     score : int
         gross score recorded for this hole
-    index : int, optional
+    handicap_index : int, optional
         player course handicap index
         Default: None (handicap index not established)
     
@@ -33,9 +33,9 @@ def compute_adjusted_gross_score(par, handicap, score, index=None):
     USGA Rule 3.1
 
     """
-    return min(score, compute_maximum_score(par, handicap, index=index))
+    return min(score, compute_maximum_score(par, stroke_index, handicap_index=handicap_index))
 
-def compute_maximum_score(par, handicap, index=None):
+def compute_maximum_score(par, stroke_index, handicap_index=None):
     r"""
     Computes maximum score on a hole for handicapping purposes.
 
@@ -46,9 +46,9 @@ def compute_maximum_score(par, handicap, index=None):
     ----------
     par : int
         hole par
-    handicap : int
-        hole handicap
-    index : int, optional
+    stroke_index : int
+        hole stroke index
+    handicap_index : int, optional
         player course handicap index
         Default: None (handicap index not estalished)
     
@@ -62,22 +62,22 @@ def compute_maximum_score(par, handicap, index=None):
     USGA Rule 3.1
 
     """
-    if index is None:
+    if handicap_index is None:
         return par + 5
-    handicap_strokes = compute_handicap_strokes(handicap, index)
+    handicap_strokes = compute_handicap_strokes(stroke_index, handicap_index)
     if handicap_strokes > 3:
         return par + 5
     return par + 2 + handicap_strokes
 
-def compute_handicap_strokes(handicap, index):
+def compute_handicap_strokes(stroke_index, handicap_index):
     r"""
     Computes handicap stokes a player recieves on a hole.
 
     Parameters
     ----------
-    handicap : int
-        hole handicap
-    index : int
+    stroke_index : int
+        hole stroke index
+    handicap_index : int
         player course handicap index
     
     Returns
@@ -91,18 +91,18 @@ def compute_handicap_strokes(handicap, index):
     
     """
     strokes = 0
-    if handicap > 0:
-        while index > 18:
+    if stroke_index > 0:
+        while handicap_index > 18:
             strokes += 1
-            index -= 18
-        if handicap <= index:
+            handicap_index -= 18
+        if stroke_index <= handicap_index:
             strokes += 1
     else:
-        if (18 - handicap) < abs(index):
+        if (18 - stroke_index) < abs(handicap_index):
             strokes -= 1
     return strokes
 
-def compute_course_handicap(par, rating, slope, index):
+def compute_course_handicap(par, rating, slope, handicap_index):
     r"""
     Computes course handicap.
 
@@ -127,7 +127,7 @@ def compute_course_handicap(par, rating, slope, index):
     USGA Rule 6.1
 
     """
-    return index * (slope / 113) + (rating - par)
+    return handicap_index * (slope / 113) + (rating - par)
 
 def compute_score_differential(rating, slope, score, conditions_adjustment=0.0):
     r"""

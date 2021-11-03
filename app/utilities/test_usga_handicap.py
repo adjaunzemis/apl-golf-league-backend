@@ -12,7 +12,7 @@ import pytest
 from usga_handicap import *
 
 @pytest.mark.parametrize(
-    "par, handicap, index, max_score", [
+    "par, stroke_index, handicap_index, max_score", [
         (4, 7, 62, 9),
         (4, 7, 52, 9),
         (4, 7, 42, 8),
@@ -21,11 +21,11 @@ from usga_handicap import *
         (4, 7, 12, 7),
         (4, 7, 2, 6)
     ])
-def test_compute_maximum_score(par, handicap, index, max_score):
-    assert compute_maximum_score(par, handicap, index) == max_score
+def test_compute_maximum_score(par, stroke_index, handicap_index, max_score):
+    assert compute_maximum_score(par, stroke_index, handicap_index) == max_score
 
 @pytest.mark.parametrize(
-    "handicap, index, handicap_strokes", [
+    "stroke_index, handicap_index, handicap_strokes", [
         (5, 63, 4),
         (5, 53, 3),
         (5, 43, 3),
@@ -34,15 +34,15 @@ def test_compute_maximum_score(par, handicap, index, max_score):
         (5, 13, 1),
         (5, 3, 0)
     ])
-def test_compute_handicap_strokes(handicap, index, handicap_strokes):
-    assert compute_handicap_strokes(handicap, index) == handicap_strokes
+def test_compute_handicap_strokes(stroke_index, handicap_index, handicap_strokes):
+    assert compute_handicap_strokes(stroke_index, handicap_index) == handicap_strokes
 
 @pytest.mark.parametrize(
-    "par, handicap, score, index, adjusted_score", [
+    "par, stroke_index, score, handicap_index, adjusted_score", [
         (4, 7, 8, 16, 7)
     ])
-def test_compute_adjusted_gross_score(par, handicap, score, index, adjusted_score):
-    assert compute_adjusted_gross_score(par, handicap, score, index=index) == adjusted_score
+def test_compute_adjusted_gross_score(par, stroke_index, score, handicap_index, adjusted_score):
+    assert compute_adjusted_gross_score(par, stroke_index, score, handicap_index=handicap_index) == adjusted_score
     
 @pytest.mark.parametrize(
     "course_par, course_rating, course_slope_rating, handicap_index, course_handicap", [
