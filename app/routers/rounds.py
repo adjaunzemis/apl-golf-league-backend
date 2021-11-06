@@ -19,9 +19,19 @@ router = APIRouter(
 )
     
 @router.get("/", response_model=RoundDataWithCount)
-async def read_rounds(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    num_rounds = len(session.exec(select(Round.id)).all())
-    round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None, ge=0), offset: int = Query(default=0, ge=0), limit: int = Query(default=25, ge=0, le=100)):
+    # Process query parameters to further limit round results returned from database
+    if golfer_id: # limit to specific golfer
+        num_rounds = len(session.exec(select(Round.id).where(Round.golfer_id == golfer_id)).all())
+        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).where(Round.golfer_id == golfer_id).offset(offset).limit(limit))
+    else: # no extra limitations
+        num_rounds = len(session.exec(select(Round.id)).all())
+        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+
+    # Reformat round data
+    if num_rounds == 0:
+        return RoundDataWithCount(num_rounds=0, rounds=[])
+
     round_data = [RoundData(
         round_id=round.id,
         date_played=round.date_played,
@@ -33,6 +43,8 @@ async def read_rounds(*, session: Session = Depends(get_session), offset: int = 
         tee_rating=tee.rating,
         tee_slope=tee.slope
     ) for round, golfer, course, tee in round_query_data]
+
+    # Query hole data for selected rounds
     hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in round_data])))
     hole_result_data = [HoleResultData(
         hole_result_id=hole_result.id,
@@ -43,6 +55,9 @@ async def read_rounds(*, session: Session = Depends(get_session), offset: int = 
         stroke_index=hole.stroke_index,
         gross_score=hole_result.strokes
     ) for hole_result, hole in hole_query_data]
+
+    # Add hole data to round data
+    # TODO: Compute handicap strokes and non-gross scores on entry to database
     for r in round_data:
         r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
@@ -53,6 +68,8 @@ async def read_rounds(*, session: Session = Depends(get_session), offset: int = 
             h.net_score = h.gross_score - h.handicap_strokes
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])
+
+    # Return count of relevant rounds from database and round data list
     return RoundDataWithCount(num_rounds=num_rounds, rounds=round_data)
 
 @router.post("/", response_model=RoundRead)
