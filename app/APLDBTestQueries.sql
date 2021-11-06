@@ -5,7 +5,8 @@ JOIN tee ON round.tee_id = tee.id
 JOIN track ON tee.track_id = track.id
 JOIN course ON track.course_id = course.id
 JOIN golfer ON round.golfer_id = golfer.id
-WHERE golfer.name == "Andris Jaunzemis";
+WHERE golfer.name == "Andris Jaunzemis"
+ORDER BY round.date_played;
 
 SELECT holeresult.id as hole_result_id, holeresult.round_id as round_id, hole.id as hole_id, hole.number as hole_number, hole.par as hole_par, hole.yardage as hole_yardage, hole.stroke_index as hole_stroke_index, holeresult.strokes as hole_result_strokes
 FROM holeresult

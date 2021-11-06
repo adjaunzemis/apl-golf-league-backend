@@ -23,10 +23,10 @@ async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int
     # Process query parameters to further limit round results returned from database
     if golfer_id: # limit to specific golfer
         num_rounds = len(session.exec(select(Round.id).where(Round.golfer_id == golfer_id)).all())
-        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).where(Round.golfer_id == golfer_id).offset(offset).limit(limit))
+        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).where(Round.golfer_id == golfer_id).offset(offset).limit(limit).order_by(Round.date_played))
     else: # no extra limitations
         num_rounds = len(session.exec(select(Round.id)).all())
-        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit))
+        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit).order_by(Round.date_played))
 
     # Reformat round data
     if num_rounds == 0:
