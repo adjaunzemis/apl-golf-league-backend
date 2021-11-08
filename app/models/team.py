@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .player import Player, PlayerRead
+from .player import Player, PlayerRead, PlayerData
 
 class TeamBase(SQLModel):
     name: str
@@ -24,3 +24,9 @@ class TeamRead(TeamBase):
 
 class TeamReadWithPlayers(TeamRead):
     players: List[PlayerRead] = []
+
+class TeamData(SQLModel):
+    team_id: int
+    flight_id: int
+    name: str
+    players: List[PlayerData] = []

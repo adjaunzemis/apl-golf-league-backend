@@ -38,3 +38,10 @@ class PlayerRead(PlayerBase):
 class PlayerReadWithData(PlayerRead):
     golfer: Optional[GolferRead] = None
     division: Optional[DivisionRead] = None
+
+class PlayerData(SQLModel):
+    player_id: int
+    team_id: int
+    golfer_name: str
+    division_name: str
+    role: str

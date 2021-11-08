@@ -24,3 +24,12 @@ class DivisionUpdate(SQLModel):
 
 class DivisionRead(DivisionBase):
     id: int
+
+class DivisionData(SQLModel):
+    division_id: int
+    flight_id: int
+    name: str
+    gender: str
+    home_tee_name: str = None
+    home_tee_rating: float = None
+    home_tee_slope: int = None

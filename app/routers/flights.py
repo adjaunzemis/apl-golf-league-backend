@@ -4,21 +4,81 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData
-from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
-from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers
-from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData
+from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightData, FlightDataWithCount
+from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead, DivisionData
+from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers, TeamData
+from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData, PlayerData
 from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData
 from ..models.match_round_link import MatchRoundLink
+from ..models.course import Course
+from ..models.tee import Tee
+from ..models.golfer import Golfer
 
 router = APIRouter(
     prefix="/flights",
     tags=["Flights"]
 )
 
-@router.get("/", response_model=List[FlightRead])
+@router.get("/", response_model=FlightDataWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(Flight).offset(offset).limit(limit)).all()
+     # TODO: Process query parameters to further limit flight results returned from database
+    num_flights = len(session.exec(select(Flight.id)).all())
+    flight_query_data = session.exec(select(Flight, Course).join(Course).offset(offset).limit(limit).order_by(Flight.year))
+
+    # Reformat flight data
+    if num_flights == 0:
+        return FlightDataWithCount(num_flights=0, flights=[])
+    
+    flight_data = [FlightData(
+        flight_id=flight.id,
+        year=flight.year,
+        name=flight.name,
+        home_course_name=home_course.name
+    ) for flight, home_course in flight_query_data]
+    flight_ids = [f.flight_id for f in flight_data]
+
+    # Query division data for selected flights
+    division_query_data = session.exec(select(Division, Tee).join(Tee).where(Division.flight_id.in_(flight_ids)))
+    division_data = [DivisionData(
+        division_id=division.id,
+        flight_id=division.flight_id,
+        name=division.name,
+        gender=division.gender,
+        home_tee_name=home_tee.name,
+        home_tee_rating=home_tee.rating,
+        home_tee_slope=home_tee.slope
+    ) for division, home_tee in division_query_data]
+
+    # Query team data for selected flights
+    team_query_data = session.exec(select(Team).where(Team.flight_id.in_(flight_ids)))
+    team_data = [TeamData(
+        team_id=team.id,
+        flight_id=team.flight_id,
+        name=team.name
+    ) for team in team_query_data]
+    team_ids = [t.team_id for t in team_data]
+
+    # Query player data for selected teams
+    player_query_data = session.exec(select(Player, Golfer, Division).join(Golfer).join(Division).where(Player.team_id.in_(team_ids)))
+    player_data = [PlayerData(
+        player_id=player.id,
+        team_id=player.team_id,
+        golfer_name=golfer.name,
+        division_name=division.name,
+        role=player.role
+    ) for player, golfer, division in player_query_data]
+
+    # Add player data to team data
+    for t in team_data:
+        t.players = [p for p in player_data if p.team_id == t.team_id]
+    
+    # Add division and team data to flight data
+    for f in flight_data:
+        f.divisions = [d for d in division_data if d.flight_id == f.flight_id]
+        f.teams = [t for t in team_data if t.flight_id == f.flight_id]
+
+    # Return count of relevant flights from database and flight data list
+    return FlightDataWithCount(num_flights=num_flights, flights=flight_data)
 
 @router.post("/", response_model=FlightRead)
 async def create_flight(*, session: Session = Depends(get_session), flight: FlightCreate):

@@ -2,8 +2,8 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from .course import Course
-from .division import Division, DivisionRead
-from .team import Team, TeamRead
+from .division import Division, DivisionRead, DivisionData
+from .team import Team, TeamRead, TeamData
 
 class FlightBase(SQLModel):
     name: str
@@ -30,3 +30,15 @@ class FlightRead(FlightBase):
 class FlightReadWithData(FlightRead):
     divisions: List[DivisionRead] = []
     teams: List[TeamRead] = []
+
+class FlightData(SQLModel):
+    flight_id: int
+    year: int
+    name: str
+    home_course_name: str = None
+    divisions: List[DivisionData] = []
+    teams: List[TeamData] = []
+
+class FlightDataWithCount(SQLModel):
+    num_flights: int
+    flights: List[FlightData]
