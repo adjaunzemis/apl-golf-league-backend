@@ -25,3 +25,14 @@ JOIN player ON round.golfer_id = player.golfer_id
 JOIN flight ON match.flight_id = flight.id
 JOIN division ON division.flight_id = flight.id AND player.division_id = division.id
 JOIN team ON player.team_id = team.id;
+
+SELECT golfer.id as golfer_id, golfer.name as golfer_name, golfer.affiliation as golfer_affiliation
+FROM golfer;
+
+SELECT player.id as player_id, golfer.id as golfer_id, player.role as player_role, division.name as division_name, flight.name as flight_name, team.name as team_name
+FROM player
+JOIN golfer ON player.golfer_id = golfer.id
+JOIN team ON player.team_id = team.id
+JOIN division ON player.division_id = division.id
+JOIN flight ON division.flight_id = flight.id
+WHERE golfer.id in (1,2,3,4);

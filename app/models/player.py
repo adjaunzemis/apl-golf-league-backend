@@ -42,6 +42,9 @@ class PlayerReadWithData(PlayerRead):
 class PlayerData(SQLModel):
     player_id: int
     team_id: int
+    golfer_id: int
     golfer_name: str
     division_name: str
+    flight_name: str = None
+    team_name: str = None
     role: str

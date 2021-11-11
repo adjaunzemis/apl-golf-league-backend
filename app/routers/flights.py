@@ -21,7 +21,7 @@ router = APIRouter(
 
 @router.get("/", response_model=FlightDataWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-     # TODO: Process query parameters to further limit flight results returned from database
+    # TODO: Process query parameters to further limit flight results returned from database
     num_flights = len(session.exec(select(Flight.id)).all())
     flight_query_data = session.exec(select(Flight, Course).join(Course).offset(offset).limit(limit).order_by(Flight.year))
 
@@ -59,14 +59,16 @@ async def read_flights(*, session: Session = Depends(get_session), offset: int =
     team_ids = [t.team_id for t in team_data]
 
     # Query player data for selected teams
-    player_query_data = session.exec(select(Player, Golfer, Division).join(Golfer).join(Division).where(Player.team_id.in_(team_ids)))
+    player_query_data = session.exec(select(Player, Team, Golfer, Division).join(Team).join(Golfer).join(Division).where(Player.team_id.in_(team_ids)))
     player_data = [PlayerData(
         player_id=player.id,
         team_id=player.team_id,
+        golfer_id=golfer.id,
         golfer_name=golfer.name,
         division_name=division.name,
+        team_name=team.name,
         role=player.role
-    ) for player, golfer, division in player_query_data]
+    ) for player, team, golfer, division in player_query_data]
 
     # Add player data to team data
     for t in team_data:
