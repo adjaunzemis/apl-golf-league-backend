@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, rounds, flights
+from .routers import courses, golfers, rounds, flights, matches
 
 description = """
 APLGolfLeague API
@@ -30,6 +30,7 @@ app.include_router(courses.router)
 app.include_router(golfers.router)
 app.include_router(rounds.router)
 app.include_router(flights.router)
+app.include_router(matches.router)
 
 @app.on_event("startup")
 def on_startup():
