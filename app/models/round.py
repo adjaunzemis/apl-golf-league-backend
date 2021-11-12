@@ -41,10 +41,13 @@ class RoundReadWithData(RoundRead):
     
 class RoundData(SQLModel):
     round_id: int
+    match_id: Optional[int] = None
+    team_id: Optional[int] = None
     date_played: date
     golfer_name: str
     golfer_handicap_index: float
     golfer_playing_handicap: int
+    team_name: Optional[str] = None
     course_name: str
     tee_name: str
     tee_rating: float
