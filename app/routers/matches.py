@@ -25,6 +25,8 @@ router = APIRouter(
 
 class MatchData(SQLModel):
     match_id: int
+    home_team_id: int
+    away_team_id: int
     flight_name: str
     week: int
     home_score: float
@@ -51,6 +53,8 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
 
     match_data = [MatchData(
         match_id=match.id,
+        home_team_id=match.home_team_id,
+        away_team_id=match.away_team_id,
         flight_name=flight.name,
         week=match.week,
         home_score=match.home_score,
