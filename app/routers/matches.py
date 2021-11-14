@@ -59,8 +59,7 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
     match_ids = [m.match_id for m in match_data]
 
     # Query round data for selected matches
-    # round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee).join(MatchRoundLink).join(Golfer).join(Tee).join(Track).join(Course).where(MatchRoundLink.match_id.in_(match_ids)))
-    round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee, Team).join(MatchRoundLink).join(Tee).join(Track).join(Course).join(Golfer).join(Player, onclause=Player.golfer_id == Round.golfer_id).join(Team, onclause=Player.team_id == Team.id).where(MatchRoundLink.match_id.in_(match_ids)))
+    round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(Tee).join(Track).join(Course).join(Golfer).join(Player, ((Player.golfer_id == Round.golfer_id) & (Player.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Player.team_id == Team.id).where(MatchRoundLink.match_id.in_(match_ids)))
     round_data = [RoundData(
         round_id=round.id,
         match_id=match_round_link.match_id,
