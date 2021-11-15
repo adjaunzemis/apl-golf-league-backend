@@ -9,7 +9,7 @@ Andris Jaunzemis
 
 import pytest
 
-from usga_handicap import *
+from .usga_handicap import USGAHandicapSystem
 
 @pytest.mark.parametrize(
     "par, stroke_index, handicap_index, max_score", [
@@ -22,7 +22,7 @@ from usga_handicap import *
         (4, 7, 2, 6)
     ])
 def test_compute_maximum_score(par, stroke_index, handicap_index, max_score):
-    assert compute_maximum_score(par, stroke_index, handicap_index) == max_score
+    assert USGAHandicapSystem.compute_maximum_score(par, stroke_index, handicap_index) == max_score
 
 @pytest.mark.parametrize(
     "stroke_index, handicap_index, handicap_strokes", [
@@ -35,18 +35,18 @@ def test_compute_maximum_score(par, stroke_index, handicap_index, max_score):
         (5, 3, 0)
     ])
 def test_compute_handicap_strokes(stroke_index, handicap_index, handicap_strokes):
-    assert compute_handicap_strokes(stroke_index, handicap_index) == handicap_strokes
+    assert USGAHandicapSystem.compute_handicap_strokes(stroke_index, handicap_index) == handicap_strokes
 
 @pytest.mark.parametrize(
     "par, stroke_index, score, handicap_index, adjusted_score", [
         (4, 7, 8, 16, 7)
     ])
 def test_compute_adjusted_gross_score(par, stroke_index, score, handicap_index, adjusted_score):
-    assert compute_adjusted_gross_score(par, stroke_index, score, course_handicap=handicap_index) == adjusted_score
+    assert USGAHandicapSystem.compute_adjusted_gross_score(par, stroke_index, score, course_handicap=handicap_index) == adjusted_score
     
 @pytest.mark.parametrize(
     "course_par, course_rating, course_slope_rating, handicap_index, course_handicap", [
         (72, 73.1, 132, 12, 15.12)
     ])
 def test_compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index, course_handicap):
-    assert pytest.approx(compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index), abs=1e-2) == course_handicap
+    assert pytest.approx(USGAHandicapSystem.compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index), abs=1e-2) == course_handicap
