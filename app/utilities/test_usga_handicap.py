@@ -42,7 +42,7 @@ def test_compute_handicap_strokes(stroke_index, handicap_index, handicap_strokes
         (4, 7, 8, 16, 7)
     ])
 def test_compute_adjusted_gross_score(par, stroke_index, score, handicap_index, adjusted_score):
-    assert compute_adjusted_gross_score(par, stroke_index, score, handicap_index=handicap_index) == adjusted_score
+    assert compute_adjusted_gross_score(par, stroke_index, score, course_handicap=handicap_index) == adjusted_score
     
 @pytest.mark.parametrize(
     "course_par, course_rating, course_slope_rating, handicap_index, course_handicap", [

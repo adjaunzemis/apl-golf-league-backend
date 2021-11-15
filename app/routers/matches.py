@@ -100,7 +100,7 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
         r.gross_score = sum([h.gross_score for h in r.holes])
         for h in r.holes:
             h.handicap_strokes = compute_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
-            h.adjusted_gross_score = compute_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, handicap_index=r.golfer_playing_handicap)
+            h.adjusted_gross_score = compute_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
             h.net_score = h.gross_score - h.handicap_strokes
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])

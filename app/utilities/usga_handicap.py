@@ -7,7 +7,7 @@ Andris Jaunzemis
 
 """
 
-def compute_adjusted_gross_score(par, stroke_index, score, handicap_index=None):
+def compute_adjusted_gross_score(par: int, stroke_index: int, score: int, course_handicap: int = None) -> int:
     r"""
     Computes adjusted gross score on a hole for handicapping purposes.
 
@@ -19,9 +19,9 @@ def compute_adjusted_gross_score(par, stroke_index, score, handicap_index=None):
         hole stroke index
     score : int
         gross score recorded for this hole
-    handicap_index : int, optional
-        player course handicap index
-        Default: None (handicap index not established)
+    course_handicap : int, optional
+        player course handicap
+        Default: None (player handicap index not established)
     
     Returns
     -------
@@ -33,9 +33,9 @@ def compute_adjusted_gross_score(par, stroke_index, score, handicap_index=None):
     USGA Rule 3.1
 
     """
-    return min(score, compute_maximum_score(par, stroke_index, handicap_index=handicap_index))
+    return min(score, compute_maximum_score(par, stroke_index, course_handicap=course_handicap))
 
-def compute_maximum_score(par, stroke_index, handicap_index=None):
+def compute_maximum_score(par: int, stroke_index: int, course_handicap: int = None) -> int:
     r"""
     Computes maximum score on a hole for handicapping purposes.
 
@@ -48,9 +48,9 @@ def compute_maximum_score(par, stroke_index, handicap_index=None):
         hole par
     stroke_index : int
         hole stroke index
-    handicap_index : int, optional
-        player course handicap index
-        Default: None (handicap index not estalished)
+    course_handicap : int, optional
+        player course handicap
+        Default: None (player handicap index not estalished)
     
     Returns
     -------
@@ -62,14 +62,14 @@ def compute_maximum_score(par, stroke_index, handicap_index=None):
     USGA Rule 3.1
 
     """
-    if handicap_index is None:
+    if course_handicap is None:
         return par + 5
-    handicap_strokes = compute_handicap_strokes(stroke_index, handicap_index)
+    handicap_strokes = compute_handicap_strokes(stroke_index, course_handicap)
     if handicap_strokes > 3:
         return par + 5
     return par + 2 + handicap_strokes
 
-def compute_handicap_strokes(stroke_index, handicap_index):
+def compute_handicap_strokes(stroke_index: int, course_handicap: int) -> int:
     r"""
     Computes handicap stokes a player recieves on a hole.
 
@@ -77,8 +77,8 @@ def compute_handicap_strokes(stroke_index, handicap_index):
     ----------
     stroke_index : int
         hole stroke index
-    handicap_index : int
-        player course handicap index
+    course_handicap : int
+        player course handicap
     
     Returns
     -------
@@ -92,17 +92,17 @@ def compute_handicap_strokes(stroke_index, handicap_index):
     """
     strokes = 0
     if stroke_index > 0:
-        while handicap_index > 18:
+        while course_handicap > 18:
             strokes += 1
-            handicap_index -= 18
-        if stroke_index <= handicap_index:
+            course_handicap -= 18
+        if stroke_index <= course_handicap:
             strokes += 1
     else:
-        if (18 - stroke_index) < abs(handicap_index):
+        if (18 - stroke_index) < abs(course_handicap):
             strokes -= 1
     return strokes
 
-def compute_course_handicap(par, rating, slope, handicap_index):
+def compute_course_handicap(par: int, rating: float, slope: int, handicap_index: float) -> float:
     r"""
     Computes course handicap.
 
@@ -112,14 +112,14 @@ def compute_course_handicap(par, rating, slope, handicap_index):
         course par
     rating : float
         course rating
-    slope : float
+    slope : int
         course slope rating
-    index : float   
+    handicap_index : float   
         player handicap index
 
     Returns
     -------
-    handicap : float
+    course_handicap : float
         player course handicap index
 
     References
@@ -129,7 +129,7 @@ def compute_course_handicap(par, rating, slope, handicap_index):
     """
     return handicap_index * (slope / 113) + (rating - par)
 
-def compute_score_differential(rating, slope, score, conditions_adjustment=0.0):
+def compute_score_differential(rating: float, slope: int, score: int, conditions_adjustment: float = 0.0):
     r"""
     Computes score differential.
 
@@ -137,7 +137,7 @@ def compute_score_differential(rating, slope, score, conditions_adjustment=0.0):
     ----------
     rating : float
         course rating
-    slope : float
+    slope : int
         course slope rating
     score : int
         adjusted gross score
@@ -156,4 +156,4 @@ def compute_score_differential(rating, slope, score, conditions_adjustment=0.0):
 
     """
     score_diff = (113 / slope) * (score - rating - conditions_adjustment)
-    return int(score_diff * 10) / 10
+    return round(score_diff * 10, 1)
