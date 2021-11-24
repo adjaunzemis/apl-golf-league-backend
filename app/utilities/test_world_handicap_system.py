@@ -49,12 +49,28 @@ def test_compute_hole_adjusted_gross_score(par, stroke_index, score, course_hand
     assert whs.compute_hole_adjusted_gross_score(par, stroke_index, score, course_handicap=course_handicap) == adjusted_score
     
 @pytest.mark.parametrize(
-    "course_par, course_rating, course_slope_rating, handicap_index, course_handicap", [
+    "course_par, course_rating, course_slope, handicap_index, course_handicap", [
         (72, 73.1, 132, 12, 15.12)
     ])
-def test_compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index, course_handicap):
+def test_compute_course_handicap(course_par, course_rating, course_slope, handicap_index, course_handicap):
     whs = WorldHandicapSystem()
-    assert pytest.approx(whs.compute_course_handicap(course_par, course_rating, course_slope_rating, handicap_index), abs=1e-2) == course_handicap
+    assert pytest.approx(whs.compute_course_handicap(course_par, course_rating, course_slope, handicap_index), abs=1e-2) == course_handicap
+
+@pytest.mark.parametrize(
+    "course_rating, course_slope, adj_gross_score, pcc, score_diff", [
+        (70.9, 121, 83, 0, 11.3),
+        (70.9, 121, 82, 0, 10.4),
+        (68.7, 115, 92, 0, 22.9),
+        (68.7, 115, 92, -0.5, 23.4),
+        (68.7, 115, 92, 1.5, 21.4),
+        (71.1, 124, 73, 0, 1.7),
+        (71.1, 122, 71, 0, -0.1),
+        (71.1, 122, 68, 0, -2.9),
+        (70.6, 133, 68, 0, -2.2)
+    ])
+def test_compute_score_differential(course_rating, course_slope, adj_gross_score, pcc, score_diff):
+    whs = WorldHandicapSystem()
+    assert whs.compute_score_differential(course_rating, course_slope, adj_gross_score, pcc) == score_diff
 
 @pytest.mark.parametrize(
     "records, handicap_index", [

@@ -36,10 +36,10 @@ class WorldHandicapSystem(HandicapSystem):
     def compute_score_differential(self, rating: float, slope: int, score: int, playing_conditions_correction: float = 0.0):
         # Reference: USGA 2020 RoH 5.1
         score_diff = (113 / slope) * (score - rating - playing_conditions_correction)
-        return np.fix(score_diff * 10.0, 1) / 10.0 # round to nearest tenth, toward zero
+        return np.round(score_diff, 1) # round to nearest tenth
 
     def compute_handicap_index(self, record: List[float]) -> float:
-        # Reference: USGA 2020 RoH 5.2
+        # Reference: USGA 2020 RoH 5.2, 5.3, 5.8
         record_sorted = np.sort(record)
         if len(record_sorted) < 4:
             handicap_index = record_sorted[0] - 2.0
