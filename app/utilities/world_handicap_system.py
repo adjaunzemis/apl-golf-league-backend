@@ -1,4 +1,5 @@
 from typing import List
+import numpy as np
 
 from .handicap_system import HandicapSystem
 
@@ -35,12 +36,37 @@ class WorldHandicapSystem(HandicapSystem):
     def compute_score_differential(self, rating: float, slope: int, score: int, playing_conditions_correction: float = 0.0):
         # Reference: USGA 2020 RoH 5.1
         score_diff = (113 / slope) * (score - rating - playing_conditions_correction)
-        return round(score_diff * 10, 1) # rounded to nearest tenth, toward zero
+        return np.fix(score_diff * 10.0, 1) / 10.0 # round to nearest tenth, toward zero
 
     def compute_handicap_index(self, record: List[float]) -> float:
         # Reference: USGA 2020 RoH 5.2
-        return self.maximum_handicap_index # TODO: Implement handicap index calculation
+        record_sorted = np.sort(record)
+        if len(record_sorted) < 4:
+            handicap_index = record_sorted[0] - 2.0
+        elif len(record_sorted) < 5:
+            handicap_index = record_sorted[0] - 1.0
+        elif len(record_sorted) < 6:
+            handicap_index = record_sorted[0]
+        elif len(record_sorted) < 7:
+            handicap_index = np.mean(record_sorted[0:2]) - 1.0
+        elif len(record_sorted) < 9:
+            handicap_index = np.mean(record_sorted[0:2])
+        elif len(record_sorted) < 12:
+            handicap_index = np.mean(record_sorted[0:3])
+        elif len(record_sorted) < 15:
+            handicap_index = np.mean(record_sorted[0:4])
+        elif len(record_sorted) < 17:
+            handicap_index = np.mean(record_sorted[0:5])
+        elif len(record_sorted) < 19:
+            handicap_index = np.mean(record_sorted[0:6])
+        elif len(record_sorted) < 20:
+            handicap_index = np.mean(record_sorted[0:7])
+        else:
+            handicap_index = np.mean(record_sorted[0:8])
+        # TODO: Add soft/hard cap logic, see USGA 2020 RoH 5.8
+        return np.round(min(handicap_index, self.maximum_handicap_index), 1) # round to nearest tenth
 
+    @property
     def maximum_handicap_index(self) -> float:
         # Reference: USGA 2020 RoH 5.3
         return 54.0
