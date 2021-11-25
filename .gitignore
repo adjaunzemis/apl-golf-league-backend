@@ -130,6 +130,7 @@ dmypy.json
 
 # VSCode
 .vscode/
+.angulardoc.json
 
 # Data files
 data/
