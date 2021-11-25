@@ -16,7 +16,7 @@ from ..models.golfer import Golfer
 from ..models.player import Player
 from ..models.flight import Flight
 from ..models.team import Team
-from ..utilities.world_handicap_system import WorldHandicapSystem
+from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(
     prefix="/matches",
@@ -94,14 +94,14 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
 
     # Add hole data to round data
     # TODO: Compute handicap strokes and non-gross scores on entry to database
-    whs = WorldHandicapSystem()
+    ahs = APLLegacyHandicapSystem()
     for r in round_data:
         r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
         r.gross_score = sum([h.gross_score for h in r.holes])
         for h in r.holes:
-            h.handicap_strokes = whs.compute_hole_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
-            h.adjusted_gross_score = whs.compute_hole_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
+            h.handicap_strokes = ahs.compute_hole_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
+            h.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
             h.net_score = h.gross_score - h.handicap_strokes
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])
