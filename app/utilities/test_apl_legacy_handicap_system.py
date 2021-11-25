@@ -19,7 +19,7 @@ from .apl_legacy_handicap_system import APLLegacyHandicapSystem
         (4, 1, 4, 6),
         (4, 9, 4, 6),
         (5, 9, 4, 7),
-        (3, 9, 4, 5),
+        (3, 9, 4, 5)
     ])
 def test_compute_hole_maximum_score(par, stroke_index, course_handicap, max_score):
     alhs = APLLegacyHandicapSystem()
@@ -63,7 +63,9 @@ def test_compute_hole_adjusted_gross_score(par, stroke_index, score, course_hand
     
 @pytest.mark.parametrize(
     "course_par, course_rating, course_slope, handicap_index, course_handicap", [
-        (72, 73.1, 132, 12, 15.12)
+        (72, 73.1, 132, 12, 15.12),
+        (36, 36.7, 123, 4.2, 5), # TODO: Move to playing handicap test
+        (36, 34.7, 134, 13.1, 15) # TODO: Move to playing handicap test
     ])
 def test_compute_course_handicap(course_par, course_rating, course_slope, handicap_index, course_handicap):
     alhs = APLLegacyHandicapSystem()

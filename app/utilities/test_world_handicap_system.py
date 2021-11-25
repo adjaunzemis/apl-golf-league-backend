@@ -34,7 +34,7 @@ def test_compute_hole_maximum_score(par, stroke_index, course_handicap, max_scor
         (5, -9, -1),
         (5, -18, -1),
         (5, -23, -2),
-        (5, -25, -2),
+        (5, -25, -2)
     ])
 def test_compute_hole_handicap_strokes(stroke_index, course_handicap, handicap_strokes):
     whs = WorldHandicapSystem()
@@ -95,7 +95,7 @@ def test_compute_score_differential(course_rating, course_slope, adj_gross_score
         ([15.3, 15.2, 16.6, 16.0, 15.7, 15.5, 16.1, 15.9, 14.8, 15.4, 15.7, 13.5, 15.7, 16.9, 16.0, 13.2, 16.1, 15.9, 12.5], 14.3),
         ([15.3, 15.2, 16.6, 16.0, 15.7, 15.5, 16.1, 15.9, 14.8, 15.4, 15.7, 13.5, 15.7, 16.9, 16.0, 13.2, 16.1, 15.9, 12.5, 15.8], 14.4),
         ([40.7, 42.4, 36.1], 34.1),
-        ([40.7, 42.4, 36.1, 45.9, 43.6, 45.0], 37.4),
+        ([40.7, 42.4, 36.1, 45.9, 43.6, 45.0], 37.4)
     ])
 def test_compoute_handicap_index(records, handicap_index):
     whs = WorldHandicapSystem()
