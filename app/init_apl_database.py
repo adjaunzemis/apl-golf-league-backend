@@ -47,8 +47,6 @@ def find_courses_played(scores_file: str):
     """
     print(f"Finding courses played in scores file: {scores_file}")
 
-    year = int(scores_file.split("_")[-2])
-
     # Read scores data spreadsheet
     df_scores = pd.read_csv(scores_file)
 
@@ -72,7 +70,7 @@ def add_courses(session: Session, courses_file: str, courses_played: List[str]):
     # Read course data spreadsheet
     df = pd.read_csv(courses_file)
     
-    year = int(courses_file.split(".")[0][-4:]) # TODO: Add year to course info
+    year = int(courses_file.split(".")[0][-4:])
 
     # For each course entry:
     for idx, row in df.iterrows():
@@ -84,6 +82,7 @@ def add_courses(session: Session, courses_file: str, courses_played: List[str]):
                 print(f"Adding course: {row['course_name']}")
                 course_db = Course(
                     name=row["course_name"],
+                    year=year,
                     address=row["address"] if pd.notna(row["address"]) else None,
                     phone=row["phone"] if pd.notna(row["phone"]) else None,
                     website=row["website"] if pd.notna(row["website"]) else None

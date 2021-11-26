@@ -27,15 +27,15 @@ def client_fixture(session: Session):
     app.dependency_overrides.clear()
 
 @pytest.mark.parametrize(
-    "name, address, phone, website", [
-        ("Test Course Name", "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", "Test Street, Test City, ST 12345", "123-456-7890", None),
-        ("Test Course Name", "Test Street, Test City, ST 12345", None, "google.com"),
-        ("Test Course Name", None, "123-456-7890", "google.com")
+    "name, year, address, phone, website", [
+        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
+        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", None),
+        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", None, "google.com"),
+        ("Test Course Name", 2021, None, "123-456-7890", "google.com")
     ])
-def test_create_course(client: TestClient, name: str, address: str, phone: str, website: str):
+def test_create_course(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
     response = client.post("/courses/", json={
-        "name": name, "address": address, "phone": phone, "website": website
+        "name": name, "year": year, "address": address, "phone": phone, "website": website
     })
     assert response.status_code == 200
 
@@ -46,19 +46,27 @@ def test_create_course(client: TestClient, name: str, address: str, phone: str, 
     assert data["website"] == website
     assert data["id"] is not None
 
-def test_create_course_incomplete(client: TestClient):
-    # Missing required 'name' field
-    response = client.post("/courses/", json={"address": "Test Address Only"})
+@pytest.mark.parametrize(
+    "name, year, address, phone, website", [
+        (None, 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
+        ("Test Course Name", None, "Test Street, Test City, ST 12345", "123-456-7890", "google.com")
+    ])
+def test_create_course_incomplete(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
+    # Missing required fieds
+    response = client.post("/courses/", json={
+        "name": name, "year": year, "address": address, "phone": phone, "website": website
+    })
     assert response.status_code == 422
 
 @pytest.mark.parametrize(
-    "name, address, phone, website", [
-        ({"key": "value"}, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", {"key": "value"}, "123-456-7890", "google.com"),
-        ("Test Course Name", "Test Street, Test City, ST 12345", {"key": "value"}, "google.com"),
-        ("Test Course Name", "Test Street, Test City, ST 12345", "123-456-7890", {"key": "value"})
+    "name, year, address, phone, website", [
+        ({"key": "value"}, 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
+        ("Test Course Name", {"key": "value"}, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
+        ("Test Course Name", 2021, {"key": "value"}, "123-456-7890", "google.com"),
+        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", {"key": "value"}, "google.com"),
+        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", {"key": "value"})
     ])
-def test_create_course_invalid(client: TestClient, name: str, address: str, phone: str, website: str):
+def test_create_course_invalid(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
     # Invalid input data types
     response = client.post("/courses/", json={
         "name": name, "address": address, "phone": phone, "website": website
@@ -67,8 +75,8 @@ def test_create_course_invalid(client: TestClient, name: str, address: str, phon
 
 def test_read_courses(session: Session, client: TestClient):
     courses = [
-        Course(name="Test Course 1", address="Test Address 1", phone="111-111-1111", website="google.com"),
-        Course(name="Test Course 2", address="Test Address 2", phone="222-222-2222", website="bing.com")
+        Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com"),
+        Course(name="Test Course 2", year=2021, address="Test Address 2", phone="222-222-2222", website="bing.com")
     ]
     for course in courses:
         session.add(course)
@@ -81,13 +89,14 @@ def test_read_courses(session: Session, client: TestClient):
     assert len(data) == len(courses)
     for dIdx in range(len(data)):
         assert data[dIdx]["name"] == courses[dIdx].name
+        assert data[dIdx]["year"] == courses[dIdx].year
         assert data[dIdx]["address"] == courses[dIdx].address
         assert data[dIdx]["phone"] == courses[dIdx].phone
         assert data[dIdx]["website"] == courses[dIdx].website
         assert data[dIdx]["id"] == courses[dIdx].id
 
 def test_read_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
     session.add(course)
     session.commit()
 
@@ -96,6 +105,7 @@ def test_read_course(session: Session, client: TestClient):
 
     data = response.json()
     assert data["name"] == course.name
+    assert data["year"] == course.year
     assert data["address"] == course.address
     assert data["phone"] == course.phone
     assert data["website"] == course.website
@@ -103,7 +113,7 @@ def test_read_course(session: Session, client: TestClient):
     assert len(data["tracks"]) == 0
 
 def test_update_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
     session.add(course)
     session.commit()
 
@@ -112,13 +122,14 @@ def test_update_course(session: Session, client: TestClient):
 
     data = response.json()
     assert data["name"] == "Awesome Course"
+    assert data["year"] == course.year
     assert data["address"] == course.address
     assert data["phone"] == course.phone
     assert data["website"] == course.website
     assert data["id"] == course.id
 
 def test_delete_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
     session.add(course)
     session.commit()
 
@@ -365,8 +376,7 @@ def test_create_hole(client: TestClient, number: int, par: int, yardage: int, st
         (1, None, 385, 3, 1),
         (1, 4, None, 3, 1),
         (1, 4, 385, None, 1)
-    ]
-)
+    ])
 def test_create_hole_incomplete(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
     # Missing required fields
     response = client.post("/courses/holes/", json={
@@ -381,8 +391,7 @@ def test_create_hole_incomplete(client: TestClient, number: int, par: int, yarda
         (1, 4, {"key": "value"}, 3, 1),
         (1, 4, 385, {"key": "value"}, 1),
         (1, 4, 385, 3, {"key": "value"})
-    ]
-)
+    ])
 def test_create_hole_invalid(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
     # Invalid input data types
     response = client.post("/courses/holes/", json={
@@ -456,7 +465,7 @@ def test_delete_hole(session: Session, client: TestClient):
     assert hole_db is None
 
 def test_read_course_with_data(session: Session, client: TestClient):
-    course = Course(name="Test Course", address="Test Street, Test City, ST 12345", phone="123-456-7890", website="google.com")
+    course = Course(name="Test Course", year=2021, address="Test Street, Test City, ST 12345", phone="123-456-7890", website="google.com")
     session.add(course)
     session.commit()
 
@@ -488,6 +497,7 @@ def test_read_course_with_data(session: Session, client: TestClient):
 
     course_data = response.json()
     assert course_data["name"] == course.name
+    assert course_data["year"] == course.year
     assert course_data["address"] == course.address
     assert course_data["phone"] == course.phone
     assert course_data["website"] == course.website

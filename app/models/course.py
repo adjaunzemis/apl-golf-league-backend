@@ -5,6 +5,7 @@ from .track import Track, TrackReadWithTees
 
 class CourseBase(SQLModel):
     name: str
+    year: int
     address: Optional[str]
     phone: Optional[str]
     website: Optional[str]
@@ -18,6 +19,7 @@ class CourseCreate(CourseBase):
 
 class CourseUpdate(SQLModel):
     name: Optional[str] = None
+    year: Optional[int] = None
     address: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None
