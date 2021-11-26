@@ -14,7 +14,9 @@ Andris Jaunzemis
 """
 
 import os
+import numpy as np
 import pandas as pd
+from typing import List
 from datetime import date, datetime
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -31,9 +33,34 @@ from models.match import Match
 from models.round import Round
 from models.hole_result import HoleResult
 from models.match_round_link import MatchRoundLink
-from usga_handicap import compute_course_handicap
+from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
-def add_courses(session: Session, courses_file: str):
+def find_courses_played(scores_file: str):
+    """
+    Finds all courses played in matches in the given scores file.
+
+    Returns
+    -------
+    course_abbreviations : list of strings
+        unique list of abbreviations for courses played
+
+    """
+    print(f"Finding courses played in scores file: {scores_file}")
+
+    year = int(scores_file.split("_")[-2])
+
+    # Read scores data spreadsheet
+    df_scores = pd.read_csv(scores_file)
+
+    # For each scores entry, compile course abbreviations:
+    course_abbreviations = []
+    for idx, row in df_scores.iterrows():
+        course_abbreviations.append(row['course_abbreviation'])
+    
+    # Filter unique abbreviations
+    return np.unique(course_abbreviations)
+
+def add_courses(session: Session, courses_file: str, courses_played: List[str]):
     """
     Adds course-related data in database.
     
@@ -49,68 +76,70 @@ def add_courses(session: Session, courses_file: str):
 
     # For each course entry:
     for idx, row in df.iterrows():
-        # Add course to database (if not already added)
-        course_db = session.exec(select(Course).where(Course.name == row["course_name"])).all()
-        if not course_db:
-            print(f"Adding course: {row['course_name']}")
-            course_db = Course(
-                name=row["course_name"],
-                address=row["address"] if pd.notna(row["address"]) else None,
-                phone=row["phone"] if pd.notna(row["phone"]) else None,
-                website=row["website"] if pd.notna(row["website"]) else None
+        # Check if course had any rounds played
+        if row["abbreviation"] in courses_played:
+            # Add course to database (if not already added)
+            course_db = session.exec(select(Course).where(Course.name == row["course_name"])).all()
+            if not course_db:
+                print(f"Adding course: {row['course_name']}")
+                course_db = Course(
+                    name=row["course_name"],
+                    address=row["address"] if pd.notna(row["address"]) else None,
+                    phone=row["phone"] if pd.notna(row["phone"]) else None,
+                    website=row["website"] if pd.notna(row["website"]) else None
+                )
+                session.add(course_db)
+                session.commit()
+            else:
+                course_db = course_db[0]
+
+            # Add track to database (if not already added)
+            track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == row["track_name"])).all()
+            if not track_db:
+                print(f"Adding track: {row['track_name']}")
+                track_db = Track(
+                    course_id=course_db.id,
+                    name=row["track_name"]
+                )
+                session.add(track_db)
+                session.commit()
+            else:
+                track_db = track_db[0]
+
+            # Add tee to database
+            tee_db = Tee(
+                track_id=track_db.id,
+                name=row["tee_name"],
+                gender="F" if row["tee_name"].lower() == "forward" else "M",
+                rating=float(row["rating"]),
+                slope=int(row["slope"]),
+                color=row["tee_color"] if pd.notna(row["tee_color"]) else None
             )
-            session.add(course_db)
+            session.add(tee_db)
             session.commit()
-        else:
-            course_db = course_db[0]
 
-        # Add track to database (if not already added)
-        track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == row["track_name"])).all()
-        if not track_db:
-            print(f"Adding track: {row['track_name']}")
-            track_db = Track(
-                course_id=course_db.id,
-                name=row["track_name"]
-            )
-            session.add(track_db)
+            # Add holes to database
+            holeOffset = 0 if row["track_name"].lower() != "back" else 9
+            for holeNum in range(1, 10):
+                par = int(row['par' + str(holeNum)])
+
+                hcp = None
+                if pd.notna(row['hcp' + str(holeNum)]):
+                    hcp = int(row['hcp' + str(holeNum)])
+
+                yds = None
+                if pd.notna(row['yd' + str(holeNum)]):
+                    yds = int(row['yd' + str(holeNum)])
+
+                hole_db = Hole(
+                    tee_id=tee_db.id,
+                    number=holeNum + holeOffset,
+                    par=par,
+                    yardage=yds,
+                    stroke_index=hcp
+                )
+                session.add(hole_db)
             session.commit()
-        else:
-            track_db = track_db[0]
-
-        # Add tee to database
-        tee_db = Tee(
-            track_id=track_db.id,
-            name=row["tee_name"],
-            gender="F" if row["tee_name"].lower() == "forward" else "M",
-            rating=float(row["rating"]),
-            slope=int(row["slope"]),
-            color=row["tee_color"] if pd.notna(row["tee_color"]) else None
-        )
-        session.add(tee_db)
-        session.commit()
-
-        # Add holes to database
-        holeOffset = 0 if row["track_name"].lower() != "back" else 9
-        for holeNum in range(1, 10):
-            par = int(row['par' + str(holeNum)])
-
-            hcp = None
-            if pd.notna(row['hcp' + str(holeNum)]):
-                hcp = int(row['hcp' + str(holeNum)])
-
-            yds = None
-            if pd.notna(row['yd' + str(holeNum)]):
-                yds = int(row['yd' + str(holeNum)])
-
-            hole_db = Hole(
-                tee_id=tee_db.id,
-                number=holeNum + holeOffset,
-                par=par,
-                yardage=yds,
-                stroke_index=hcp
-            )
-            session.add(hole_db)
-        session.commit()
 
 def add_flights(session: Session, flights_file: str):
     """
@@ -473,6 +502,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
             date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
 
             # Add round
+            alhs = APLLegacyHandicapSystem()
             round_db = session.exec(select(Round).where(Round.golfer_id == golfer_db.id).where(Round.date_played == date_played)).all()
             if not round_db:
                 print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
@@ -481,11 +511,11 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     golfer_id=golfer_db.id,
                     date_played=date_played,
                     handicap_index=row[f"p{pNum}_handicap"],
-                    playing_handicap=compute_course_handicap(
+                    playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
                         par=tee_db.par,
                         rating=tee_db.rating,
                         slope=tee_db.slope,
-                        index=row[f"p{pNum}_handicap"]
+                        handicap_index=row[f"p{pNum}_handicap"]
                     )
                 )
                 session.add(round_db)
@@ -541,17 +571,29 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)  
 
     with Session(engine) as session:
-        courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
-        add_courses(session, courses_file)
+        # Find all courses played in rounds for this year
+        scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
+        courses_played = []
+        for scores_file in scores_files:
+            for course_played in find_courses_played(scores_file):
+                if course_played not in courses_played:
+                    courses_played.append(course_played)
+        print(f"Courses played: {courses_played}")
 
+        # Add relevant course data to database
+        courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
+        add_courses(session, courses_file, courses_played)
+
+        # Add flight data to database
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
         add_flights(session, flights_file)
 
+        # Add roster data into database
         roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
         for roster_file in roster_files:
             add_teams(session, roster_file, flights_file)
 
-        scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
+        # Add score data to database
         for scores_file in scores_files:
             add_matches(session, scores_file, flights_file, courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
