@@ -75,8 +75,10 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
         team_name=team.name,
         course_name=course.name,
         tee_name=tee.name,
+        tee_gender=tee.gender,
         tee_rating=tee.rating,
-        tee_slope=tee.slope
+        tee_slope=tee.slope,
+        tee_color=tee.color if tee.color else "none",
     ) for round, match_round_link, golfer, course, tee, team in round_query_data]
     round_ids = [r.round_id for r in round_data]
 

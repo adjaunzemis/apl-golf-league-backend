@@ -50,9 +50,11 @@ class RoundData(SQLModel):
     team_name: Optional[str] = None
     course_name: str
     tee_name: str
+    tee_gender: str
     tee_rating: float
     tee_slope: float
     tee_par: int = None
+    tee_color: str = "none"
     gross_score: int = None
     adjusted_gross_score: int = None
     net_score: int = None

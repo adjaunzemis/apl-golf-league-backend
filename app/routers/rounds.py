@@ -40,8 +40,10 @@ async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int
         golfer_playing_handicap=round.playing_handicap,
         course_name=course.name,
         tee_name=tee.name,
+        tee_gender=tee.gender,
         tee_rating=tee.rating,
-        tee_slope=tee.slope
+        tee_slope=tee.slope,
+        tee_color=tee.color if tee.color else "none",
     ) for round, golfer, course, tee in round_query_data]
 
     # Query hole data for selected rounds
