@@ -36,11 +36,8 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             return 10
 
     def compute_hole_handicap_strokes(self, stroke_index: int, course_handicap: int) -> int:
-        # Similar to WHS, but using 9-hole handicaps only and assuming hole
-        # stroke index is normalized to 1-to-9 range (not 1-to-18).
-        if course_handicap < 0: # plus-handicap
-            return -(int(-course_handicap / 9) + int(-course_handicap % 9 >= stroke_index))
-        return int(course_handicap / 9) + int(course_handicap % 9 >= stroke_index)
+        # Similar to WHS, but using 9-hole playing handicaps
+        return super().compute_hole_handicap_strokes(stroke_index=stroke_index, course_handicap=course_handicap*2)
     
     def compute_handicap_index(self, record: List[float]) -> float:
         # Reference: APL Golf League Handicapping
