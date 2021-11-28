@@ -14,8 +14,9 @@ router = APIRouter(
     tags=["Courses"]
 )
 
-@router.get("/", response_model=List[CourseRead])
+@router.get("/", response_model=List[CourseReadWithTracks])
 async def read_courses(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    # TODO: Refactor querying to use joins and reduce number of queries
     return session.exec(select(Course).offset(offset).limit(limit)).all()
 
 @router.post("/", response_model=CourseRead)
