@@ -87,6 +87,7 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
     hole_result_data = [HoleResultData(
         hole_result_id=hole_result.id,
         round_id=hole_result.round_id,
+        hole_id=hole_result.hole_id,
         number=hole.number,
         par=hole.par,
         yardage=hole.yardage,

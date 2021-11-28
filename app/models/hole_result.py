@@ -30,6 +30,7 @@ class HoleResultReadWithHole(HoleResultRead):
 class HoleResultData(SQLModel):
     hole_result_id: int
     round_id: int
+    hole_id: int
     number: int
     par: int
     yardage: int = None
