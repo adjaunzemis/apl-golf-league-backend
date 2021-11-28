@@ -27,18 +27,19 @@ def test_compute_hole_maximum_score(par, stroke_index, course_handicap, max_scor
 
 @pytest.mark.parametrize(
     "stroke_index, course_handicap, handicap_strokes", [
-        (5, 30, 3),
-        (5, 23, 3),
-        (5, 20, 2),
-        (5, 14, 2),
-        (5, 10, 1),
-        (5, 5, 1),
-        (5, 3, 0),
+        (5, 30, 4),
+        (5, 27, 3),
+        (5, 21, 3),
+        (5, 18, 2),
+        (5, 12, 2),
+        (5, 9, 1),
+        (5, 3, 1),
+        (5, 2, 0),
         (5, 0, 0),
         (5, -2, 0),
-        (5, -5, -1),
+        (5, -3, -1),
         (5, -9, -1),
-        (5, -14, -2)
+        (5, -12, -2)
     ])
 def test_compute_hole_handicap_strokes(stroke_index, course_handicap, handicap_strokes):
     alhs = APLLegacyHandicapSystem()
