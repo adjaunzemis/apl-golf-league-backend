@@ -1,21 +1,37 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
+import numpy as np
 
 from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightData, FlightDataWithCount
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead, DivisionData
-from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamReadWithPlayers, TeamData
+from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamData
 from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData, PlayerData
 from ..models.course import Course
 from ..models.tee import Tee
 from ..models.golfer import Golfer
+from ..models.match import Match, MatchData
+from ..models.match_round_link import MatchRoundLink
+from ..models.round import Round, RoundData
+from ..models.track import Track
+from ..models.hole import Hole
+from ..models.hole_result import HoleResult, HoleResultData
+from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(
     prefix="/flights",
     tags=["Flights"]
 )
+
+# TODO: Move data models to separate class?
+class TeamWithMatchData(SQLModel):
+    team_id: int
+    flight_id: int
+    name: str
+    players: List[PlayerData] = []
+    matches: List[MatchData] = []
 
 @router.get("/", response_model=FlightDataWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
@@ -170,12 +186,103 @@ async def create_team(*, session: Session = Depends(get_session), team: TeamCrea
     session.refresh(team_db)
     return team_db
 
-@router.get("/teams/{team_id}", response_model=TeamReadWithPlayers)
+@router.get("/teams/{team_id}", response_model=TeamWithMatchData)
 async def read_team(*, session: Session = Depends(get_session), team_id: int):
-    team_db = session.get(Team, team_id)
-    if not team_db:
+    # Query team data
+    team_query_data = session.exec(select(Team, Flight).join(Flight).where(Team.id == team_id)).all()
+    if not team_query_data:
         raise HTTPException(status_code=404, detail="Team not found")
-    return team_db
+
+    team_query_data = team_query_data[0]
+    team_data = TeamWithMatchData(
+        team_id=team_query_data[0].id,
+        flight_id=team_query_data[0].flight_id,
+        name=team_query_data[0].name
+    )
+    flight_name = team_query_data[1].name
+
+    # Query player data for selected team
+    player_query_data = session.exec(select(Player, Team, Golfer, Division).join(Team).join(Golfer).join(Division).where(Player.team_id == team_id))
+    team_data.players = [PlayerData(
+        player_id=player.id,
+        team_id=player.team_id,
+        golfer_id=golfer.id,
+        golfer_name=golfer.name,
+        flight_name=flight_name,
+        division_name=division.name,
+        team_name=team.name,
+        role=player.role
+    ) for player, team, golfer, division in player_query_data]
+
+    # Query match data for selected team
+    match_query_data = session.exec(select(Match).where((Match.home_team_id == team_id) | (Match.away_team_id == team_id))).all()
+    match_data = [MatchData(
+        match_id=match.id,
+        home_team_id=match.home_team_id,
+        away_team_id=match.away_team_id,
+        flight_name=flight_name,
+        week=match.week,
+        home_score=match.home_score,
+        away_score=match.away_score
+    ) for match in match_query_data]
+    match_ids = np.unique([m.match_id for m in match_data])
+
+    # Query round data for selected matches
+    round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(Golfer).join(Tee).join(Track).join(Course).where(MatchRoundLink.match_id.in_(match_ids)))
+    round_data = [RoundData(
+        round_id=round.id,
+        match_id=match_round_link.match_id,
+        team_id=team_data.team_id,
+        date_played=round.date_played,
+        golfer_name=golfer.name,
+        golfer_handicap_index=round.handicap_index,
+        golfer_playing_handicap=round.playing_handicap,
+        team_name=team_data.name,
+        course_name=course.name,
+        tee_name=tee.name,
+        tee_gender=tee.gender,
+        tee_rating=tee.rating,
+        tee_slope=tee.slope,
+        tee_color=tee.color if tee.color else "none",
+    ) for round, match_round_link, golfer, course, tee in round_query_data]
+    round_ids = np.unique([r.round_id for r in round_data])
+
+    # Query hole data for selected rounds
+    hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids)))
+    hole_result_data = [HoleResultData(
+        hole_result_id=hole_result.id,
+        round_id=hole_result.round_id,
+        hole_id=hole_result.hole_id,
+        number=hole.number,
+        par=hole.par,
+        yardage=hole.yardage,
+        stroke_index=hole.stroke_index,
+        gross_score=hole_result.strokes
+    ) for hole_result, hole in hole_query_data]
+
+    # Add hole data to round data
+    # TODO: Compute handicap strokes and non-gross scores on entry to database
+    ahs = APLLegacyHandicapSystem()
+    for r in round_data:
+        r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
+        r.tee_par = sum([h.par for h in r.holes])
+        r.gross_score = sum([h.gross_score for h in r.holes])
+        for h in r.holes:
+            h.handicap_strokes = ahs.compute_hole_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
+            h.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
+            h.net_score = h.gross_score - h.handicap_strokes
+        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
+        r.net_score = sum([h.net_score for h in r.holes])
+
+    # Add round data to match data
+    for m in match_data:
+        m.rounds = [r for r in round_data if r.match_id == m.match_id]
+
+    # Add match data to team data
+    team_data.matches = match_data
+
+    # Return team data
+    return team_data
 
 @router.patch("/teams/{team_id}", response_model=TeamRead)
 async def update_team(*, session: Session = Depends(get_session), team_id: int, team: TeamUpdate):

@@ -4,7 +4,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select, SQLModel
 
 from ..dependencies import get_session
-from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData
+from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData, MatchData, MatchDataWithCount
 from ..models.match_round_link import MatchRoundLink
 from ..models.round import Round, RoundData
 from ..models.course import Course
@@ -22,20 +22,6 @@ router = APIRouter(
     prefix="/matches",
     tags=["Matches"]
 )
-
-class MatchData(SQLModel):
-    match_id: int
-    home_team_id: int
-    away_team_id: int
-    flight_name: str
-    week: int
-    home_score: float
-    away_score: float
-    rounds: List[RoundData] = []
-
-class MatchDataWithCount(SQLModel):
-    num_matches: int
-    matches: List[MatchData]
 
 @router.get("/", response_model=MatchDataWithCount)
 async def read_matches(*, session: Session = Depends(get_session), team_id: int = Query(default=None, ge=0), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):

@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from .flight import Flight, FlightRead
 from .team import Team, TeamRead
-from .round import Round, RoundReadWithData
+from .round import Round, RoundReadWithData, RoundData
 from .match_round_link import MatchRoundLink
 
 class MatchBase(SQLModel):
@@ -40,3 +40,17 @@ class MatchReadWithData(MatchRead):
     home_team: TeamRead = None
     away_team: TeamRead = None
     rounds: List[RoundReadWithData] = []
+
+class MatchData(SQLModel):
+    match_id: int
+    home_team_id: int
+    away_team_id: int
+    flight_name: str
+    week: int
+    home_score: float
+    away_score: float
+    rounds: List[RoundData] = []
+
+class MatchDataWithCount(SQLModel):
+    num_matches: int
+    matches: List[MatchData]
