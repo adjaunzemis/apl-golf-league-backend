@@ -45,6 +45,6 @@ class PlayerData(SQLModel):
     golfer_id: int
     golfer_name: str
     division_name: str
-    flight_name: str = None
-    team_name: str = None
+    flight_name: str
+    team_name: str
     role: str

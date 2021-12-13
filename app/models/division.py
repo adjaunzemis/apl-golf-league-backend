@@ -30,6 +30,6 @@ class DivisionData(SQLModel):
     flight_id: int
     name: str
     gender: str
-    home_tee_name: str = None
-    home_tee_rating: float = None
-    home_tee_slope: int = None
+    home_tee_name: str
+    home_tee_rating: float
+    home_tee_slope: int
