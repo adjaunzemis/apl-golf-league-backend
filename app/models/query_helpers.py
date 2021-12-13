@@ -18,6 +18,26 @@ from .match_round_link import MatchRoundLink
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 def get_flights(session: Session, offset: int = None, limit: int = None) -> List[FlightData]:
+    """
+    Retrieves flight data from database.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    offset : integer, optional
+        database offset for pagination
+        Default: None
+    limit : integer, optional
+        database entry return limit
+        Default: None
+    
+    Returns
+    -------
+    flight_data : list of FlightData
+        flight data from database
+    
+    """
     flight_query_data = session.exec(select(Flight, Course).join(Course).offset(offset).limit(limit).order_by(Flight.year))
     return [FlightData(
         flight_id=flight.id,
@@ -96,17 +116,17 @@ def get_players_in_teams(session: Session, team_ids: List[int]) -> List[PlayerDa
         players in the given teams
 
     """
-    player_query_data = session.exec(select(Player, Team, Golfer, Division).join(Team).join(Golfer).join(Division).where(Player.team_id.in_(team_ids)))
+    player_query_data = session.exec(select(Player, Team, Golfer, Division, Flight).join(Team, onclause=Player.team_id == Team.id).join(Golfer, onclause=Player.golfer_id == Golfer.id).join(Division, onclause=Player.division_id == Division.id).join(Flight, onclause=Division.flight_id == Flight.id).where(Player.team_id.in_(team_ids)))
     return [PlayerData(
         player_id=player.id,
         team_id=player.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
-        flight_name="TEST", # TODO: Add flight to query
+        flight_name=flight.name,
         division_name=division.name,
         team_name=team.name,
         role=player.role
-    ) for player, team, golfer, division in player_query_data]
+    ) for player, team, golfer, division, flight in player_query_data]
 
 def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchData]:
     """
@@ -125,16 +145,16 @@ def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchDa
         matches played by the given teams
     
     """
-    match_query_data = session.exec(select(Match).where((Match.home_team_id.in_(team_ids)) | (Match.away_team_id.in_(team_ids)))).all()
+    match_query_data = session.exec(select(Match, Flight).join(Flight, onclause=Match.flight_id == Flight.id).where((Match.home_team_id.in_(team_ids)) | (Match.away_team_id.in_(team_ids)))).all()
     match_data = [MatchData(
         match_id=match.id,
         home_team_id=match.home_team_id,
         away_team_id=match.away_team_id,
-        flight_name="TEST", # TODO: Add flight to query
+        flight_name=flight.name,
         week=match.week,
         home_score=match.home_score,
         away_score=match.away_score
-    ) for match in match_query_data]
+    ) for match, flight in match_query_data]
 
     # Get round data for selected matches
     round_data = get_rounds_for_matches(session=session, match_ids=[m.match_id for m in match_data])

@@ -58,3 +58,10 @@ JOIN team ON player.team_id = team.id
 JOIN division ON player.division_id = division.id
 JOIN flight ON division.flight_id = flight.id
 WHERE golfer.id in (1,2,3,4);
+
+SELECT *
+FROM player
+JOIN team on player.team_id = team.id
+JOIN golfer on player.golfer_id = golfer.id
+JOIN division on player.division_id = division.id
+JOIN flight on division.flight_id = flight.id;
