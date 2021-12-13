@@ -1,38 +1,19 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select, SQLModel
-
-from ..models.query_helpers import get_divisions_in_flights, get_flights, get_matches_for_teams, get_players_in_teams, get_teams_in_flights
+from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightData, FlightDataWithCount
-from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead, DivisionData
-from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead, TeamData
+from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightDataWithCount
+from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
+from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData, PlayerData
-from ..models.course import Course
-from ..models.tee import Tee
-from ..models.golfer import Golfer
-from ..models.match import Match, MatchData
-from ..models.match_round_link import MatchRoundLink
-from ..models.round import Round, RoundData
-from ..models.track import Track
-from ..models.hole import Hole
-from ..models.hole_result import HoleResult, HoleResultData
-from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from ..models.query_helpers import TeamWithMatchData, get_divisions_in_flights, get_flights, get_matches_for_teams, get_players_in_teams, get_teams_in_flights
 
 router = APIRouter(
     prefix="/flights",
     tags=["Flights"]
 )
-
-# TODO: Move data models to separate class?
-class TeamWithMatchData(SQLModel):
-    team_id: int
-    flight_id: int
-    name: str
-    players: List[PlayerData] = []
-    matches: List[MatchData] = []
 
 @router.get("/", response_model=FlightDataWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):

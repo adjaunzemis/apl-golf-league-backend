@@ -4,7 +4,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData, MatchData, MatchDataWithCount
+from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData, MatchDataWithCount
 from ..models.match_round_link import MatchRoundLink
 from ..models.query_helpers import get_matches
 

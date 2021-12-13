@@ -17,7 +17,7 @@ from .match_round_link import MatchRoundLink
 
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
-# TODO: Move custom data models elsewhere
+# TODO: Move custom route data models elsewhere
 class GolferData(SQLModel):
     golfer_id: int
     name: str
@@ -27,6 +27,13 @@ class GolferData(SQLModel):
 class GolferDataWithCount(SQLModel):
     num_golfers: int
     golfers: List[GolferData]
+    
+class TeamWithMatchData(SQLModel):
+    team_id: int
+    flight_id: int
+    name: str
+    players: List[PlayerData] = []
+    matches: List[MatchData] = []
 
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
     """

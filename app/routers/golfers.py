@@ -5,9 +5,6 @@ from sqlmodel import Session, select
 
 from ..dependencies import get_session
 from ..models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
-from ..models.player import Player, PlayerData
-from ..models.team import Team
-from ..models.division import Division
 from ..models.query_helpers import GolferDataWithCount, get_golfers
 
 router = APIRouter(
