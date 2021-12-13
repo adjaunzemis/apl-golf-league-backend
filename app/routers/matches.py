@@ -1,24 +1,12 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select, SQLModel
-
-from app.models.query_helpers import get_rounds_for_matches
+from sqlmodel import Session, select
 
 from ..dependencies import get_session
 from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData, MatchData, MatchDataWithCount
 from ..models.match_round_link import MatchRoundLink
-from ..models.round import Round, RoundData
-from ..models.course import Course
-from ..models.track import Track
-from ..models.tee import Tee
-from ..models.hole import Hole
-from ..models.hole_result import HoleResult, HoleResultData
-from ..models.golfer import Golfer
-from ..models.player import Player
-from ..models.flight import Flight
-from ..models.team import Team
-from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from ..models.query_helpers import get_matches
 
 router = APIRouter(
     prefix="/matches",
@@ -27,35 +15,14 @@ router = APIRouter(
 
 @router.get("/", response_model=MatchDataWithCount)
 async def read_matches(*, session: Session = Depends(get_session), team_id: int = Query(default=None, ge=0), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    # Process query parameters to further limit match results returned from database
+    # Process query parameters to limit results
     if team_id: # limit to specific team
-        num_matches = len(session.exec(select(Match.id).where(Match.home_team_id == team_id or Match.away_team_id == team_id)).all())
-        match_query_data = session.exec(select(Match, Flight).join(Flight).where(Match.home_team_id == team_id or Match.away_team_id == team_id).offset(offset).limit(limit).order_by(Match.week))
+        match_ids = session.exec(select(Match.id).where(Match.home_team_id == team_id or Match.away_team_id == team_id).offset(offset).limit(limit)).all()
     else: # no extra limitations
-        num_matches = len(session.exec(select(Match.id)).all())
-        match_query_data = session.exec(select(Match, Flight).join(Flight).offset(offset).limit(limit).order_by(Match.week))
-
-    # Reformat matches data
-    if num_matches == 0:
-        return MatchDataWithCount(num_matches=0, matches=[])
-
-    match_data = [MatchData(
-        match_id=match.id,
-        home_team_id=match.home_team_id,
-        away_team_id=match.away_team_id,
-        flight_name=flight.name,
-        week=match.week,
-        home_score=match.home_score,
-        away_score=match.away_score
-    ) for match, flight in match_query_data]
-    
-    # Add round data to match data
-    round_data = get_rounds_for_matches(session=session, match_ids=[m.match_id for m in match_data])
-    for m in match_data:
-        m.rounds = [r for r in round_data if r.match_id == m.match_id]
+        match_ids = session.exec(select(Match.id).offset(offset).limit(limit)).all()
 
     # Return count of relevant matches from database and match data list
-    return MatchDataWithCount(num_matches=num_matches, matches=match_data)
+    return MatchDataWithCount(num_matches=len(match_ids), matches=get_matches(session=session, match_ids=match_ids))
 
 @router.post("/", response_model=MatchRead)
 async def create_match(*, session: Session = Depends(get_session), match: MatchCreate):

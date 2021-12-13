@@ -36,11 +36,9 @@ class TeamWithMatchData(SQLModel):
 
 @router.get("/", response_model=FlightDataWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    # Get flight data
     # TODO: Process query parameters to further limit flight results returned from database
-    num_flights = len(session.exec(select(Flight.id)).all())
-    flight_data = get_flights(session=session, offset=offset, limit=limit)
-    flight_ids = [f.flight_id for f in flight_data]
+    flight_ids = session.exec(select(Flight.id).offset(offset).limit(limit)).all()
+    flight_data = get_flights(session=session, flight_ids=flight_ids)
 
     # Get division data for selected flights
     division_data = get_divisions_in_flights(session=session, flight_ids=flight_ids)
@@ -57,7 +55,7 @@ async def read_flights(*, session: Session = Depends(get_session), offset: int =
         f.teams = [t for t in team_data if t.flight_id == f.flight_id]
 
     # Return count of relevant flights from database and flight data list
-    return FlightDataWithCount(num_flights=num_flights, flights=flight_data)
+    return FlightDataWithCount(num_flights=len(flight_ids), flights=flight_data)
 
 @router.post("/", response_model=FlightRead)
 async def create_flight(*, session: Session = Depends(get_session), flight: FlightCreate):

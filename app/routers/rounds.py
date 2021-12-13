@@ -4,14 +4,9 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundData, RoundDataWithCount
-from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole, HoleResultData
-from ..models.course import Course
-from ..models.track import Track
-from ..models.tee import Tee
-from ..models.hole import Hole
-from ..models.golfer import Golfer
-from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
+from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
+from ..models.query_helpers import get_rounds
 
 router = APIRouter(
     prefix="/rounds",
@@ -20,61 +15,14 @@ router = APIRouter(
     
 @router.get("/", response_model=RoundDataWithCount)
 async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None, ge=0), offset: int = Query(default=0, ge=0), limit: int = Query(default=25, ge=0, le=100)):
-    # Process query parameters to further limit round results returned from database
+    # Process query parameters to limit results
     if golfer_id: # limit to specific golfer
-        num_rounds = len(session.exec(select(Round.id).where(Round.golfer_id == golfer_id)).all())
-        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).where(Round.golfer_id == golfer_id).offset(offset).limit(limit).order_by(Round.date_played))
+        round_ids = session.exec(select(Round.id).where(Round.golfer_id == golfer_id).offset(offset).limit(limit)).all()
     else: # no extra limitations
-        num_rounds = len(session.exec(select(Round.id)).all())
-        round_query_data = session.exec(select(Round, Golfer, Course, Tee).join(Golfer).join(Tee).join(Track).join(Course).offset(offset).limit(limit).order_by(Round.date_played))
-
-    # Reformat round data
-    if num_rounds == 0:
-        return RoundDataWithCount(num_rounds=0, rounds=[])
-
-    round_data = [RoundData(
-        round_id=round.id,
-        date_played=round.date_played,
-        golfer_name=golfer.name,
-        golfer_handicap_index=round.handicap_index,
-        golfer_playing_handicap=round.playing_handicap,
-        course_name=course.name,
-        tee_name=tee.name,
-        tee_gender=tee.gender,
-        tee_rating=tee.rating,
-        tee_slope=tee.slope,
-        tee_color=tee.color if tee.color else "none",
-    ) for round, golfer, course, tee in round_query_data]
-
-    # Query hole data for selected rounds
-    hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([r.round_id for r in round_data])))
-    hole_result_data = [HoleResultData(
-        hole_result_id=hole_result.id,
-        round_id=hole_result.round_id,
-        hole_id=hole_result.hole_id,
-        number=hole.number,
-        par=hole.par,
-        yardage=hole.yardage,
-        stroke_index=hole.stroke_index,
-        gross_score=hole_result.strokes
-    ) for hole_result, hole in hole_query_data]
-
-    # Add hole data to round data
-    # TODO: Compute handicap strokes and non-gross scores on entry to database
-    ahs = APLLegacyHandicapSystem()
-    for r in round_data:
-        r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
-        r.tee_par = sum([h.par for h in r.holes])
-        r.gross_score = sum([h.gross_score for h in r.holes])
-        for h in r.holes:
-            h.handicap_strokes = ahs.compute_hole_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
-            h.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
-            h.net_score = h.gross_score - h.handicap_strokes
-        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
-        r.net_score = sum([h.net_score for h in r.holes])
+        round_ids = session.exec(select(Round.id).offset(offset).limit(limit)).all()
 
     # Return count of relevant rounds from database and round data list
-    return RoundDataWithCount(num_rounds=num_rounds, rounds=round_data)
+    return RoundDataWithCount(num_rounds=len(round_ids), matches=get_rounds(session=session, round_ids=round_ids))
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):
