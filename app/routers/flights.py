@@ -225,27 +225,27 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
         home_score=match.home_score,
         away_score=match.away_score
     ) for match in match_query_data]
-    match_ids = np.unique([m.match_id for m in match_data])
+    match_ids = [m.match_id for m in match_data]
 
     # Query round data for selected matches
-    round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(Golfer).join(Tee).join(Track).join(Course).where(MatchRoundLink.match_id.in_(match_ids)))
+    round_query_data = session.exec(select(Round, MatchRoundLink, Golfer, Course, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(Tee).join(Track).join(Course).join(Golfer).join(Player, ((Player.golfer_id == Round.golfer_id) & (Player.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Player.team_id == Team.id).where(MatchRoundLink.match_id.in_(match_ids)))
     round_data = [RoundData(
         round_id=round.id,
         match_id=match_round_link.match_id,
-        team_id=team_data.team_id,
+        team_id=team.id,
         date_played=round.date_played,
         golfer_name=golfer.name,
         golfer_handicap_index=round.handicap_index,
         golfer_playing_handicap=round.playing_handicap,
-        team_name=team_data.name,
+        team_name=team.name,
         course_name=course.name,
         tee_name=tee.name,
         tee_gender=tee.gender,
         tee_rating=tee.rating,
         tee_slope=tee.slope,
         tee_color=tee.color if tee.color else "none",
-    ) for round, match_round_link, golfer, course, tee in round_query_data]
-    round_ids = np.unique([r.round_id for r in round_data])
+    ) for round, match_round_link, golfer, course, tee, team in round_query_data]
+    round_ids = [r.round_id for r in round_data]
 
     # Query hole data for selected rounds
     hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids)))

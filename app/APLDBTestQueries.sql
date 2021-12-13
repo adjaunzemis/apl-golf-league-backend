@@ -58,8 +58,3 @@ JOIN team ON player.team_id = team.id
 JOIN division ON player.division_id = division.id
 JOIN flight ON division.flight_id = flight.id
 WHERE golfer.id in (1,2,3,4);
-
-SELECT *
-FROM round
-JOIN matchroundlink ON round.id = matchroundlink.round_id
-WHERE matchroundlink.match_id IN (1);
