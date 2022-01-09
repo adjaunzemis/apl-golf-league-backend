@@ -1,5 +1,6 @@
 from typing import List
 from sqlmodel import Session, select, SQLModel
+from sqlalchemy.orm import aliased
 
 from .course import Course
 from .track import Track
@@ -228,16 +229,20 @@ def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
         match data for the given matches
     
     """
-    match_query_data = session.exec(select(Match, Flight).join(Flight, onclause=Match.flight_id == Flight.id).where(Match.id.in_(match_ids))).all()
+    home_team = aliased(Team)
+    away_team = aliased(Team)
+    match_query_data = session.exec(select(Match, Flight, home_team, away_team).join(Flight, onclause=Match.flight_id == Flight.id).join(home_team, onclause=Match.home_team_id == home_team.id).join(away_team, onclause=Match.away_team_id == away_team.id).where(Match.id.in_(match_ids))).all()
     match_data = [MatchData(
         match_id=match.id,
         home_team_id=match.home_team_id,
+        home_team_name=home_team.name,
         away_team_id=match.away_team_id,
+        away_team_name=away_team.name,
         flight_name=flight.name,
         week=match.week,
         home_score=match.home_score,
         away_score=match.away_score
-    ) for match, flight in match_query_data]
+    ) for match, flight, home_team, away_team in match_query_data]
 
     # Get round data for selected matches
     round_data = get_rounds_for_matches(session=session, match_ids=[m.match_id for m in match_data])

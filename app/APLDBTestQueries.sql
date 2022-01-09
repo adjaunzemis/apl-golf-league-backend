@@ -65,3 +65,9 @@ JOIN team on player.team_id = team.id
 JOIN golfer on player.golfer_id = golfer.id
 JOIN division on player.division_id = division.id
 JOIN flight on division.flight_id = flight.id;
+
+SELECT match.id as match_id, flight.name as flight_name, home_team.name as home_team_name, away_team.name as away_team
+FROM match
+JOIN flight on match.flight_id = flight.id
+JOIN team AS home_team on match.home_team_id = home_team.id
+JOIN team AS away_team on match.away_team_id = away_team.id;
