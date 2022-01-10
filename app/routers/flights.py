@@ -8,10 +8,7 @@ from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, Flig
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.player import Player, PlayerCreate, PlayerUpdate, PlayerRead, PlayerReadWithData
-from ..models.round import RoundData
-from ..models.match import MatchData
-from ..models.query_helpers import TeamWithMatchData, get_divisions_in_flights, get_flights, get_matches_for_teams, get_players_in_teams, get_teams_in_flights
-from ..models.statistics import GolferStatistics
+from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_players_in_teams, get_teams_in_flights
 
 router = APIRouter(
     prefix="/flights",
@@ -210,72 +207,3 @@ async def delete_player(*, session: Session = Depends(get_session), player_id: i
     session.delete(player_db)
     session.commit()
     return {"ok": True}
-
-def compute_golfer_statistics_for_rounds(golfer_id: int, rounds: List[RoundData]) -> GolferStatistics:
-    """
-    Computes statistics for the given golfer from the given rounds.
-
-    Filters rounds by golfer_id before processing statistics.
-
-    Parameters
-    ----------
-    golfer_id : int
-        golfer identifier
-    rounds : list of RoundData
-        rounds to process for statistics
-
-    Returns
-    -------
-    stats : GolferStatistics
-        statistics computed from rounds for the given golfer
-    
-    """
-    stats = GolferStatistics()
-    for round in rounds:
-        if round.golfer_id == golfer_id:
-            stats.num_rounds += 1
-            stats.num_holes += len(round.holes)
-            stats.avg_gross_score += ((round.gross_score - stats.avg_gross_score) / stats.num_rounds)
-            stats.avg_net_score += ((round.net_score - stats.avg_net_score) / stats.num_rounds)
-            for hole in round.holes:
-                if hole.gross_score == 1:
-                    stats.num_aces += 1
-                elif hole.gross_score == (hole.par - 3):
-                    stats.num_albatrosses += 1
-                elif hole.gross_score == (hole.par - 2):
-                    stats.num_eagles += 1
-                elif hole.gross_score == (hole.par - 1):
-                    stats.num_birdies += 1
-                elif hole.gross_score == hole.par:
-                    stats.num_pars += 1
-                elif hole.gross_score == (hole.par + 1):
-                    stats.num_bogeys += 1
-                elif hole.gross_score == (hole.par + 2):
-                    stats.num_double_bogeys += 1
-                elif hole.gross_score > (hole.par + 2):
-                    stats.num_others += 1
-    return stats
-
-def compute_golfer_statistics_for_matches(golfer_id: int, matches: List[MatchData]) -> GolferStatistics:
-    """
-    Extracts rounds for given golfer from given matches, computes statistics.
-
-    Filters rounds by golfer_id before processing statistics.
-    
-    Parameters
-    ----------
-    golfer_id : int
-        golfer identifier in database
-    matches : list of MatchData
-        matches containing rounds to analyze
-    
-    Returns
-    -------
-    stats : GolferStatistics
-        statistics computed from rounds for the given golfer
-        
-    """
-    rounds = []
-    for match in matches:
-        rounds.extend([round for round in match.rounds if round.golfer_id == golfer_id])
-    return compute_golfer_statistics_for_rounds(golfer_id, rounds)

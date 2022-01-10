@@ -1,10 +1,9 @@
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 
-from .golfer import Golfer, GolferRead
+from .golfer import Golfer, GolferRead, GolferStatistics
 from .division import Division, DivisionRead
-from .statistics import GolferStatistics
 
 class PlayerRole(str, Enum):
     CAPTAIN = "CAPTAIN"
