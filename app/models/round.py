@@ -44,6 +44,7 @@ class RoundData(SQLModel):
     match_id: Optional[int] = None
     team_id: Optional[int] = None
     date_played: date
+    golfer_id: int
     golfer_name: str
     golfer_handicap_index: float
     golfer_playing_handicap: int

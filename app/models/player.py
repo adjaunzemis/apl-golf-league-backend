@@ -1,10 +1,10 @@
 from typing import List, Optional
 from enum import Enum
-from sqlalchemy.orm.relationships import foreign
 from sqlmodel import SQLModel, Field, Relationship
 
 from .golfer import Golfer, GolferRead
 from .division import Division, DivisionRead
+from .statistics import GolferStatistics
 
 class PlayerRole(str, Enum):
     CAPTAIN = "CAPTAIN"
@@ -48,3 +48,4 @@ class PlayerData(SQLModel):
     flight_name: str
     team_name: str
     role: str
+    statistics: GolferStatistics = None
