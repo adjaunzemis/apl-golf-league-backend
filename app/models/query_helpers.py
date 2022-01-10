@@ -312,16 +312,11 @@ def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
     hole_result_data = get_hole_results_for_rounds(session=session, round_ids=[r.round_id for r in round_data])
 
     # Add hole data to round data and return
-    # TODO: Compute handicap strokes and non-gross scores on entry to database
-    ahs = APLLegacyHandicapSystem()
+    # TODO: Compute non-gross round scores on entry to database
     for r in round_data:
         r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
         r.gross_score = sum([h.gross_score for h in r.holes])
-        for h in r.holes:
-            h.handicap_strokes = ahs.compute_hole_handicap_strokes(h.stroke_index, r.golfer_playing_handicap)
-            h.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(h.par, h.stroke_index, h.gross_score, course_handicap=r.golfer_playing_handicap)
-            h.net_score = h.gross_score - h.handicap_strokes
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])
     return round_data
@@ -363,6 +358,7 @@ def get_hole_results_for_rounds(session: Session, round_ids: List[int]) -> List[
         hole results for the given rounds
 
     """
+    # TODO: Simplify using HoleResultRead* classes
     hole_query_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids)))
     return [HoleResultData(
         hole_result_id=hole_result.id,
@@ -372,7 +368,10 @@ def get_hole_results_for_rounds(session: Session, round_ids: List[int]) -> List[
         par=hole.par,
         yardage=hole.yardage,
         stroke_index=hole.stroke_index,
-        gross_score=hole_result.strokes
+        handicap_strokes=hole_result.handicap_strokes,
+        gross_score=hole_result.gross_score,
+        adjusted_gross_score=hole_result.adjusted_gross_score,
+        net_score=hole_result.net_score
     ) for hole_result, hole in hole_query_data]
 
 def compute_golfer_statistics_for_rounds(golfer_id: int, rounds: List[RoundData]) -> GolferStatistics:

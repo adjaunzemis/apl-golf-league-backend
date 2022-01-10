@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from .hole import Hole, HoleRead
@@ -6,7 +6,10 @@ from .hole import Hole, HoleRead
 class HoleResultBase(SQLModel):
     round_id: int = Field(foreign_key="round.id")
     hole_id: int = Field(foreign_key="hole.id")
-    strokes: int
+    handicap_strokes: int
+    gross_score: int
+    adjusted_gross_score: int
+    net_score: int
 
 class HoleResult(HoleResultBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -19,7 +22,10 @@ class HoleResultCreate(HoleResultBase):
 class HoleResultUpdate(SQLModel):
     round_id: Optional[int] = None
     hole_id: Optional[int] = None
-    strokes: Optional[int] = None
+    handicap_strokes: Optional[int] = None
+    gross_score: Optional[int] = None
+    adjusted_gross_score: Optional[int] = None
+    net_score: Optional[int] = None
     
 class HoleResultRead(HoleResultBase):
     id: int
@@ -27,6 +33,7 @@ class HoleResultRead(HoleResultBase):
 class HoleResultReadWithHole(HoleResultRead):
     hole: Optional[HoleRead] = None
 
+# TODO: Remove this custom data class, consolidate with HoleResultRead*
 class HoleResultData(SQLModel):
     hole_result_id: int
     round_id: int

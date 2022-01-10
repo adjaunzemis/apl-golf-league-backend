@@ -359,6 +359,9 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
         print("Skipping playoffs score data")
         return
 
+    # Initialize handicap system
+    alhs = APLLegacyHandicapSystem()
+
     # Read flights data spreadsheet
     df_flights = pd.read_csv(flights_file)
 
@@ -501,7 +504,6 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
             date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
 
             # Add round
-            alhs = APLLegacyHandicapSystem()
             round_db = session.exec(select(Round).where(Round.golfer_id == golfer_db.id).where(Round.date_played == date_played)).all()
             if not round_db:
                 print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
@@ -542,10 +544,15 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     hNum = hole_db.number
                     if hNum > 9:
                         hNum -= 9
+                    gross_score = row[f"p{pNum}_h{hNum}_score"]
+                    handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_db.playing_handicap)
                     hole_result_db = HoleResult(
                         round_id=round_db.id,
                         hole_id=hole_db.id,
-                        strokes=row[f"p{pNum}_h{hNum}_score"]
+                        handicap_strokes=handicap_strokes,
+                        gross_score=gross_score,
+                        adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_db.playing_handicap),
+                        net_score=(gross_score - handicap_strokes)
                     )
                     session.add(hole_result_db)
                     session.commit()
