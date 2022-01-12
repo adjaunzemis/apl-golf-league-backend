@@ -5,7 +5,7 @@ class HoleBase(SQLModel):
     number: int
     par: int
     yardage: Optional[int] = None
-    stroke_index: Optional[int] = None
+    stroke_index: int
     tee_id: Optional[int] = Field(default=None, foreign_key="tee.id")
 
 class Hole(HoleBase, table=True):
