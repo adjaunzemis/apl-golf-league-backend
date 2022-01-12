@@ -58,6 +58,59 @@ def find_courses_played(scores_file: str):
     # Filter unique abbreviations
     return np.unique(course_abbreviations)
 
+def check_course_data(courses_file: str, courses_played: List[str]):
+    """
+    Checks course data for all required fields.
+
+    Avoids beginning the `add_courses` routine without all required data.
+
+    Prints results of evaluation to console.
+
+    Returns
+    -------
+    complete : boolean
+        true if all courses played have all required data fields
+
+    """
+    print(f"Checking played course data in file: {courses_file}")
+
+    # Read course data spreadsheet
+    df = pd.read_csv(courses_file)
+    
+    # For each course entry:
+    complete = True
+    for idx, row in df.iterrows():
+        # Check if course had any rounds played
+        if row["abbreviation"] in courses_played:
+            # Extract necessary fields
+            course_name = row["course_name"]
+            course_track = row['track_name']
+            course_abbreviation = row["abbreviation"]
+            # TODO: Check for tee name too
+
+            # Check for hole data
+            # TODO: Check entry checking logic
+            has_pars = True
+            has_hcps = True
+            has_yds = True
+            for hole_num in range(1, 10):
+                if not pd.notna(row['par' + str(hole_num)]):
+                    has_pars = False
+                if not pd.notna(row['hcp' + str(hole_num)]):
+                    has_pars = False
+                if not pd.notna(row['yd' + str(hole_num)]):
+                    has_pars = False
+
+            # Update consolidated output
+            if (not has_pars) or (not has_hcps) or (not has_yds):
+                complete = False
+
+            # Print course result to console
+            print(f"Course: {course_name} {course_track} ({course_abbreviation}): pars={has_pars}, handicaps={has_hcps}, yardages={has_yds}")
+
+    # Return consolidated output
+    return complete
+
 def add_courses(session: Session, courses_file: str, courses_played: List[str]):
     """
     Adds course-related data in database.
@@ -586,8 +639,14 @@ if __name__ == "__main__":
                     courses_played.append(course_played)
         print(f"Courses played: {courses_played}")
 
-        # Add relevant course data to database
+        # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
+        course_data_complete = check_course_data(courses_file, courses_played)
+
+        if not course_data_complete:
+            print(STOP) # TODO: Replace with actual error output
+        
+        # Add relevant course data to database
         add_courses(session, courses_file, courses_played)
 
         # Add flight data to database
