@@ -86,10 +86,9 @@ def check_course_data(courses_file: str, courses_played: List[str]):
             course_name = row["course_name"]
             course_track = row['track_name']
             course_abbreviation = row["abbreviation"]
-            # TODO: Check for tee name too
+            course_tee = row["tee_name"]
 
             # Check for hole data
-            # TODO: Check entry checking logic
             has_pars = True
             has_hcps = True
             has_yds = True
@@ -97,16 +96,16 @@ def check_course_data(courses_file: str, courses_played: List[str]):
                 if not pd.notna(row['par' + str(hole_num)]):
                     has_pars = False
                 if not pd.notna(row['hcp' + str(hole_num)]):
-                    has_pars = False
+                    has_hcps = False
                 if not pd.notna(row['yd' + str(hole_num)]):
-                    has_pars = False
+                    has_yds = False
 
             # Update consolidated output
             if (not has_pars) or (not has_hcps) or (not has_yds):
                 complete = False
 
             # Print course result to console
-            print(f"Course: {course_name} {course_track} ({course_abbreviation}): pars={has_pars}, handicaps={has_hcps}, yardages={has_yds}")
+            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: pars={has_pars}, handicaps={has_hcps}, yardages={has_yds}")
 
     # Return consolidated output
     return complete
