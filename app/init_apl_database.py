@@ -91,7 +91,7 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
             course_tee = row["tee_name"]
 
             # Build custom course rows mask
-            mask = (df_custom['abbreviation'].lower() == row['abbreviation'].lower()) & (df_custom['tee'].lower() == row['tee_name'].lower())
+            mask = (df_custom['abbreviation'].str.lower() == row['abbreviation'].lower()) & (df_custom['tee'].str.lower() == row['tee_name'].lower())
             if not any(mask):
                 checks_pass = False
                 print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: no data in custom courses file")
@@ -180,7 +180,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
                 track_db = track_db[0]
 
             # Find matching row in custom courses data
-            mask = (df_custom['abbreviation'].lower() == row['abbreviation'].lower()) & (df_custom['tee'].lower() == row['tee_name'].lower())
+            mask = (df_custom['abbreviation'].str.lower() == row['abbreviation'].lower()) & (df_custom['tee'].str.lower() == row['tee_name'].lower())
 
             # Add tee to database
             tee_db = Tee(
