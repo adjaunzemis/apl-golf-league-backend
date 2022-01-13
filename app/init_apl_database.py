@@ -186,7 +186,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             tee_color = df_custom.loc[mask].iloc[0]['color'].title() if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
             tee_db = Tee(
                 track_id=track_db.id,
-                name=tee_color if tee_color is not None else row["tee_name"],
+                name=row["tee_name"], # TODO: tee_color if tee_color is not None else row["tee_name"],
                 gender="L" if row["tee_name"].lower() == "forward" else "M",
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
