@@ -58,9 +58,10 @@ def find_courses_played(scores_file: str):
     # Filter unique abbreviations
     return np.unique(course_abbreviations)
 
-def check_course_data(courses_file: str, courses_played: List[str]):
+def check_course_data(courses_file: str, custom_courses_file: str, courses_played: List[str]):
     """
-    Checks course data for all required fields.
+    Checks course data for all required fields and consistency with custom
+    courses spreadsheet
 
     Avoids beginning the `add_courses` routine without all required data.
 
@@ -68,18 +69,19 @@ def check_course_data(courses_file: str, courses_played: List[str]):
 
     Returns
     -------
-    complete : boolean
+    checks_pass : boolean
         true if all courses played have all required data fields
 
     """
-    print(f"Checking played course data in file: {courses_file}")
+    print(f"Checking played course data in file: {courses_file}, with custom course data file: {custom_courses_file}")
 
-    # Read course data spreadsheet
-    df = pd.read_csv(courses_file)
+    # Read course data spreadsheets
+    df_courses = pd.read_csv(courses_file)
+    df_custom = pd.read_csv(custom_courses_file)
     
     # For each course entry:
-    complete = True
-    for idx, row in df.iterrows():
+    checks_pass = True
+    for idx, row in df_courses.iterrows():
         # Check if course had any rounds played
         if row["abbreviation"] in courses_played:
             # Extract necessary fields
@@ -88,29 +90,45 @@ def check_course_data(courses_file: str, courses_played: List[str]):
             course_abbreviation = row["abbreviation"]
             course_tee = row["tee_name"]
 
-            # Check for hole data
-            has_pars = True
-            has_hcps = True
-            has_yds = True
+            # Build custom course rows mask
+            mask = (df_custom['abbreviation'] == row['abbreviation']) & (df_custom['tee'] == row['tee_name'])
+            
+            # Check for existing hole data and match against custom courses file
             for hole_num in range(1, 10):
-                if not pd.notna(row['par' + str(hole_num)]):
-                    has_pars = False
-                if not pd.notna(row['hcp' + str(hole_num)]):
-                    has_hcps = False
-                if not pd.notna(row['yd' + str(hole_num)]):
-                    has_yds = False
+                if pd.notna(row['par' + str(hole_num)]):
+                    hole_par = row['par' + str(hole_num)]
+                    hole_par_custom = df_custom.loc[mask].iloc[0]['par' + str(hole_num)]
+                    if hole_par != hole_par_custom:
+                        checks_pass = False
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} par entries do not match")
+                elif not pd.notna(df_custom.loc[mask].iloc[0]['par' + str(hole_num)]):
+                    checks_pass = False
+                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} par entries missing")
 
-            # Update consolidated output
-            if (not has_pars) or (not has_hcps) or (not has_yds):
-                complete = False
+                if pd.notna(row['hcp' + str(hole_num)]):
+                    hole_hcp = row['hcp' + str(hole_num)]
+                    hole_hcp_custom = df_custom.loc[mask].iloc[0]['hcp' + str(hole_num)]
+                    if hole_hcp != hole_hcp_custom:
+                        checks_pass = False
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} handicap entries do not match")
+                elif not pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(hole_num)]):
+                    checks_pass = False
+                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} handicap entries missing")
 
-            # Print course result to console
-            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: pars={has_pars}, handicaps={has_hcps}, yardages={has_yds}")
+                if pd.notna(row['yd' + str(hole_num)]):
+                    hole_yd = row['yd' + str(hole_num)]
+                    hole_yd_custom = df_custom.loc[mask].iloc[0]['yd' + str(hole_num)]
+                    if hole_yd != hole_yd_custom:
+                        checks_pass = False
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} yardage entries do not match")
+                elif not pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(hole_num)]):
+                    checks_pass = False
+                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} yardage entries missing")
 
-    # Return consolidated output
-    return complete
+    # Return consolidated result of all checks
+    return checks_pass
 
-def add_courses(session: Session, courses_file: str, courses_played: List[str]):
+def add_courses(session: Session, courses_file: str, custom_courses_file: str, courses_played: List[str]):
     """
     Adds course-related data in database.
     
@@ -119,13 +137,14 @@ def add_courses(session: Session, courses_file: str, courses_played: List[str]):
     """
     print(f"Adding course data from file: {courses_file}")
 
-    # Read course data spreadsheet
-    df = pd.read_csv(courses_file)
+    # Read course data spreadsheets
+    df_courses = pd.read_csv(courses_file)
+    df_custom = pd.read_csv(custom_courses_file)
     
     year = int(courses_file.split(".")[0][-4:])
 
     # For each course entry:
-    for idx, row in df.iterrows():
+    for idx, row in df_courses.iterrows():
         # Check if course had any rounds played
         if row["abbreviation"] in courses_played:
             # Add course to database (if not already added)
@@ -640,13 +659,16 @@ if __name__ == "__main__":
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
-        course_data_complete = check_course_data(courses_file, courses_played)
+        custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
 
-        if not course_data_complete:
-            print(STOP) # TODO: Replace with actual error output
-        
+        checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
+        if not checks_pass:
+            raise RuntimeError("Missing/inconsistent course data, halting database initialization")
+        print(f"Validated course entry data")
+        print(STOP)
+
         # Add relevant course data to database
-        add_courses(session, courses_file, courses_played)
+        add_courses(session, courses_file, custom_courses_file, courses_played)
 
         # Add flight data to database
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
