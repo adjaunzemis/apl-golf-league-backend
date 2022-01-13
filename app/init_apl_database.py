@@ -183,13 +183,14 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             mask = (df_custom['abbreviation'].str.lower() == row['abbreviation'].lower()) & (df_custom['tee'].str.lower() == row['tee_name'].lower())
 
             # Add tee to database
+            tee_color = df_custom.loc[mask].iloc[0]['color'].title() if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
             tee_db = Tee(
                 track_id=track_db.id,
-                name=row["tee_name"],
+                name=tee_color if tee_color is not None else row["tee_name"],
                 gender="L" if row["tee_name"].lower() == "forward" else "M",
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
-                color=df_custom.loc[mask].iloc[0]['color'] if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
+                color=tee_color.lower() if tee_color is not None else None
             )
             session.add(tee_db)
             session.commit()
