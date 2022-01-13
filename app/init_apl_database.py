@@ -91,39 +91,42 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
             course_tee = row["tee_name"]
 
             # Build custom course rows mask
-            mask = (df_custom['abbreviation'] == row['abbreviation']) & (df_custom['tee'] == row['tee_name'])
-            
-            # Check for existing hole data and match against custom courses file
-            for hole_num in range(1, 10):
-                if pd.notna(row['par' + str(hole_num)]):
-                    hole_par = row['par' + str(hole_num)]
-                    hole_par_custom = df_custom.loc[mask].iloc[0]['par' + str(hole_num)]
-                    if hole_par != hole_par_custom:
+            mask = (df_custom['abbreviation'].lower() == row['abbreviation'].lower()) & (df_custom['tee'].lower() == row['tee_name'].lower())
+            if not any(mask):
+                checks_pass = False
+                print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: no data in custom courses file")
+            else:
+                # Check for existing hole data and match against custom courses file
+                for holeNum in range(1, 10):
+                    if pd.notna(row['par' + str(holeNum)]):
+                        hole_par = row['par' + str(holeNum)]
+                        hole_par_custom = df_custom.loc[mask].iloc[0]['par' + str(holeNum)]
+                        if hole_par != hole_par_custom:
+                            checks_pass = False
+                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries do not match")
+                    elif not pd.notna(df_custom.loc[mask].iloc[0]['par' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} par entries do not match")
-                elif not pd.notna(df_custom.loc[mask].iloc[0]['par' + str(hole_num)]):
-                    checks_pass = False
-                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} par entries missing")
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries missing")
 
-                if pd.notna(row['hcp' + str(hole_num)]):
-                    hole_hcp = row['hcp' + str(hole_num)]
-                    hole_hcp_custom = df_custom.loc[mask].iloc[0]['hcp' + str(hole_num)]
-                    if hole_hcp != hole_hcp_custom:
+                    if pd.notna(row['hcp' + str(holeNum)]):
+                        hole_hcp = row['hcp' + str(holeNum)]
+                        hole_hcp_custom = df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]
+                        if hole_hcp != hole_hcp_custom:
+                            checks_pass = False
+                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries do not match")
+                    elif not pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} handicap entries do not match")
-                elif not pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(hole_num)]):
-                    checks_pass = False
-                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} handicap entries missing")
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries missing")
 
-                if pd.notna(row['yd' + str(hole_num)]):
-                    hole_yd = row['yd' + str(hole_num)]
-                    hole_yd_custom = df_custom.loc[mask].iloc[0]['yd' + str(hole_num)]
-                    if hole_yd != hole_yd_custom:
+                    if pd.notna(row['yd' + str(holeNum)]):
+                        hole_yd = row['yd' + str(holeNum)]
+                        hole_yd_custom = df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]
+                        if hole_yd != hole_yd_custom:
+                            checks_pass = False
+                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries do not match")
+                    elif not pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} yardage entries do not match")
-                elif not pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(hole_num)]):
-                    checks_pass = False
-                    print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {hole_num} yardage entries missing")
+                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries missing")
 
     # Return consolidated result of all checks
     return checks_pass
@@ -176,6 +179,9 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             else:
                 track_db = track_db[0]
 
+            # Find matching row in custom courses data
+            mask = (df_custom['abbreviation'].lower() == row['abbreviation'].lower()) & (df_custom['tee'].lower() == row['tee_name'].lower())
+
             # Add tee to database
             tee_db = Tee(
                 track_id=track_db.id,
@@ -183,7 +189,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
                 gender="F" if row["tee_name"].lower() == "forward" else "M",
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
-                color=row["tee_color"] if pd.notna(row["tee_color"]) else None
+                color=df_custom.loc[mask].iloc[0]['color'] if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
             )
             session.add(tee_db)
             session.commit()
@@ -196,10 +202,14 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
                 hcp = None
                 if pd.notna(row['hcp' + str(holeNum)]):
                     hcp = int(row['hcp' + str(holeNum)])
+                elif pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
+                    hcp = df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]
 
                 yds = None
                 if pd.notna(row['yd' + str(holeNum)]):
                     yds = int(row['yd' + str(holeNum)])
+                elif pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]):
+                    yds = df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]
 
                 hole_db = Hole(
                     tee_id=tee_db.id,
@@ -663,9 +673,8 @@ if __name__ == "__main__":
 
         checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
         if not checks_pass:
-            raise RuntimeError("Missing/inconsistent course data, halting database initialization")
+            raise RuntimeError("Missing or inconsistent course data, halting database initialization")
         print(f"Validated course entry data")
-        print(STOP)
 
         # Add relevant course data to database
         add_courses(session, courses_file, custom_courses_file, courses_played)
