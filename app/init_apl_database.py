@@ -186,7 +186,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             tee_db = Tee(
                 track_id=track_db.id,
                 name=row["tee_name"],
-                gender="F" if row["tee_name"].lower() == "forward" else "M",
+                gender="L" if row["tee_name"].lower() == "forward" else "M",
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
                 color=df_custom.loc[mask].iloc[0]['color'] if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
@@ -279,7 +279,7 @@ def add_flights(session: Session, flights_file: str):
                     print(f"Adding division: {division_name}")
 
                     # Find home tees
-                    tee_gender = "F" if division_name.lower() == "forward" else "M"
+                    tee_gender = "L" if division_name.lower() == "forward" else "M"
                     tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_name).where(Tee.gender == tee_gender)).all()
                     if not tee_db:
                         raise ValueError(f"Cannot match home tee in database: {row[f'division_{div_num}_tee']}")

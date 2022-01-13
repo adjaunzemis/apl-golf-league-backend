@@ -5,8 +5,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from .hole import Hole, HoleRead
 
 class TeeGender(str, Enum):
-    MALE = "M"
-    FEMALE = "F"
+    MENS = "M"
+    LADIES = "L"
 
 class TeeBase(SQLModel):
     name: str
