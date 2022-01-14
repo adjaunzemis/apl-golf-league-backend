@@ -294,6 +294,7 @@ def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
         round_id=round.id,
         match_id=match_round_link.match_id,
         team_id=team.id,
+        round_type=round.type,
         date_played=round.date_played,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
