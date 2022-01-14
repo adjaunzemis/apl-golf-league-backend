@@ -17,20 +17,20 @@ import os
 import numpy as np
 import pandas as pd
 from typing import List
-from datetime import date, datetime
+from datetime import datetime
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from models.course import Course
 from models.track import Track
-from models.tee import Tee
+from models.tee import Tee, TeeGender
 from models.hole import Hole
 from models.flight import Flight
 from models.division import Division
 from models.golfer import Golfer
 from models.team import Team
-from models.player import Player
+from models.player import Player, PlayerRole
 from models.match import Match
-from models.round import Round
+from models.round import Round, RoundType
 from models.hole_result import HoleResult
 from models.match_round_link import MatchRoundLink
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
@@ -187,7 +187,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             tee_db = Tee(
                 track_id=track_db.id,
                 name=tee_color if tee_color is not None else row["tee_name"],
-                gender="L" if row["tee_name"].lower() == "forward" else "M",
+                gender=TeeGender.LADIES if row["tee_name"].lower() == "forward" else TeeGender.MENS,
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
                 color=tee_color.lower() if tee_color is not None else None
@@ -316,7 +316,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                             # Add division to database
                             division_db = Division(
                                 flight_id=flight_db.id,
-                                name="SuperSenior",
+                                name="Super-Senior",
                                 gender="M",
                                 home_tee_id=tee_db.id
                             )
@@ -417,9 +417,10 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
             team_db = team_db[0]
 
         # Find division
-        division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == row['division'])).all()
+        division_name = "Super-Senior" if row['division'] == "SuperSenior" else row['division']
+        division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == division_name)).all()
         if not division_db:
-            raise ValueError(f"Unable to find division '{row['division']}'")
+            raise ValueError(f"Unable to find division '{division_name}'")
         division_db = division_db[0]
         
         # Add player to database
@@ -427,7 +428,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
             team_id=team_db.id,
             golfer_id=golfer_db.id,
             division_id=division_db.id,
-            role="CAPTAIN" if is_captain else "PLAYER"
+            role=PlayerRole.CAPTAIN if is_captain else PlayerRole.PLAYER
         )
         session.add(player_db)
         session.commit()
@@ -600,6 +601,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     tee_id=tee_db.id,
                     golfer_id=golfer_db.id,
                     date_played=date_played,
+                    type=RoundType.FLIGHT,
                     handicap_index=row[f"p{pNum}_handicap"],
                     playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
                         par=tee_db.par,
