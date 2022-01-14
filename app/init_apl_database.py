@@ -186,7 +186,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             tee_color = df_custom.loc[mask].iloc[0]['color'].title() if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
             tee_db = Tee(
                 track_id=track_db.id,
-                name=row["tee_name"], # TODO: tee_color if tee_color is not None else row["tee_name"],
+                name=tee_color if tee_color is not None else row["tee_name"],
                 gender="L" if row["tee_name"].lower() == "forward" else "M",
                 rating=float(row["rating"]),
                 slope=int(row["slope"]),
@@ -222,7 +222,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
                 session.add(hole_db)
             session.commit()
 
-def add_flights(session: Session, flights_file: str):
+def add_flights(session: Session, flights_file: str, custom_courses_file: str):
     """
     Adds flight-related data in database.
     
@@ -235,6 +235,9 @@ def add_flights(session: Session, flights_file: str):
 
     # Read flight data spreadsheet
     df_flights = pd.read_csv(flights_file)
+
+    # Read custom course data spreadsheet
+    df_custom = pd.read_csv(custom_courses_file)
 
     # For each flight:
     for idx, row in df_flights.iterrows():
@@ -276,14 +279,17 @@ def add_flights(session: Session, flights_file: str):
 
                 # For each division in this flight:
                 for div_num in [1, 2, 3]:
-                    division_name = row[f"division_{div_num}_name"].capitalize()
+                    division_name = row[f"division_{div_num}_name"].title()
                     print(f"Adding division: {division_name}")
+                    
+                    # Get correct division tee name/color
+                    division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
 
                     # Find home tees
                     tee_gender = "L" if division_name.lower() == "forward" else "M"
-                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_name).where(Tee.gender == tee_gender)).all()
+                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender)).all()
                     if not tee_db:
-                        raise ValueError(f"Cannot match home tee in database: {row[f'division_{div_num}_tee']}")
+                        raise ValueError(f"Cannot match home tee in database: {division_tee}")
                     else:
                         tee_db = tee_db[0]
 
@@ -300,9 +306,10 @@ def add_flights(session: Session, flights_file: str):
                     # Add super senior division (same tees as forward division with 'M' gender)
                     if division_name.lower() == "forward":
                         print(f"Adding division: SuperSenior")
-                        tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == "Super-Senior").where(Tee.gender == "M")).all()
+                        division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == "super-senior")].iloc[0]['color']
+                        tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == "M")).all()
                         if not tee_db:
-                            raise ValueError(f"Cannot match home tee in database: Super-Senior")
+                            raise ValueError(f"Cannot match home tee in database: {division_tee}")
                         else:
                             tee_db = tee_db[0]
 
@@ -682,7 +689,7 @@ if __name__ == "__main__":
 
         # Add flight data to database
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
-        add_flights(session, flights_file)
+        add_flights(session, flights_file, custom_courses_file)
 
         # Add roster data into database
         roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
