@@ -433,7 +433,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         session.add(player_db)
         session.commit()
 
-def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, subs_file: str):
+def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
     """
     Adds match-related data in database.
     
@@ -462,8 +462,9 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
         raise ValueError(f"Unable to find flight '{flight_name}-{year}'")
     flight_db = flight_db[0]
 
-    # Read courses data spreadsheet
+    # Read courses data spreadsheets
     df_courses = pd.read_csv(courses_file)
+    df_custom = pd.read_csv(custom_courses_file)
 
     # Read scores data spreadsheet
     df_scores = pd.read_csv(scores_file)
@@ -588,7 +589,8 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     raise ValueError(f"Unable to find track for course '{course_db.name}' matching abbreviation '{row['course_abbreviation']}'")
 
                 # Find round tee
-                tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == home_tee_db.name)).one()
+                tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['course_abbreviation'].lower()) & (df_custom['tee'].str.lower() == division_db.name.lower())].iloc[0]['color']
+                tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == division_db.gender)).one()
 
             # Parse round date played
             date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
@@ -700,6 +702,6 @@ if __name__ == "__main__":
 
         # Add score data to database
         for scores_file in scores_files:
-            add_matches(session, scores_file, flights_file, courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
+            add_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
     print("Database initialized!")
