@@ -1,12 +1,13 @@
 from typing import List
+from datetime import date
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
+from ..models.round import Round, RoundCreate, RoundData, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
-from ..models.query_helpers import get_rounds
+from ..models.query_helpers import get_rounds, get_rounds_in_scoring_record
 
 router = APIRouter(
     prefix="/rounds",
@@ -101,3 +102,8 @@ async def delete_hole_result(*, session: Session = Depends(get_session), hole_re
     session.delete(hole_result_db)
     session.commit()
     return {"ok": True}
+
+# TODO: Move to handicapping router?
+@router.get("/scoring-record/id={golfer_id}&date={date}", response_model=List[RoundData])
+async def get_scoring_record(*, session: Session = Depends(get_session), golfer_id: int, date: date):
+    return get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, date=date, limit=10)

@@ -1,5 +1,6 @@
 from typing import List
-from sqlmodel import Session, select, SQLModel
+from datetime import date
+from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
 from .course import Course
@@ -313,7 +314,6 @@ def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
     hole_result_data = get_hole_results_for_rounds(session=session, round_ids=[r.round_id for r in round_data])
 
     # Add hole data to round data and return
-    # TODO: Compute non-gross round scores on entry to database
     for r in round_data:
         r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
@@ -443,3 +443,31 @@ def compute_golfer_statistics_for_matches(golfer_id: int, matches: List[MatchDat
     for match in matches:
         rounds.extend([round for round in match.rounds if round.golfer_id == golfer_id])
     return compute_golfer_statistics_for_rounds(golfer_id, rounds)
+
+def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, limit: int = 20) -> List[RoundData]:
+    """
+    Extracts round data for rounds in golfer's scoring record.
+
+    Scoring record is used for calculating handicap index and includes the
+    golfer's most recent rounds as of the given date.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    golfer_id : int
+        golfer identifier in database
+    date : date
+        latest date allowed for rounds in this scoring record
+    limit : int, optional
+        maximum rounds allowed in scoring record
+        Default: 20
+    
+    Returns
+    -------
+    record : list of RoundData
+        round data for rounds in golfer's scoring record
+    
+    """
+    round_ids = session.exec(select(Round.id).where(Round.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
+    return get_rounds(session=session, round_ids=round_ids)
