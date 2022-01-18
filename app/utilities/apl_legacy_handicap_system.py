@@ -52,7 +52,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             score_diffs_avg = np.mean(record_sorted[0:4])
         else:
             score_diffs_avg = np.mean(record_sorted[0:5])
-        return np.floor((0.96 * score_diffs_avg) * 10.0) / 10.0 # truncate to nearest tenth
+        return min(np.floor((0.96 * score_diffs_avg) * 10.0) / 10.0, self.maximum_handicap_index) # truncate to nearest tenth
 
     @property
     def maximum_handicap_index(self) -> float:
