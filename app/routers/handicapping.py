@@ -1,11 +1,11 @@
 from typing import List
-from datetime import date, timezone, datetime
+from datetime import date
 from fastapi import APIRouter, Depends, Query
-from fastapi.exceptions import HTTPException
-from sqlmodel import SQLModel, Session, select
+from sqlmodel import SQLModel, Session
 
 from ..dependencies import get_session
-from ..models.round import RoundData
+from ..models.round import RoundData, RoundType
+from ..models.tee import TeeGender
 from ..models.query_helpers import get_rounds_in_scoring_record
 
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
@@ -15,20 +15,24 @@ router = APIRouter(
     tags=["Handicapping"]
 )
 
+# TODO: Change to or merge with RoundSummary?
 class ScoringRecordEntry(SQLModel):
-    date: date
-    score_differential: float
-    rating: float
-    slope: float
-    gross_score: int
+    date_played: date
+    round_type: RoundType
+    golfer_name: str
+    course_name: str
+    tee_name: str
+    tee_gender: TeeGender
+    tee_rating: float
+    tee_slope: float
     adjusted_gross_score: int
+    score_differential: float
 
 class HandicapIndexWithScoringRecord(SQLModel):
     handicap_index: float
     date: date
     scoring_record: List[ScoringRecordEntry] = []
 
-# TODO: Add score differential to round data on creation or import to database
 def create_scoring_record_from_rounds(rounds: List[RoundData]) -> List[ScoringRecordEntry]:
     """
     Extracts scoring record data from round data.
@@ -44,14 +48,18 @@ def create_scoring_record_from_rounds(rounds: List[RoundData]) -> List[ScoringRe
         scoring record
 
     """
-    ahs = APLLegacyHandicapSystem()
     return [ScoringRecordEntry(
-        date=r.date_played,
-        score_differential=ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score),
-        rating=r.tee_rating,
-        slope=r.tee_slope,
+        date_played=r.date_played,
+        round_type=r.round_type,
+        golfer_name=r.golfer_name,
+        course_name=r.course_name,
+        tee_name=r.tee_name,
+        tee_gender=r.tee_gender,
+        tee_rating=r.tee_rating,
+        tee_slope=r.tee_slope,
         gross_score=r.gross_score,
-        adjusted_gross_score=r.adjusted_gross_score) for r in rounds]
+        adjusted_gross_score=r.adjusted_gross_score,
+        score_differential=r.score_differential) for r in rounds]
 
 @router.get("/scoring-record/id={golfer_id}", response_model=List[ScoringRecordEntry])
 async def get_scoring_record(*, session: Session = Depends(get_session), golfer_id: int, date: date = Query(default=date.today())):

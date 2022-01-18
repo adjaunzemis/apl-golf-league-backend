@@ -63,10 +63,11 @@ class RoundData(SQLModel):
     tee_rating: float
     tee_slope: float
     tee_par: int = None
-    tee_color: str = "none"
+    tee_color: str
     gross_score: int = None
     adjusted_gross_score: int = None
     net_score: int = None
+    score_differential: float = None
     holes: List[HoleResultData] = []
 
 class RoundDataWithCount(SQLModel):

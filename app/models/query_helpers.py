@@ -314,12 +314,14 @@ def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
     hole_result_data = get_hole_results_for_rounds(session=session, round_ids=[r.round_id for r in round_data])
 
     # Add hole data to round data and return
+    ahs = APLLegacyHandicapSystem()
     for r in round_data:
         r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
         r.tee_par = sum([h.par for h in r.holes])
         r.gross_score = sum([h.gross_score for h in r.holes])
         r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
         r.net_score = sum([h.net_score for h in r.holes])
+        r.score_differential = ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score)
     return round_data
 
 def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[RoundData]:
