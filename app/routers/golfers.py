@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from ..dependencies import get_session
 from ..models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
-from ..models.query_helpers import GolferDataWithCount, get_golfers
+from ..models.query_helpers import GolferData, GolferDataWithCount, get_golfers
 
 router = APIRouter(
     prefix="/golfers",
@@ -16,7 +16,6 @@ router = APIRouter(
 async def read_golfers(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     # TODO: Process query parameters to further limit golfer results returned from database
     golfer_ids = session.exec(select(Golfer.id).offset(offset).limit(limit)).all()
-    golfer_data = get_golfers(session=session, golfer_ids=golfer_ids)
 
     # Return count of relevant golfers from database and golfer data list
     return GolferDataWithCount(num_golfers=len(golfer_ids), golfers=get_golfers(session=session, golfer_ids=golfer_ids)
@@ -30,12 +29,12 @@ async def create_golfer(*, session: Session = Depends(get_session), golfer: Golf
     session.refresh(golfer_db)
     return golfer_db
 
-@router.get("/{golfer_id}", response_model=GolferRead)
+@router.get("/{golfer_id}", response_model=GolferData)
 async def read_golfer(*, session: Session = Depends(get_session), golfer_id: int):
-    golfer_db = session.get(Golfer, golfer_id)
-    if not golfer_db:
+    golfer_db = get_golfers(session=session, golfer_ids=[golfer_id,])
+    if (not golfer_db) or (len(golfer_db) == 0):
         raise HTTPException(status_code=404, detail="Golfer not found")
-    return golfer_db
+    return golfer_db[0]
 
 @router.patch("/{golfer_id}", response_model=GolferRead)
 async def update_golfer(*, session: Session = Depends(get_session), golfer_id: int, golfer: GolferUpdate):
