@@ -598,7 +598,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
             date_entered = datetime.strptime(row[f'date_entered'], '%Y-%m-%d %H:%M:%S')
 
             # Add round
-            round_data_db = session.exec(select(Round, RoundGolferLink).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).all()
+            round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).all()
             if (not round_data_db) or (len(round_data_db) == 0):
                 print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
                 round_db = Round(
