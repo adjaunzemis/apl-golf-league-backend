@@ -32,6 +32,7 @@ from models.player import Player, PlayerRole
 from models.match import Match
 from models.round import Round, RoundType
 from models.hole_result import HoleResult
+from models.round_golfer_link import RoundGolferLink
 from models.match_round_link import MatchRoundLink
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -592,40 +593,51 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['course_abbreviation'].lower()) & (df_custom['tee'].str.lower() == division_db.name.lower())].iloc[0]['color']
                 tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == division_db.gender)).one()
 
-            # Parse round date played
+            # Parse round date played and entered
             date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
+            date_entered = datetime.strptime(row[f'date_entered'], '%Y-%m-%d %H:%M:%S')
 
             # Add round
-            round_db = session.exec(select(Round).where(Round.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).all()
-            if not round_db:
+            round_data_db = session.exec(select(Round, RoundGolferLink).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).all()
+            if (not round_data_db) or (len(round_data_db) == 0):
                 print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
                 round_db = Round(
                     tee_id=tee_db.id,
-                    golfer_id=golfer_db.id,
-                    date_played=date_played,
                     type=RoundType.FLIGHT,
-                    handicap_index=row[f"p{pNum}_handicap"],
-                    playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
+                    date_played=date_played,
+                    date_updated=date_entered
+                )
+                session.add(round_db)
+                session.commit()
+
+                print(f"Adding round-golfer link: round_id = {round_db.id}, golfer_id = {golfer_db.id}")
+                round_golfer_link_db = RoundGolferLink(
+                    round_id=round_db.id,
+                    golfer_id=golfer_db.id,
+                    golfer_handicap_index=row[f"p{pNum}_handicap"],
+                    golfer_playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
                         par=tee_db.par,
                         rating=tee_db.rating,
                         slope=tee_db.slope,
                         handicap_index=row[f"p{pNum}_handicap"]
                     )
                 )
-                session.add(round_db)
+                session.add(round_golfer_link_db)
                 session.commit()
+                
             else:
-                round_db = round_db[0]
+                round_db = round_data_db[0][0]
+                round_golfer_link_db = round_data_db[0][1]
 
             # Add match-round-link
-            link_db = session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_db.id).where(MatchRoundLink.round_id == round_db.id)).all()
-            if not link_db:
+            match_round_link_db = session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_db.id).where(MatchRoundLink.round_id == round_db.id)).all()
+            if not match_round_link_db:
                 print(f"Adding match-round link: match_id = {match_db.id}, round_id = {round_db.id}")
-                link_db = MatchRoundLink(
+                match_round_link_db = MatchRoundLink(
                     match_id=match_db.id,
                     round_id=round_db.id
                 )
-                session.add(link_db)
+                session.add(match_round_link_db)
                 session.commit()
 
             # Add round hole results
@@ -638,13 +650,13 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     if hNum > 9:
                         hNum -= 9
                     gross_score = row[f"p{pNum}_h{hNum}_score"]
-                    handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_db.playing_handicap)
+                    handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
                     hole_result_db = HoleResult(
                         round_id=round_db.id,
                         hole_id=hole_db.id,
                         handicap_strokes=handicap_strokes,
                         gross_score=gross_score,
-                        adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_db.playing_handicap),
+                        adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
                         net_score=(gross_score - handicap_strokes)
                     )
                     session.add(hole_result_db)

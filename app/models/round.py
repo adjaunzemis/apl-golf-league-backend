@@ -1,10 +1,12 @@
 from typing import List, Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
-from datetime import date
+from datetime import datetime, date
+
 
 from .tee import Tee, TeeRead
 from .golfer import Golfer, GolferRead
+from .round_golfer_link import RoundGolferLink
 from .hole_result import HoleResult, HoleResultReadWithHole, HoleResultData
 
 class RoundType(str, Enum):
@@ -15,16 +17,14 @@ class RoundType(str, Enum):
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
-    golfer_id: int = Field(foreign_key="golfer.id")
-    handicap_index: float
-    playing_handicap: int
     type: RoundType
     date_played: date
+    date_updated: datetime
 
 class Round(RoundBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tee: Tee = Relationship()
-    golfer: Golfer = Relationship()
+    golfers: List[Golfer] = Relationship(link_model=RoundGolferLink)
     hole_results: List[HoleResult] = Relationship(back_populates="round")
 
 class RoundCreate(RoundBase):
@@ -32,18 +32,16 @@ class RoundCreate(RoundBase):
 
 class RoundUpdate(SQLModel):
     tee_id: Optional[int] = None
-    golfer_id: Optional[int] = None
-    handicap_index: Optional[float] = None
-    playing_handicap: Optional[int] = None
     type: Optional[RoundType] = None
     date_played: Optional[date] = None
+    date_updated: Optional[datetime] = None
 
 class RoundRead(RoundBase):
     id: int
 
 class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
-    golfer: Optional[GolferRead] = None
+    golfers: Optional[List[GolferRead]] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
 
 class RoundData(SQLModel):
