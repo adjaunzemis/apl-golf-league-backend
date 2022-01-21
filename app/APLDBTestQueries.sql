@@ -4,6 +4,30 @@ FROM round
 JOIN roundgolferlink ON round.id = roundgolferlink.round_id
 JOIN golfer ON roundgolferlink.golfer_id = golfer.id;
 
+-- round_query_data = session.exec(select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Tee, Team)
+--   .join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id)
+--   .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
+--   .join(Tee)
+--   .join(Track)
+--   .join(Course)
+--   .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
+--   .join(Match, onclause=Match.id == MatchRoundLink.match_id)
+--   .join(Player, ((Player.golfer_id == Golfer.id) & (Player.team_id.in_((Match.home_team_id, Match.away_team_id)))))
+--   .join(Team, Team.id == onclause=Player.team_id)
+--   .where(Round.id.in_(round_ids)))
+SELECT *
+FROM round
+JOIN matchroundlink ON matchroundlink.round_id = round.id
+JOIN roundgolferlink ON roundgolferlink.round_id = round.id
+JOIN tee ON tee.id = round.tee_id
+JOIN track ON track.id = tee.track_id
+JOIN course ON course.id = track.course_id
+JOIN golfer ON golfer.id = roundgolferlink.golfer_id
+JOIN match on match.id = matchroundlink.match_id
+JOIN player ON player.golfer_id = golfer.id AND player.team_id IN (match.home_team_id, match.away_team_id)
+JOIN team ON team.id = player.team_id
+WHERE round.id IN (1, 2, 3);
+
 SELECT round.id as round_id, golfer.name as golfer_name, round.date_played as date_played, course.name as course_name, golfer.id as golfer_id
 FROM round
 JOIN tee ON round.tee_id = tee.id
