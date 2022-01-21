@@ -1,4 +1,9 @@
 -- APL DB Test Queries
+SELECT *
+FROM round
+JOIN roundgolferlink ON round.id = roundgolferlink.round_id
+JOIN golfer ON roundgolferlink.golfer_id = golfer.id;
+
 SELECT round.id as round_id, golfer.name as golfer_name, round.date_played as date_played, course.name as course_name, golfer.id as golfer_id
 FROM round
 JOIN tee ON round.tee_id = tee.id

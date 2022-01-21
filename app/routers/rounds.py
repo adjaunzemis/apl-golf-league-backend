@@ -3,9 +3,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+
 from ..dependencies import get_session
 from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
+from ..models.round_golfer_link import RoundGolferLink
 from ..models.query_helpers import get_rounds
 
 router = APIRouter(
@@ -17,12 +19,12 @@ router = APIRouter(
 async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None, ge=0), offset: int = Query(default=0, ge=0), limit: int = Query(default=25, ge=0, le=100)):
     # Process query parameters to limit results
     if golfer_id: # limit to specific golfer
-        round_ids = session.exec(select(Round.id).where(Round.golfer_id == golfer_id).offset(offset).limit(limit)).all()
+        round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).offset(offset).limit(limit)).all()
     else: # no extra limitations
         round_ids = session.exec(select(Round.id).offset(offset).limit(limit)).all()
 
     # Return count of relevant rounds from database and round data list
-    return RoundDataWithCount(num_rounds=len(round_ids), matches=get_rounds(session=session, round_ids=round_ids))
+    return RoundDataWithCount(num_rounds=len(round_ids), rounds=get_rounds(session=session, round_ids=round_ids))
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):
