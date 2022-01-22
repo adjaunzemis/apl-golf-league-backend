@@ -287,7 +287,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
 
                     # Find home tees
-                    tee_gender = "L" if division_name.lower() == "forward" else "M"
+                    tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
                     tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender)).all()
                     if not tee_db:
                         raise ValueError(f"Cannot match home tee in database: {division_tee}")
@@ -304,11 +304,11 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                         session.add(division_db)
                         session.commit()
 
-                    # Add super senior division (same tees as forward division with 'M' gender)
+                    # Add super senior division (same tees as forward division but with Men's rating and slope)
                     if division_name.lower() == "forward":
                         print(f"Adding division: SuperSenior")
                         division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == "super-senior")].iloc[0]['color']
-                        tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == "M")).all()
+                        tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS)).all()
                         if not tee_db:
                             raise ValueError(f"Cannot match home tee in database: {division_tee}")
                         else:
@@ -318,7 +318,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                             division_db = Division(
                                 flight_id=flight_db.id,
                                 name="Super-Senior",
-                                gender="M",
+                                gender=TeeGender.MENS,
                                 home_tee_id=tee_db.id
                             )
                             session.add(division_db)
@@ -379,7 +379,7 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
 
     # For each roster entry:
     for idx, row in df_roster.iterrows():
-        print(f"Processing player: {row['name']}")
+        print(f"Processing team-golfer link for golfer: {row['name']}")
         
         # Find golfer
         golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).all()
@@ -540,7 +540,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
                     division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == golfer_division_name)).one()
                 else:
-                    # Determine appropriate division in this flight based on other player entries
+                    # Determine appropriate division in this flight based on other team-golfer link entries
                     for team_golfer_link_db in team_golfer_links_db:
                         golfer_division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
                         golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_division_db.flight_id)).one()

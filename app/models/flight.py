@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from .course import Course
 from .division import Division, DivisionRead, DivisionData
-from .team import Team, TeamRead, TeamData
+from .team import Team, TeamRead
 
 class FlightBase(SQLModel):
     name: str
@@ -37,7 +37,7 @@ class FlightData(SQLModel):
     name: str
     home_course_name: str = None
     divisions: List[DivisionData] = []
-    teams: List[TeamData] = []
+    teams: List[TeamRead] = []
 
 class FlightDataWithCount(SQLModel):
     num_flights: int

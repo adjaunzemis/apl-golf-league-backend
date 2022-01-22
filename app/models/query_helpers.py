@@ -3,14 +3,12 @@ from datetime import date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
-
 from .course import Course
 from .track import Track
 from .tee import Tee
 from .hole import Hole
 from .flight import Flight, FlightData
-from .team import Team, TeamData
-from .player import Player, PlayerData
+from .team import Team, TeamRead
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData
@@ -18,15 +16,26 @@ from .round import Round, RoundData
 from .hole_result import HoleResult, HoleResultData
 from .round_golfer_link import RoundGolferLink
 from .match_round_link import MatchRoundLink
+from .team_golfer_link import TeamGolferLink
 
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 # TODO: Move custom route data models elsewhere
+class TeamGolferData(SQLModel):
+    team_id: int
+    golfer_id: int
+    golfer_name: str
+    division_name: str
+    flight_name: str
+    team_name: str
+    role: str
+    statistics: GolferStatistics = None
+
 class GolferData(SQLModel):
     golfer_id: int
     name: str
     affiliation: str
-    player_data: List[PlayerData] = []
+    player_data: List[TeamGolferData] = []
 
 class GolferDataWithCount(SQLModel):
     num_golfers: int
@@ -36,7 +45,7 @@ class TeamWithMatchData(SQLModel):
     team_id: int
     flight_id: int
     name: str
-    players: List[PlayerData] = []
+    golfers: List[TeamGolferData] = []
     matches: List[MatchData] = []
 
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
@@ -92,7 +101,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
         home_tee_slope=home_tee.slope
     ) for division, home_tee in division_query_data]
 
-def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamData]:
+def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamRead]:
     """
     Retrieves team data for all teams in the given flights.
     
@@ -109,12 +118,7 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamDa
         teams in the given flights
     
     """
-    team_query_data = session.exec(select(Team).where(Team.flight_id.in_(flight_ids)))
-    return [TeamData(
-        team_id=team.id,
-        flight_id=team.flight_id,
-        name=team.name
-    ) for team in team_query_data]
+    return session.exec(select(Team).where(Team.flight_id.in_(flight_ids)))
 
 def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     """
@@ -146,58 +150,9 @@ def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
         g.player_data = [p for p in player_data if p.golfer_id == g.golfer_id]
     return golfer_data
 
-def get_players(session: Session, player_ids: List[int]) -> List[PlayerData]:
+def get_team_golfers(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
     """
-    Retrieves player data for the given players.
-
-    Parameters
-    ----------
-    session : Session
-        database session
-    player_ids : list of integers
-        player identifiers
-
-    Returns
-    -------
-    player_data : list of PlayerData
-        player data for the given players
-    
-    """
-    player_query_data = session.exec(select(Player, Team, Golfer, Division, Flight).join(Team, onclause=Player.team_id == Team.id).join(Golfer, onclause=Player.golfer_id == Golfer.id).join(Division, onclause=Player.division_id == Division.id).join(Flight, onclause=Division.flight_id == Flight.id).where(Player.id.in_(player_ids)))
-    return [PlayerData(
-        player_id=player.id,
-        team_id=player.team_id,
-        golfer_id=golfer.id,
-        golfer_name=golfer.name,
-        flight_name=flight.name,
-        division_name=division.name,
-        team_name=team.name,
-        role=player.role
-    ) for player, team, golfer, division, flight in player_query_data]
-
-def get_players_for_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
-    """
-    Retrieves player data for the given golfers.
-
-    Parameters
-    ----------
-    session : Session
-        database session
-    golfer_ids : list of integers
-        golfer identifiers
-
-    Returns
-    -------
-    player_data : list of PlayerData
-        player data for the given golfers
-    
-    """
-    player_ids = session.exec(select(Player.id).where(Player.golfer_id.in_(golfer_ids))).all()
-    return get_players(session=session, player_ids=player_ids)
-
-def get_players_in_teams(session: Session, team_ids: List[int]) -> List[PlayerData]:
-    """
-    Retrieves player data for all golfers in the given teams.
+    Retrieves team golfer data for the given teams.
 
     Parameters
     ----------
@@ -208,12 +163,20 @@ def get_players_in_teams(session: Session, team_ids: List[int]) -> List[PlayerDa
 
     Returns
     -------
-    player_data : list of PlayerData
-        players in the given teams
-
+    team_golfer_data : list of TeamGolferData
+        golfer data for golfers on the given teams
+    
     """
-    player_ids = session.exec(select(Player.id).where(Player.team_id.in_(team_ids))).all()
-    return get_players(session=session, player_ids=player_ids)
+    query_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Flight).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(Flight, onclause=Division.flight_id == Flight.id).where(TeamGolferLink.team_id.in_(team_ids)))
+    return [TeamGolferData(
+        team_id=team_golfer_link.team_id,
+        golfer_id=golfer.id,
+        golfer_name=golfer.name,
+        flight_name=flight.name,
+        division_name=division.name,
+        team_name=team.name,
+        role=team_golfer_link.role
+    ) for team_golfer_link, team, golfer, division, flight in query_data]
 
 def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
     """
@@ -292,7 +255,7 @@ def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
         round data for the given rounds
     
     """
-    round_query_data = session.exec(select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Tee).join(Track).join(Course).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(Player, ((Player.golfer_id == Golfer.id) & (Player.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Team.id == Player.team_id).where(Round.id.in_(round_ids)))
+    round_query_data = session.exec(select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Tee).join(Track).join(Course).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(TeamGolferLink, ((TeamGolferLink.golfer_id == Golfer.id) & (TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Team.id == TeamGolferLink.team_id).where(Round.id.in_(round_ids)))
     round_data = [RoundData(
         round_id=round.id,
         match_id=match_round_link.match_id,

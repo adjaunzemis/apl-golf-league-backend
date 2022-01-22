@@ -3,7 +3,6 @@ from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, date
 
-
 from .tee import Tee, TeeRead
 from .golfer import Golfer, GolferRead
 from .round_golfer_link import RoundGolferLink
