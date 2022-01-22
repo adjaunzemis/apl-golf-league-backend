@@ -8,7 +8,7 @@ from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightDataWithCount
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
-from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers, get_teams_in_flights
+from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
 from ..models.team_golfer_link import TeamGolferLink
 
 router = APIRouter(
@@ -27,7 +27,7 @@ async def read_flights(*, session: Session = Depends(get_session), offset: int =
 
     # Get team and player data for selected flights
     team_data = get_teams_in_flights(session=session, flight_ids=flight_ids)
-    team_golfer_data = get_team_golfers(session=session, team_ids=[t.team_id for t in team_data])
+    team_golfer_data = get_team_golfers_for_teams(session=session, team_ids=[t.team_id for t in team_data])
     for t in team_data:
         t.golfers = [g for g in team_golfer_data if g.team_id == t.team_id]
     
@@ -135,7 +135,7 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
     if not team_query_data:
         raise HTTPException(status_code=404, detail="Team not found")
     team_matches = get_matches_for_teams(session=session, team_ids=(team_id,))
-    team_golfers = get_team_golfers(session=session, team_ids=(team_id,))
+    team_golfers = get_team_golfers_for_teams(session=session, team_ids=(team_id,))
     for golfer in team_golfers:
         golfer.statistics = compute_golfer_statistics_for_matches(golfer.golfer_id, team_matches)
     return TeamWithMatchData(
