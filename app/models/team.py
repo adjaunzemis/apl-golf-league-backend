@@ -1,7 +1,8 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .player import Player, PlayerRead, PlayerData
+from .golfer import Golfer
+from .team_golfer_link import TeamGolferLink
 
 class TeamBase(SQLModel):
     name: str
@@ -10,7 +11,7 @@ class TeamBase(SQLModel):
 class Team(TeamBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     flight: Optional["Flight"] = Relationship(back_populates="teams")
-    players: Optional[List[Player]] = Relationship(back_populates="team")
+    golfers: List[Golfer] = Relationship(link_model=TeamGolferLink)
 
 class TeamCreate(TeamBase):
     pass
@@ -21,12 +22,3 @@ class TeamUpdate(SQLModel):
 
 class TeamRead(TeamBase):
     id: int
-
-class TeamReadWithPlayers(TeamRead):
-    players: List[PlayerRead] = []
-
-class TeamData(SQLModel):
-    team_id: int
-    flight_id: int
-    name: str
-    players: List[PlayerData] = []

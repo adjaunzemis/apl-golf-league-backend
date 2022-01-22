@@ -10,10 +10,10 @@ from .round_golfer_link import RoundGolferLink
 from .hole_result import HoleResult, HoleResultReadWithHole, HoleResultData
 
 class RoundType(str, Enum):
-    QUALIFYING = "QUALIFYING"
-    FLIGHT = "FLIGHT"
-    PLAYOFF = "PLAYOFF"
-    TOURNAMENT = "TOURNAMENT"
+    QUALIFYING = "Qualifying"
+    FLIGHT = "Flight"
+    PLAYOFF = "Playoff"
+    TOURNAMENT = "Tournament"
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")

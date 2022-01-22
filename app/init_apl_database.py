@@ -28,7 +28,7 @@ from models.flight import Flight
 from models.division import Division
 from models.golfer import Golfer
 from models.team import Team
-from models.player import Player, PlayerRole
+from models.team_golfer_link import TeamGolferLink, TeamRole
 from models.match import Match
 from models.round import Round, RoundType
 from models.hole_result import HoleResult
@@ -326,9 +326,9 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
 
 def add_teams(session: Session, roster_file: str, flights_file: str):
     """
-    Adds team-related data in database.
+    Adds team-related data to database.
     
-    Populates the following tables: team, golfer, player
+    Populates the following tables: team, golfer, teamgolferlink
 
     """
     print(f"Adding team data from file: {roster_file}")
@@ -424,21 +424,22 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
             raise ValueError(f"Unable to find division '{division_name}'")
         division_db = division_db[0]
         
-        # Add player to database
-        player_db = Player(
+        # Add team-golfer link to database
+        team_golfer_link = TeamGolferLink(
             team_id=team_db.id,
             golfer_id=golfer_db.id,
             division_id=division_db.id,
-            role=PlayerRole.CAPTAIN if is_captain else PlayerRole.PLAYER
+            role=TeamRole.CAPTAIN if is_captain else TeamRole.PLAYER
         )
-        session.add(player_db)
+        session.add(team_golfer_link)
         session.commit()
 
 def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
     """
-    Adds match-related data in database.
+    Adds match-related data to database.
     
-    Populates the following tables: match, round, holeresult, matchroundlink
+    Populates the following tables: match, round, holeresult, matchroundlink,
+    roundgolferlink
 
     """
     print(f"Adding match data from file: {scores_file}")
@@ -528,41 +529,41 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 raise ValueError(f"Unable to find golfer '{golfer_name}'")
             golfer_db = golfer_db[0]
 
-            # Find player
-            player_db = session.exec(select(Player).where(Player.team_id == team_db.id).where(Player.golfer_id == golfer_db.id)).all()
-            if not player_db:
+            # Find team-golfer link
+            team_golfer_link_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_db.id).where(TeamGolferLink.golfer_id == golfer_db.id)).all()
+            if not team_golfer_link_db:
                 division_db: Division = None
 
-                # Find other player entries for golfer
-                players_db = session.exec(select(Player).where(Player.golfer_id == golfer_db.id)).all()
-                if not players_db:
-                    player_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
-                    division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == player_division_name)).one()
+                # Find team-golfer link entries for golfer
+                team_golfer_links_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.golfer_id == golfer_db.id)).all()
+                if not team_golfer_links_db:
+                    golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
+                    division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == golfer_division_name)).one()
                 else:
                     # Determine appropriate division in this flight based on other player entries
-                    for player_db in players_db:
-                        player_division_db = session.exec(select(Division).where(Division.id == player_db.division_id)).one()
-                        player_flight_db = session.exec(select(Flight).where(Flight.id == player_division_db.flight_id)).one()
-                        if player_flight_db.year == year:
-                            division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == player_division_db.name)).one()
+                    for team_golfer_link_db in team_golfer_links_db:
+                        golfer_division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
+                        golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_division_db.flight_id)).one()
+                        if golfer_flight_db.year == year:
+                            division_db = session.exec(select(Division).where(Division.flight_id == team_db.flight_id).where(Division.name == golfer_division_db.name)).one()
                 if not division_db:
                     raise ValueError(f"Unable to find suitable division for golfer '{golfer_db.name}' in flight '{flight_db.name}-{year}'")
                     
-                # Add player as substitute
+                # Add team-golfer link as substitute
                 print(f"Adding substitute '{golfer_db.name}' to team '{team_db.name}' in division '{division_db.name}'")
-                player_db = Player(
+                team_golfer_link_db = TeamGolferLink(
                     team_id=team_db.id,
                     golfer_id=golfer_db.id,
                     division_id=division_db.id,
-                    role="SUBSTITUTE"
+                    role=TeamRole.SUBSTITUTE
                 )
-                session.add(player_db)
+                session.add(team_golfer_link_db)
                 session.commit()
             else:
-                player_db = player_db[0]
+                team_golfer_link_db = team_golfer_link_db[0]
 
             # Find division
-            division_db = session.exec(select(Division).where(Division.id == player_db.division_id)).one()
+            division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
 
             # Find division home tee
             home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.home_tee_id)).one()
