@@ -6,9 +6,8 @@ from sqlmodel import Session, select
 
 
 from ..dependencies import get_session
-from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightDataWithCount
+from ..models.flight import Flight, FlightCreate, FlightData, FlightUpdate, FlightRead, FlightDataWithCount
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
-from ..models.golfer import Golfer
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
 from ..models.team_golfer_link import TeamGolferLink
@@ -23,18 +22,12 @@ async def read_flights(*, session: Session = Depends(get_session), offset: int =
     # TODO: Process query parameters to further limit flight results returned from database
     flight_ids = session.exec(select(Flight.id).offset(offset).limit(limit)).all()
     flight_data = get_flights(session=session, flight_ids=flight_ids)
-
-    # Get division data for selected flights
-    division_data = get_divisions_in_flights(session=session, flight_ids=flight_ids)
-
-    # Get team data for selected flights
-    team_data = get_teams_in_flights(session=session, flight_ids=flight_ids)
-
     # Add division and team data to flight data
+    division_data = get_divisions_in_flights(session=session, flight_ids=flight_ids)
+    team_data = get_teams_in_flights(session=session, flight_ids=flight_ids)
     for f in flight_data:
         f.divisions = [d for d in division_data if d.flight_id == f.flight_id]
         f.teams = [t for t in team_data if t.flight_id == f.flight_id]
-
     # Return count of relevant flights from database and flight data list
     return FlightDataWithCount(num_flights=len(flight_ids), flights=flight_data)
 
@@ -46,12 +39,17 @@ async def create_flight(*, session: Session = Depends(get_session), flight: Flig
     session.refresh(flight_db)
     return flight_db
 
-@router.get("/{flight_id}", response_model=FlightReadWithData)
+@router.get("/{flight_id}", response_model=FlightData)
 async def read_flight(*, session: Session = Depends(get_session), flight_id: int):
-    flight_db = session.get(Flight, flight_id)
-    if not flight_db:
+    # Query database for selected flight, error if not found
+    flight_data = get_flights(session=session, flight_ids=[flight_id,])
+    if (not flight_data) or (len(flight_data) == 0):
         raise HTTPException(status_code=404, detail="Flight not found")
-    return flight_db
+    flight_data = flight_data[0]
+    # Add division and team data to selected flight and return
+    flight_data.divisions = get_divisions_in_flights(session=session, flight_ids=[flight_id,])
+    flight_data.teams = get_teams_in_flights(session=session, flight_ids=[flight_id,])
+    return flight_data
 
 @router.patch("/{flight_id}", response_model=FlightRead)
 async def update_flight(*, session: Session = Depends(get_session), flight_id: int, flight: FlightUpdate):
