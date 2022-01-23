@@ -221,7 +221,7 @@ def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
     Returns
     -------
     match_data : list of MatchData
-        match data for the given matches
+        match data for the given matches, sorted by week
     
     """
     home_team = aliased(Team)
@@ -239,6 +239,9 @@ def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
         away_score=match.away_score
     ) for match, flight, home_team, away_team in match_query_data]
 
+    # Sort matches by week
+    match_data.sort(key=lambda m: m.week)
+    
     # Get round data for selected matches
     round_data = get_rounds_for_matches(session=session, match_ids=[m.match_id for m in match_data])
 
