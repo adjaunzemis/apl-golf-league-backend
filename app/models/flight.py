@@ -30,15 +30,3 @@ class FlightRead(FlightBase):
 class FlightReadWithData(FlightRead):
     divisions: List[DivisionRead] = []
     teams: List[TeamRead] = []
-
-class FlightData(SQLModel):
-    flight_id: int
-    year: int
-    name: str
-    home_course_name: str = None
-    divisions: List[DivisionData] = []
-    teams: List[TeamReadWithGolfers] = []
-
-class FlightDataWithCount(SQLModel):
-    num_flights: int
-    flights: List[FlightData]

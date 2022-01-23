@@ -41,7 +41,7 @@ class MatchReadWithData(MatchRead):
     away_team: TeamRead = None
     rounds: List[RoundReadWithData] = []
 
-class MatchData(SQLModel):
+class MatchSummary(SQLModel):
     match_id: int
     home_team_id: int
     home_team_name: str
@@ -51,6 +51,8 @@ class MatchData(SQLModel):
     week: int
     home_score: float
     away_score: float
+
+class MatchData(MatchSummary):
     rounds: List[RoundData] = []
 
 class MatchDataWithCount(SQLModel):

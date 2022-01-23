@@ -7,11 +7,11 @@ from .course import Course
 from .track import Track
 from .tee import Tee
 from .hole import Hole
-from .flight import Flight, FlightData
+from .flight import Flight
 from .team import Team, TeamReadWithGolfers
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
-from .match import Match, MatchData
+from .match import Match, MatchData, MatchSummary
 from .round import Round, RoundData
 from .hole_result import HoleResult, HoleResultData
 from .round_golfer_link import RoundGolferLink
@@ -47,6 +47,19 @@ class TeamWithMatchData(SQLModel):
     name: str
     golfers: List[TeamGolferData] = []
     matches: List[MatchData] = []
+    
+class FlightData(SQLModel):
+    flight_id: int
+    year: int
+    name: str
+    home_course_name: str = None
+    divisions: List[DivisionData] = []
+    teams: List[TeamReadWithGolfers] = []
+    matches: List[MatchSummary] = []
+    
+class FlightDataWithCount(SQLModel):
+    num_flights: int
+    flights: List[FlightData]
 
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
     """
