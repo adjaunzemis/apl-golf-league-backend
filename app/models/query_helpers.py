@@ -8,7 +8,7 @@ from .track import Track
 from .tee import Tee
 from .hole import Hole
 from .flight import Flight, FlightData
-from .team import Team, TeamRead
+from .team import Team, TeamReadWithGolfers
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData
@@ -101,7 +101,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
         home_tee_slope=home_tee.slope
     ) for division, home_tee in division_query_data]
 
-def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamRead]:
+def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamReadWithGolfers]:
     """
     Retrieves team data for all teams in the given flights.
     
@@ -114,11 +114,12 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamRe
     
     Returns
     -------
-    team_data : list of TeamData
+    team_data : list of TeamReadWithData
         teams in the given flights
     
     """
-    return session.exec(select(Team).where(Team.flight_id.in_(flight_ids)))
+    teams = session.exec(select(Team).where(Team.flight_id.in_(flight_ids))).all()
+    return [TeamReadWithGolfers(id=t.id, flight_id=t.flight_id, name=t.name, golfers=t.golfers) for t in teams]
 
 def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     """

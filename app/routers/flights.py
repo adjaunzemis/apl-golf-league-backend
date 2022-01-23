@@ -4,9 +4,11 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 
+
 from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead, FlightReadWithData, FlightDataWithCount
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
+from ..models.golfer import Golfer
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
 from ..models.team_golfer_link import TeamGolferLink
@@ -25,12 +27,9 @@ async def read_flights(*, session: Session = Depends(get_session), offset: int =
     # Get division data for selected flights
     division_data = get_divisions_in_flights(session=session, flight_ids=flight_ids)
 
-    # Get team and player data for selected flights
+    # Get team data for selected flights
     team_data = get_teams_in_flights(session=session, flight_ids=flight_ids)
-    team_golfer_data = get_team_golfers_for_teams(session=session, team_ids=[t.team_id for t in team_data])
-    for t in team_data:
-        t.golfers = [g for g in team_golfer_data if g.team_id == t.team_id]
-    
+
     # Add division and team data to flight data
     for f in flight_data:
         f.divisions = [d for d in division_data if d.flight_id == f.flight_id]
