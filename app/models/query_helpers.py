@@ -52,6 +52,7 @@ class FlightData(SQLModel):
     flight_id: int
     year: int
     name: str
+    logo_url: str = None
     home_course_name: str = None
     divisions: List[DivisionData] = []
     teams: List[TeamReadWithGolfers] = []
@@ -83,6 +84,7 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         flight_id=flight.id,
         year=flight.year,
         name=flight.name,
+        logo_url=flight.logo_url,
         home_course_name=home_course.name
     ) for flight, home_course in flight_query_data]
 

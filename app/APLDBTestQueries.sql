@@ -100,3 +100,9 @@ FROM match
 JOIN flight on match.flight_id = flight.id
 JOIN team AS home_team on match.home_team_id = home_team.id
 JOIN team AS away_team on match.away_team_id = away_team.id;
+
+ALTER TABLE flight ADD logo_url varchar(255);
+
+ALTER TABLE flight DROP COLUMN logoURL;
+
+SELECT * FROM flight;
