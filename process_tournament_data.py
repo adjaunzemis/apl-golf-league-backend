@@ -108,6 +108,22 @@ def parse_tournament_scores_file(file: str):
                     })
     return scores
 
+def parse_tournament_results_file(file: str):
+    results = []
+    with open(file, 'r') as fp:
+        category = None
+        for line in fp:
+            line = line.strip()
+            line = line.replace(',', ' ')
+            if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
+                line_parts = line.split()
+                if (len(line_parts) > 1) and (line_parts[0].lower() != 'hole'): # skip table column headers
+                    if line_parts[0].isdigit():
+                        results.append({"category": category, "hole": int(line_parts[0]), "name": " ".join(line_parts[1:3]), "details": None if len(line_parts) < 4 else " ".join(line_parts[3:])})
+                    else:
+                        category = " ".join(line_parts)
+    return results
+
 if __name__ == "__main__":
     data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
     for data_dir in data_dirs:
@@ -183,4 +199,24 @@ if __name__ == "__main__":
                     fp.write(scores_csv_data)
 
             # TODO: Process tournament results (winners, prizes, etc.)
+            results_file = f"{info_dict['abbreviation']}.results"
+            print(f"Processing {data_year} tournament results file: {results_file}")
+
+            results = []
+            try:
+                results = parse_tournament_results_file(f"data/{data_dir}/Tournaments/{results_file}")
+            except ValueError:
+                print("\tERROR: Unable to process tournament results file!")
+
+            if len(results) == 0:
+                print("\tNo tournament results data to output")
+            else:
+                results_csv_data = ",".join([str(k) for k,v in results[0].items()])
+                for results_entry in results:
+                    results_csv_data += "\n" + ",".join([str(v) for k,v in results_entry.items()])
+
+                results_output_file = f"data/tournament_results_{data_year}_{info_dict['abbreviation']}.csv"
+                print(f"\tWriting processed tournament results data to file: {results_output_file}")
+                with open(results_output_file, "w") as fp:
+                    fp.write(results_csv_data)
         
