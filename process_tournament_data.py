@@ -108,6 +108,22 @@ def parse_tournament_scores_file(file: str):
                     })
     return scores
 
+def parse_tournament_scores_summary_file(file: str):
+    scores = []
+    with open(file, 'r') as fp:
+        for line in fp:
+            line = line.strip()
+            line = line.replace(',', ' ')
+            if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
+                line_parts = line.split()
+                if (len(line_parts) > 1) and (line_parts[-1].lower() != 'net'): # skip table header
+                    name = " ".join(line_parts[0:-3])
+                    gross = int(line_parts[-3])
+                    handicap = int(line_parts[-2])
+                    net = int(line_parts[-1])
+                    scores.append({"name": name, "gross": gross, "handicap": handicap, "net": net})
+    return scores
+
 def parse_tournament_results_file(file: str):
     results = []
     with open(file, 'r') as fp:
@@ -138,8 +154,7 @@ if __name__ == "__main__":
 
             try:
                 info_dict_list.append(parse_tournament_info_file(f"data/{data_dir}/Tournaments/{info_file}", data_year))
-                # TODO: Check for valid data (e.g. populated tee sheet or scores) before adding to info list
-            except ValueError:
+            except:
                 print("\tERROR: Unable to process tournament info file!")
             
         if len(info_dict_list) == 0:
@@ -161,7 +176,7 @@ if __name__ == "__main__":
             roster = []
             try:
                 roster = parse_tournament_roster_file(f"data/{data_dir}/Tournaments/{roster_file}")
-            except ValueError:
+            except:
                 print("\tERROR: Unable to process tournament roster file!")
 
             if len(roster) == 0:
@@ -183,7 +198,7 @@ if __name__ == "__main__":
             scores = []
             try:
                 scores = parse_tournament_scores_file(f"data/{data_dir}/Tournaments/{scores_file}")
-            except ValueError:
+            except:
                 print("\tERROR: Unable to process tournament scores file!")
 
             if len(scores) == 0:
@@ -198,7 +213,51 @@ if __name__ == "__main__":
                 with open(scores_output_file, "w") as fp:
                     fp.write(scores_csv_data)
 
-            # TODO: Process tournament results (winners, prizes, etc.)
+            # Process tournament gross scores summary
+            gross_scores_file = f"{info_dict['abbreviation']}.gross"
+            print(f"Processing {data_year} tournament gross scores file: {gross_scores_file}")
+
+            gross_scores = []
+            try:
+                gross_scores = parse_tournament_scores_summary_file(f"data/{data_dir}/Tournaments/{gross_scores_file}")
+            except:
+                print("\tERROR: Unable to process tournament gross scores file!")
+
+            if len(gross_scores) == 0:
+                print("\tNo tournament gross scores data to output")
+            else:
+                gross_scores_csv_data = ",".join([str(k) for k,v in gross_scores[0].items()])
+                for gross_scores_entry in gross_scores:
+                    gross_scores_csv_data += "\n" + ",".join([str(v) for k,v in gross_scores_entry.items()])
+
+                gross_scores_output_file = f"data/tournament_gross_{data_year}_{info_dict['abbreviation']}.csv"
+                print(f"\tWriting processed tournament gross scores data to file: {gross_scores_output_file}")
+                with open(gross_scores_output_file, "w") as fp:
+                    fp.write(gross_scores_csv_data)
+
+            # Process tournament net scores summary
+            net_scores_file = f"{info_dict['abbreviation']}.net"
+            print(f"Processing {data_year} tournament net scores file: {net_scores_file}")
+
+            net_scores = []
+            try:
+                net_scores = parse_tournament_scores_summary_file(f"data/{data_dir}/Tournaments/{net_scores_file}")
+            except:
+                print("\tERROR: Unable to process tournament net scores file!")
+
+            if len(net_scores) == 0:
+                print("\tNo tournament net scores data to output")
+            else:
+                net_scores_csv_data = ",".join([str(k) for k,v in net_scores[0].items()])
+                for net_scores_entry in net_scores:
+                    net_scores_csv_data += "\n" + ",".join([str(v) for k,v in net_scores_entry.items()])
+
+                net_scores_output_file = f"data/tournament_net_{data_year}_{info_dict['abbreviation']}.csv"
+                print(f"\tWriting processed tournament net scores data to file: {net_scores_output_file}")
+                with open(net_scores_output_file, "w") as fp:
+                    fp.write(net_scores_csv_data)
+
+            # Process tournament results (winners, prizes, etc.)
             results_file = f"{info_dict['abbreviation']}.results"
             print(f"Processing {data_year} tournament results file: {results_file}")
 
