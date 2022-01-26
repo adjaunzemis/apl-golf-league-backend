@@ -56,6 +56,7 @@ class RoundData(SQLModel):
     golfer_playing_handicap: int
     team_name: Optional[str] = None
     course_name: str
+    track_name: str
     tee_name: str
     tee_gender: str
     tee_rating: float
