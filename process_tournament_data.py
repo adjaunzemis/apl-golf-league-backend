@@ -7,8 +7,8 @@ Andris Jaunzemis
 
 """
 
-from datetime import date, datetime
 import os
+import pandas as pd
 
 def parse_tournament_info_file(file: str, year: int):
     info = {"name": None, "abbreviation": None, "in_charge": None, "in_charge_email": None,
@@ -49,6 +49,13 @@ def parse_tournament_info_file(file: str, year: int):
                     elif line_parts[0].lower() == 'ryder_cup':
                         info["ryder_cup"] = True if line_parts[1].lower() == 'on' else False
     return info
+
+def check_tournament_played(info: dict, year: int, custom_tournaments_file: str):
+    df_custom = pd.read_csv(custom_tournaments_file)
+    for idx, row in df_custom.iterrows():
+        if ((row['year'] == year) and (row['name'].lower() == info['name'].lower())):
+            return True
+    return False
 
 def parse_tournament_roster_file(file: str):
     roster = []
@@ -141,6 +148,7 @@ def parse_tournament_results_file(file: str):
     return results
 
 if __name__ == "__main__":
+    CUSTOM_TOURNAMENTS_FILE = "data/tournaments_custom.csv"
     data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
     for data_dir in data_dirs:
         data_year = 2000 + int(data_dir[-2:])
@@ -153,7 +161,9 @@ if __name__ == "__main__":
             print(f"Processing {data_year} tournament info file: {info_file}")
 
             try:
-                info_dict_list.append(parse_tournament_info_file(f"data/{data_dir}/Tournaments/{info_file}", data_year))
+                info_dict = parse_tournament_info_file(f"data/{data_dir}/Tournaments/{info_file}", data_year)
+                if check_tournament_played(info=info_dict, year=data_year, custom_tournaments_file=CUSTOM_TOURNAMENTS_FILE):
+                    info_dict_list.append(info_dict)
             except:
                 print("\tERROR: Unable to process tournament info file!")
             
