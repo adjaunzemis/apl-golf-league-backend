@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from .tee import TeeGender
 from .flight_division_link import FlightDivisionLink
+from .tournament_division_link import TournamentDivisionLink
 
 class DivisionBase(SQLModel):
     name: str
@@ -12,6 +13,7 @@ class DivisionBase(SQLModel):
 class Division(DivisionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     flight: Optional["Flight"] = Relationship(link_model=FlightDivisionLink, sa_relationship_kwargs={'viewonly': True})
+    tournament: Optional["Tournament"] = Relationship(link_model=TournamentDivisionLink, sa_relationship_kwargs={'viewonly': True})
 
 class DivisionCreate(DivisionBase):
     pass
@@ -32,3 +34,12 @@ class FlightDivisionData(SQLModel):
     home_tee_name: str
     home_tee_rating: float
     home_tee_slope: int
+
+class TournamentDivisionData(SQLModel):
+    division_id: int
+    tournament_id: int
+    name: str
+    gender: str
+    tee_name: str
+    tee_rating: float
+    tee_slope: int
