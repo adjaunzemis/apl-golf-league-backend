@@ -37,14 +37,19 @@ from models.round_golfer_link import RoundGolferLink
 from models.match_round_link import MatchRoundLink
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
-def find_courses_played(scores_file: str):
+def find_flight_courses_played(scores_file: str):
     """
-    Finds all courses played in matches in the given scores file.
+    Finds all courses played in the given flight matches.
+
+    Parameters
+    ----------
+    scores_file : string
+        match data for a flight
 
     Returns
     -------
     course_abbreviations : list of strings
-        unique list of abbreviations for courses played
+        list of abbreviations for courses played
 
     """
     print(f"Finding courses played in scores file: {scores_file}")
@@ -56,6 +61,35 @@ def find_courses_played(scores_file: str):
     course_abbreviations = []
     for idx, row in df_scores.iterrows():
         course_abbreviations.append(row['course_abbreviation'])
+    
+    # Filter unique abbreviations
+    return np.unique(course_abbreviations)
+
+def find_tournament_courses_played(info_file: str):
+    """
+    Finds all courses played in the given tournaments.
+    
+    Parameters
+    ----------
+    info_file : string
+        tournament information file
+    
+    Returns
+    -------
+    course_abbreviations : list of strings
+        list of abbreviations for courses played
+
+    """
+    print(f"Finding courses played in tournament information file: {info_file}")
+
+    # Read tournament info data spreadsheet
+    df_info = pd.read_csv(info_file)
+
+    # For each tournament entry, compile course abbreviations:
+    course_abbreviations = []
+    for idx, row in df_info.iterrows():
+        course_abbreviations.append(row['front_track'])
+        course_abbreviations.append(row['back_track'])
     
     # Filter unique abbreviations
     return np.unique(course_abbreviations)
@@ -328,11 +362,18 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     session.add(division_db)
                     session.commit()
 
-def add_teams(session: Session, roster_file: str, flights_file: str):
+def add_flight_teams(session: Session, roster_file: str, flights_file: str):
     """
-    Adds team-related data to database.
-    
-    Populates the following tables: team, golfer, teamgolferlink
+    Adds flight team-related data to database.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    roster_file : string
+        file containing flight roster data
+    flights_file : string
+        file containing flight information
 
     """
     print(f"Adding team data from file: {roster_file}")
@@ -436,12 +477,24 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
             session.add(team_golfer_link_db)
             session.commit()
 
-def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
+def add_flight_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
     """
     Adds match-related data to database.
     
-    Populates the following tables: match, round, holeresult, matchroundlink,
-    roundgolferlink
+    Parameters
+    ----------
+    session : Session
+        database session
+    scores_file : string
+        file containing flight match results
+    flights_file : string
+        file containing flight information
+    courses_file : string
+        file containing course data from website
+    custom_courses_file : string
+        file containing manually-entered course data
+    subs_file : string
+        file containing substitute golfer data
 
     """
     print(f"Adding match data from file: {scores_file}")
@@ -671,7 +724,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
-    DATA_YEAR = 2019
+    DATA_YEAR = 2021
 
     DATABASE_FILE = "apl.db"
 
@@ -688,19 +741,26 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)  
 
     with Session(engine) as session:
-        # Find all courses played in rounds for this year
-        scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
+        # Find all courses played in flight rounds
+        flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
         courses_played = []
-        for scores_file in scores_files:
-            for course_played in find_courses_played(scores_file):
+        for scores_file in flight_scores_files:
+            for course_played in find_flight_courses_played(scores_file):
                 if course_played not in courses_played:
                     courses_played.append(course_played)
-        print(f"Courses played: {courses_played}")
+
+        # Find all courses played in tournament rounds
+        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
+        for course_played in find_tournament_courses_played(tournaments_file):
+            if course_played not in courses_played:
+                courses_played.append(course_played)
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
         custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
 
+        print(f"Courses played: {courses_played}")
+        
         checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
         if not checks_pass:
             raise RuntimeError("Missing or inconsistent course data, halting database initialization")
@@ -714,12 +774,12 @@ if __name__ == "__main__":
         add_flights(session, flights_file, custom_courses_file)
 
         # Add roster data into database
-        roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
-        for roster_file in roster_files:
-            add_teams(session, roster_file, flights_file)
+        flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
+        for roster_file in flight_roster_files:
+            add_flight_teams(session, roster_file, flights_file)
 
         # Add score data to database
-        for scores_file in scores_files:
-            add_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
+        for scores_file in flight_scores_files:
+            add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
     print("Database initialized!")
