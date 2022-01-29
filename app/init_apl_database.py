@@ -153,7 +153,7 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
         # Check if course had any rounds played
         if row["abbreviation"] in courses_played:
             # Add course to database (if not already added)
-            course_db = session.exec(select(Course).where(Course.name == row["course_name"])).one_or_none()
+            course_db = session.exec(select(Course).where(Course.name == row["course_name"])).one_or_none() # TODO: Account for changes by year
             if not course_db:
                 print(f"Adding course: {row['course_name']}")
                 course_db = Course(
@@ -527,6 +527,8 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
             golfer_name = row[f"p{pNum}_name"]
             if golfer_name.lower() == 'none':
                 print(f"No round to add for forfeited match")
+            elif golfer_name.lower() == 'substitute':
+                print(f"No round to add for un-named substitute golfer")
             else:
                 if golfer_name[-6:] == " (sub)":
                     golfer_name = golfer_name[:-6]
@@ -669,7 +671,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
-    DATA_YEAR = 2020
+    DATA_YEAR = 2019
 
     DATABASE_FILE = "apl.db"
 
