@@ -8,9 +8,9 @@ from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.match import MatchSummary
-from ..models.query_helpers import FlightData, FlightDataWithCount, TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
 from ..models.flight_team_link import FlightTeamLink
 from ..models.team_golfer_link import TeamGolferLink
+from ..models.query_helpers import FlightData, FlightDataWithCount, TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
 
 router = APIRouter(
     prefix="/flights",
@@ -61,7 +61,7 @@ async def read_flight(*, session: Session = Depends(get_session), flight_id: int
             week=match.week,
             home_score=match.home_score,
             away_score=match.away_score
-        ) for match in team_matches ]
+        ) for match in team_matches]
     return flight_data
 
 @router.patch("/{flight_id}", response_model=FlightRead)

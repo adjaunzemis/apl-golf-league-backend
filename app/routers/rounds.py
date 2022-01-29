@@ -8,7 +8,7 @@ from ..dependencies import get_session
 from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
 from ..models.round_golfer_link import RoundGolferLink
-from ..models.query_helpers import get_rounds
+from ..models.query_helpers import get_flight_rounds
 
 router = APIRouter(
     prefix="/rounds",
@@ -24,7 +24,7 @@ async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int
         round_ids = session.exec(select(Round.id).offset(offset).limit(limit)).all()
 
     # Return count of relevant rounds from database and round data list
-    return RoundDataWithCount(num_rounds=len(round_ids), rounds=get_rounds(session=session, round_ids=round_ids))
+    return RoundDataWithCount(num_rounds=len(round_ids), rounds=get_flight_rounds(session=session, round_ids=round_ids))
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), round: RoundCreate):

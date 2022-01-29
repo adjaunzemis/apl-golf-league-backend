@@ -2,7 +2,9 @@ from typing import List
 from datetime import date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
+from app.models.tournament import Tournament
 
+from app.models.tournament_team_link import TournamentTeamLink
 
 from .course import Course
 from .track import Track
@@ -11,15 +13,16 @@ from .hole import Hole
 from .flight import Flight
 from .flight_team_link import FlightTeamLink
 from .flight_division_link import FlightDivisionLink
-from .team import Team, FlightTeamReadWithGolfers
+from .team import Team, FlightTeamReadWithGolfers, TournamentTeamData
 from .golfer import Golfer, GolferStatistics
-from .division import Division, FlightDivisionData
+from .division import Division, FlightDivisionData, TournamentDivisionData
 from .match import Match, MatchData, MatchSummary
 from .round import Round, RoundData
 from .hole_result import HoleResult, HoleResultData
 from .round_golfer_link import RoundGolferLink
 from .match_round_link import MatchRoundLink
 from .team_golfer_link import TeamGolferLink
+from .tournament_division_link import TournamentDivisionLink
 
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -66,6 +69,21 @@ class FlightDataWithCount(SQLModel):
     num_flights: int
     flights: List[FlightData]
 
+class TournamentData(SQLModel):
+    tournament_id: int
+    year: int
+    name: str
+    logo_url: str = None
+    secretary: str = None
+    secretary_contact: str = None
+    course_name: str = None
+    divisions: List[TournamentDivisionData] = []
+    teams: List[TournamentTeamData] = []
+
+class TournamentDataWithCount(SQLModel):
+    num_tournaments: int
+    tournaments: List[TournamentData]
+
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
     """
     Retrieves flight data from database.
@@ -94,6 +112,34 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         home_course_name=home_course.name
     ) for flight, home_course in flight_query_data]
 
+def get_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentData]:
+    """
+    Retrieves tournament data from database.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    tournament_ids : list of integers
+        tournament identifiers
+    
+    Returns
+    -------
+    tournament_data : list of TournamentData
+        tournament data from database
+    
+    """
+    tournament_query_data = session.exec(select(Tournament, Course).join(Course).where(Tournament.id.in_(tournament_ids)).order_by(Tournament.year))
+    return [TournamentData(
+        tournament_id=tournament.id,
+        year=tournament.year,
+        name=tournament.name,
+        logo_url=tournament.logo_url,
+        secretary=tournament.secretary,
+        secretary_contact=tournament.secretary_contact,
+        course_name=course.name
+    ) for tournament, course in tournament_query_data]
+
 def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[FlightDivisionData]:
     """
     Retrieves division data for all divisions in the given flights.
@@ -107,7 +153,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Fl
     
     Returns
     -------
-    division_data : list of DivisionData
+    division_data : list of FlightDivisionData
         division data for division in the given flights
          
     """
@@ -121,6 +167,34 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Fl
         home_tee_rating=home_tee.rating,
         home_tee_slope=home_tee.slope
     ) for division, flight_division_link, home_tee in division_query_data]
+
+def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentDivisionData]:
+    """
+    Retrieves division data for all teams in the given tournaments.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    tournament_ids : list of integers
+        tournament identifiers
+    
+    Returns
+    -------
+    division_data : list of TournamentDivisionData
+        division data for division in the given tournaments
+
+    """
+    division_query_data = session.exec(select(Division, TournamentDivisionLink, Tee).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(Tee).where(TournamentDivisionLink.tournament_id.in_(tournament_ids)))
+    return [TournamentDivisionData(
+        division_id=division.id,
+        tournament_id=tournament_division_link.tournament_id,
+        name=division.name,
+        gender=division.gender,
+        tee_name=tee.name,
+        tee_rating=tee.rating,
+        tee_slope=tee.slope
+    ) for division, tournament_division_link, tee in division_query_data]
 
 def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[FlightTeamReadWithGolfers]:
     """
@@ -141,6 +215,26 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[Flight
     """
     query_data = session.exec(select(Team, Flight).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id.in_(flight_ids))).all()
     return [FlightTeamReadWithGolfers(id=team.id, flight_id=flight.id, name=team.name, golfers=team.golfers) for team, flight in query_data]
+
+def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentTeamData]:
+    """
+    Retrieves team data for all teams in the given tournaments.
+    
+    Parameters
+    ----------
+    session : Session
+        database session
+    tournament_ids : list of integers
+        tournament identifiers
+    
+    Returns
+    -------
+    team_data : list of TournamentTeamReadWithGolfers
+        teams in the given tournaments
+    
+    """
+    query_data = session.exec(select(Team, Tournament).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id.in_(tournament_ids))).all()
+    return [TournamentTeamData(id=team.id, tournament_id=tournament.id, name=team.name, golfers=team.golfers) for team, tournament in query_data]
 
 def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     """
@@ -291,9 +385,9 @@ def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchDa
     match_ids = session.exec(select(Match.id).where((Match.home_team_id.in_(team_ids)) | (Match.away_team_id.in_(team_ids)))).all()
     return get_matches(session=session, match_ids=match_ids)
 
-def get_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
+def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
     """
-    Retrieves round data for the given rounds, including results.
+    Retrieves round data for the given flight-play rounds, including results.
 
     Parameters
     ----------
@@ -362,7 +456,82 @@ def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[Round
     
     """
     round_ids = session.exec(select(Round.id).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).where(MatchRoundLink.match_id.in_(match_ids))).all()
-    return get_rounds(session=session, round_ids=round_ids)
+    return get_flight_rounds(session=session, round_ids=round_ids)
+
+def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[RoundData]:
+    """
+    Retrieves round data for the given tournament.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    tournament_id : integer
+        tournament identifier
+    
+    Returns
+    -------
+    round_data : list of RoundData
+        rounds played for the given tournament
+
+    """
+    round_ids = session.exec(select(Round.id).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).where(MatchRoundLink.match_id.in_(match_ids))).all()
+    return get_tournament_rounds(session=session, round_ids=round_ids)
+
+def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
+    """
+    Retrieves round data for the given tournament-play rounds, including results.
+
+    TODO: Consolidate with `get_flight_rounds`.
+    TODO: Fix to remove dependence on MatchRoundLink and Match
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    round_ids : list of integers
+        round identifiers
+    
+    Returns
+    -------
+    round_data : list of RoundData
+        round data for the given rounds
+    
+    """
+    round_query_data = session.exec(select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Track, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Tee).join(Track).join(Course).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(TeamGolferLink, ((TeamGolferLink.golfer_id == Golfer.id) & (TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Team.id == TeamGolferLink.team_id).where(Round.id.in_(round_ids)))
+    round_data = [RoundData(
+        round_id=round.id,
+        team_id=team.id,
+        round_type=round.type,
+        date_played=round.date_played,
+        date_updated=round.date_updated,
+        golfer_id=round_golfer_link.golfer_id,
+        golfer_name=golfer.name,
+        golfer_handicap_index=round_golfer_link.golfer_handicap_index,
+        golfer_playing_handicap=round_golfer_link.golfer_playing_handicap,
+        team_name=team.name,
+        course_name=course.name,
+        track_name=track.name,
+        tee_name=tee.name,
+        tee_gender=tee.gender,
+        tee_rating=tee.rating,
+        tee_slope=tee.slope,
+        tee_color=tee.color if tee.color else "none",
+    ) for round, match_round_link, round_golfer_link, golfer, course, track, tee, team in round_query_data]
+
+    # Query hole data for selected rounds
+    hole_result_data = get_hole_results_for_rounds(session=session, round_ids=[r.round_id for r in round_data])
+
+    # Add hole data to round data and return
+    ahs = APLLegacyHandicapSystem()
+    for r in round_data:
+        r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
+        r.tee_par = sum([h.par for h in r.holes])
+        r.gross_score = sum([h.gross_score for h in r.holes])
+        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
+        r.net_score = sum([h.net_score for h in r.holes])
+        r.score_differential = ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score)
+    return round_data
 
 def get_hole_results_for_rounds(session: Session, round_ids: List[int]) -> List[HoleResultData]:
     """
@@ -492,4 +661,4 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, l
     
     """
     round_ids = session.exec(select(Round.id).where(Round.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
-    return get_rounds(session=session, round_ids=round_ids)
+    return get_flight_rounds(session=session, round_ids=round_ids)

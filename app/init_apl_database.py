@@ -778,11 +778,11 @@ if __name__ == "__main__":
                 if course_played not in courses_played:
                     courses_played.append(course_played)
 
-        # # Find all courses played in tournament rounds
-        # tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
-        # for course_played in find_tournament_courses_played(tournaments_file):
-        #     if course_played not in courses_played:
-        #         courses_played.append(course_played)
+        # Find all courses played in tournament rounds
+        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
+        for course_played in find_tournament_courses_played(tournaments_file):
+            if course_played not in courses_played:
+                courses_played.append(course_played)
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"

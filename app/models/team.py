@@ -28,6 +28,7 @@ class FlightTeamReadWithGolfers(TeamRead):
     flight_id: int
     golfers: List[Golfer]
 
-class TournamentTeamReadWithGolfers(TeamRead):
+class TournamentTeamData(TeamRead):
     tournament_id: int
     golfers: List[Golfer]
+    rounds: Optional[List["Round"]] = []

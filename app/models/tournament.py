@@ -35,4 +35,4 @@ class TournamentUpdate(SQLModel):
 
 class TournamentRead(TournamentBase):
     id: int
-    course: Optional[Course] = None
+    # course: Optional[Course] = None # TODO: try using this instead of joins in query?
