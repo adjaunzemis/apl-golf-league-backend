@@ -22,5 +22,6 @@ class TeamUpdate(SQLModel):
 class TeamRead(TeamBase):
     id: int
 
-class TeamReadWithGolfers(TeamRead):
+class FlightTeamReadWithGolfers(TeamRead):
+    flight_id: int
     golfers: List[Golfer]

@@ -3,15 +3,13 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from app.models.flight_team_link import FlightTeamLink
-
-
 from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.division import Division, DivisionCreate, DivisionUpdate, DivisionRead
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.match import MatchSummary
 from ..models.query_helpers import FlightData, FlightDataWithCount, TeamWithMatchData, compute_golfer_statistics_for_matches, get_divisions_in_flights, get_flights, get_matches_for_teams, get_team_golfers_for_teams, get_teams_in_flights
+from ..models.flight_team_link import FlightTeamLink
 from ..models.team_golfer_link import TeamGolferLink
 
 router = APIRouter(

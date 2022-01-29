@@ -3,12 +3,14 @@ from datetime import date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
+from app.models.flight_team_link import FlightTeamLink
+
 from .course import Course
 from .track import Track
 from .tee import Tee
 from .hole import Hole
 from .flight import Flight
-from .team import Team, TeamReadWithGolfers
+from .team import Team, FlightTeamReadWithGolfers
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
@@ -55,7 +57,7 @@ class FlightData(SQLModel):
     logo_url: str = None
     home_course_name: str = None
     divisions: List[DivisionData] = []
-    teams: List[TeamReadWithGolfers] = []
+    teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
     
 class FlightDataWithCount(SQLModel):
@@ -116,7 +118,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
         home_tee_slope=home_tee.slope
     ) for division, home_tee in division_query_data]
 
-def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamReadWithGolfers]:
+def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[FlightTeamReadWithGolfers]:
     """
     Retrieves team data for all teams in the given flights.
     
@@ -133,8 +135,8 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[TeamRe
         teams in the given flights
     
     """
-    teams = session.exec(select(Team).where(Team.flight_id.in_(flight_ids))).all()
-    return [TeamReadWithGolfers(id=t.id, flight_id=t.flight_id, name=t.name, golfers=t.golfers) for t in teams]
+    query_data = session.exec(select(Team, Flight).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id.in_(flight_ids))).all()
+    return [FlightTeamReadWithGolfers(id=team.id, flight_id=flight.id, name=team.name, golfers=team.golfers) for team, flight in query_data]
 
 def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     """
