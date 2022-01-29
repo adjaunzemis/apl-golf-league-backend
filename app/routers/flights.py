@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.models.flight_team_link import FlightTeamLink
+
 
 from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
@@ -200,6 +202,31 @@ async def delete_match_round_link(*, session: Session = Depends(get_session), te
     link_db = session.get(TeamGolferLink, [team_id, golfer_id])
     if not link_db:
         raise HTTPException(status_code=404, detail="Team-golfer link not found")
+    session.delete(link_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/team-links/", response_model=List[FlightTeamLink])
+async def read_flight_team_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(FlightTeamLink).offset(offset).limit(limit)).all()
+
+@router.get("/{flight_id}/team-links/", response_model=List[FlightTeamLink])
+async def read_flight_team_links_for_flight(*, session: Session = Depends(get_session), flight_id: int):
+    return session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_id)).all()
+
+@router.post("/{flight_id}/teams-links/{team_id}", response_model=FlightTeamLink)
+async def create_flight_team_link(*, session: Session = Depends(get_session), flight_id: int, team_id: int):
+    link_db = FlightTeamLink(flight_id=flight_id, team_id=team_id)
+    session.add(link_db)
+    session.commit()
+    session.refresh(link_db)
+    return link_db
+
+@router.delete("/{flight_id}/team-links/{team_id}")
+async def delete_flight_team_link(*, session: Session = Depends(get_session), flight_id: int, team_id: int):
+    link_db = session.get(FlightTeamLink, [flight_id, team_id])
+    if not link_db:
+        raise HTTPException(status_code=404, detail="Flight-team link not found")
     session.delete(link_db)
     session.commit()
     return {"ok": True}
