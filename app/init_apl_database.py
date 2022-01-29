@@ -26,6 +26,7 @@ from models.tee import Tee, TeeGender
 from models.hole import Hole
 from models.flight import Flight
 from models.division import Division
+from models.flight_division_link import FlightDivisionLink
 from models.golfer import Golfer
 from models.team import Team
 from models.flight_team_link import FlightTeamLink
@@ -169,9 +170,18 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
 
 def add_courses(session: Session, courses_file: str, custom_courses_file: str, courses_played: List[str]):
     """
-    Adds course-related data in database.
+    Adds course data to database.
     
-    Populates the following tables: course, track, tee, hole
+    Parameters
+    ----------
+    session : Session
+        database session
+    courses_file : string
+        file containing course data from website
+    custom_courses_file : string
+        file containing manually-entered course data
+    courses_played : list of strings
+        abbreviations for courses played
 
     """
     print(f"Adding course data from file: {courses_file}")
@@ -261,9 +271,16 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
 
 def add_flights(session: Session, flights_file: str, custom_courses_file: str):
     """
-    Adds flight-related data in database.
+    Adds flight data to database.
     
-    Populates the following tables: flight, division
+    Parameters
+    ----------
+    session : Session
+        database session
+    flights_files : string
+        file containing flight information
+    custom_courses_file : string
+        file containing manually-entered course data
 
     """
     print(f"Adding flight data from file: {flights_file}")
@@ -328,7 +345,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 raise ValueError(f"Cannot match home tee in database: {division_tee}")
 
             # Add division to database
-            division_db = session.exec(select(Division).where(Division.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
+            division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
             if not division_db:
                 print(f"Adding division: {division_name}")
                 division_db = Division(
@@ -338,6 +355,12 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     home_tee_id=tee_db.id
                 )
                 session.add(division_db)
+                session.commit()
+                    
+                # Add flight-team link to database
+                print(f"Adding flight-division link for division: {division_db.name}, flight: {flight_db.name}-{flight_db.year}")
+                flight_division_link_db = FlightDivisionLink(flight_id=flight_db.id, division_id=division_db.id)
+                session.add(flight_division_link_db)
                 session.commit()
 
             # Add super senior division (same tees as forward division but with Men's rating and slope)
@@ -350,7 +373,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     raise ValueError(f"Cannot match home tee in database: {division_tee}")
 
                 # Add division to database
-                division_db = session.exec(select(Division).where(Division.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_db.gender)).one_or_none()
+                division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_db.gender)).one_or_none()
                 if not division_db:
                     print(f"Adding division: {division_name}")
                     division_db = Division(
@@ -360,6 +383,12 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                         home_tee_id=tee_db.id
                     )
                     session.add(division_db)
+                    session.commit()
+                    
+                    # Add flight-team link to database
+                    print(f"Adding flight-division link for division: {division_db.name}, flight: {flight_db.name}-{flight_db.year}")
+                    flight_division_link_db = FlightDivisionLink(flight_id=flight_db.id, division_id=division_db.id)
+                    session.add(flight_division_link_db)
                     session.commit()
 
 def add_flight_teams(session: Session, roster_file: str, flights_file: str):
@@ -450,7 +479,7 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
             session.commit()
 
             # Add flight-team link to database
-            print(f"Processing flight-team link for team: {team_db.name}, flight: {flight_db.name}-{flight_db.year}")
+            print(f"Adding flight-team link for team: {team_db.name}, flight: {flight_db.name}-{flight_db.year}")
             flight_team_link_db = FlightTeamLink(flight_id=flight_db.id, team_id=team_db.id)
             session.add(flight_team_link_db)
             session.commit()
@@ -460,7 +489,7 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
 
         # Find division
         division_name = "Super-Senior" if row['division'] == "SuperSenior" else row['division']
-        division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == division_name)).one_or_none()
+        division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_team_link_db.flight_id).where(Division.name == division_name)).one_or_none()
         if not division_db:
             raise ValueError(f"Unable to find division '{division_name}'")
         
@@ -598,14 +627,14 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                     team_golfer_links_db = session.exec(select(TeamGolferLink).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(TeamGolferLink.golfer_id == golfer_db.id).where(Flight.year == year)).all()
                     if not team_golfer_links_db:
                         golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
-                        division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_name)).one()
+                        division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_name)).one()
                     else:
                         # Determine appropriate division in this flight based on other team-golfer link entries
                         for team_golfer_link_db in team_golfer_links_db:
-                            golfer_division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
-                            golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_division_db.flight_id)).one()
+                            (golfer_division_db, golfer_flight_division_link_db) = session.exec(select(Division, FlightDivisionLink).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(Division.id == team_golfer_link_db.division_id)).one()
+                            golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_flight_division_link_db.flight_id)).one()
                             if golfer_flight_db.year == year:
-                                division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_db.name)).one()
+                                division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_db.name)).one()
                     if not division_db:
                         raise ValueError(f"Unable to find suitable division for golfer '{golfer_db.name}' in flight '{flight_db.name}-{year}'")
                         
@@ -749,11 +778,11 @@ if __name__ == "__main__":
                 if course_played not in courses_played:
                     courses_played.append(course_played)
 
-        # Find all courses played in tournament rounds
-        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
-        for course_played in find_tournament_courses_played(tournaments_file):
-            if course_played not in courses_played:
-                courses_played.append(course_played)
+        # # Find all courses played in tournament rounds
+        # tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
+        # for course_played in find_tournament_courses_played(tournaments_file):
+        #     if course_played not in courses_played:
+        #         courses_played.append(course_played)
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"

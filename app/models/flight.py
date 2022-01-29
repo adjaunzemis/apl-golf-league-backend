@@ -2,9 +2,10 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from .course import Course
-from .division import Division, DivisionRead
-from .team import Team, TeamRead
+from .division import Division
+from .team import Team
 from .flight_team_link import FlightTeamLink
+from .flight_division_link import FlightDivisionLink
 
 class FlightBase(SQLModel):
     name: str
@@ -17,7 +18,7 @@ class FlightBase(SQLModel):
 class Flight(FlightBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     home_course: Course = Relationship()
-    divisions: Optional[List[Division]] = Relationship(back_populates="flight")
+    divisions: Optional[List[Division]] = Relationship(link_model=FlightDivisionLink)
     teams: Optional[List[Team]] = Relationship(link_model=FlightTeamLink)
 
 class FlightCreate(FlightBase):
@@ -33,7 +34,3 @@ class FlightUpdate(SQLModel):
 
 class FlightRead(FlightBase):
     id: int
-
-class FlightReadWithData(FlightRead):
-    divisions: List[DivisionRead] = []
-    teams: List[TeamRead] = []
