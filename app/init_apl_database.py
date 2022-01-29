@@ -525,143 +525,146 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 
             # Find golfer
             golfer_name = row[f"p{pNum}_name"]
-            if golfer_name[-6:] == " (sub)":
-                golfer_name = golfer_name[:-6]
-            golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer_name)).one_or_none()
-            if not golfer_db:
-                raise ValueError(f"Unable to find golfer '{golfer_name}'")
-
-            # Find team-golfer link
-            team_golfer_link_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_db.id).where(TeamGolferLink.golfer_id == golfer_db.id)).one_or_none()
-            if not team_golfer_link_db:
-                division_db: Division = None
-
-                # Find team-golfer link entries for golfer
-                team_golfer_links_db = session.exec(select(TeamGolferLink).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(TeamGolferLink.golfer_id == golfer_db.id).where(Flight.year == year)).all()
-                if not team_golfer_links_db:
-                    golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
-                    division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_name)).one()
-                else:
-                    # Determine appropriate division in this flight based on other team-golfer link entries
-                    for team_golfer_link_db in team_golfer_links_db:
-                        golfer_division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
-                        golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_division_db.flight_id)).one()
-                        if golfer_flight_db.year == year:
-                            division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_db.name)).one()
-                if not division_db:
-                    raise ValueError(f"Unable to find suitable division for golfer '{golfer_db.name}' in flight '{flight_db.name}-{year}'")
-                    
-                # Add team-golfer link as substitute
-                print(f"Adding substitute '{golfer_db.name}' to team '{team_db.name}' in division '{division_db.name}'")
-                team_golfer_link_db = TeamGolferLink(
-                    team_id=team_db.id,
-                    golfer_id=golfer_db.id,
-                    division_id=division_db.id,
-                    role=TeamRole.SUBSTITUTE
-                )
-                session.add(team_golfer_link_db)
-                session.commit()
-
-            # Find division
-            division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
-
-            # Find division home tee
-            home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.home_tee_id)).one()
-
-            # Find division home track
-            home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
-
-            # Find round tee
-            if (flight_db.home_course_id == course_db.id) and (home_track_db.name[0].upper() == row['course_abbreviation'][-1].upper()):
-                tee_db = home_tee_db # round played at home course
+            if golfer_name.lower() == 'none':
+                print(f"No round to add for forfeited match")
             else:
-                print(f"Match played at non-home course: {row['course_abbreviation']}")
+                if golfer_name[-6:] == " (sub)":
+                    golfer_name = golfer_name[:-6]
+                golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer_name)).one_or_none()
+                if not golfer_db:
+                    raise ValueError(f"Unable to find golfer '{golfer_name}'")
 
-                # Find round track
-                tracks_db = session.exec(select(Track).where(Track.course_id == course_db.id)).all()
-                if not tracks_db:
-                    raise ValueError(f"Unable to find tracks for course '{course_db.name}'")
+                # Find team-golfer link
+                team_golfer_link_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_db.id).where(TeamGolferLink.golfer_id == golfer_db.id)).one_or_none()
+                if not team_golfer_link_db:
+                    division_db: Division = None
 
-                # Find track based on match course abbreviation
-                track_db = None
-                for tIdx in range(len(tracks_db)):
-                    if tracks_db[tIdx].name[0] == row['course_abbreviation'][-1]:
-                        track_db = tracks_db[tIdx]
-                if not track_db:
-                    raise ValueError(f"Unable to find track for course '{course_db.name}' matching abbreviation '{row['course_abbreviation']}'")
+                    # Find team-golfer link entries for golfer
+                    team_golfer_links_db = session.exec(select(TeamGolferLink).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(TeamGolferLink.golfer_id == golfer_db.id).where(Flight.year == year)).all()
+                    if not team_golfer_links_db:
+                        golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
+                        division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_name)).one()
+                    else:
+                        # Determine appropriate division in this flight based on other team-golfer link entries
+                        for team_golfer_link_db in team_golfer_links_db:
+                            golfer_division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
+                            golfer_flight_db = session.exec(select(Flight).where(Flight.id == golfer_division_db.flight_id)).one()
+                            if golfer_flight_db.year == year:
+                                division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_db.name)).one()
+                    if not division_db:
+                        raise ValueError(f"Unable to find suitable division for golfer '{golfer_db.name}' in flight '{flight_db.name}-{year}'")
+                        
+                    # Add team-golfer link as substitute
+                    print(f"Adding substitute '{golfer_db.name}' to team '{team_db.name}' in division '{division_db.name}'")
+                    team_golfer_link_db = TeamGolferLink(
+                        team_id=team_db.id,
+                        golfer_id=golfer_db.id,
+                        division_id=division_db.id,
+                        role=TeamRole.SUBSTITUTE
+                    )
+                    session.add(team_golfer_link_db)
+                    session.commit()
+
+                # Find division
+                division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
+
+                # Find division home tee
+                home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.home_tee_id)).one()
+
+                # Find division home track
+                home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
 
                 # Find round tee
-                tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['course_abbreviation'].lower()) & (df_custom['tee'].str.lower() == division_db.name.lower())].iloc[0]['color']
-                tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == division_db.gender)).one()
+                if (flight_db.home_course_id == course_db.id) and (home_track_db.name[0].upper() == row['course_abbreviation'][-1].upper()):
+                    tee_db = home_tee_db # round played at home course
+                else:
+                    print(f"Match played at non-home course: {row['course_abbreviation']}")
 
-            # Parse round date played and entered
-            date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
-            date_entered = datetime.strptime(row[f'date_entered'], '%Y-%m-%d %H:%M:%S')
+                    # Find round track
+                    tracks_db = session.exec(select(Track).where(Track.course_id == course_db.id)).all()
+                    if not tracks_db:
+                        raise ValueError(f"Unable to find tracks for course '{course_db.name}'")
 
-            # Add round
-            round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).one_or_none()
-            if not round_data_db:
-                print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
-                round_db = Round(
-                    tee_id=tee_db.id,
-                    type=RoundType.FLIGHT,
-                    date_played=date_played,
-                    date_updated=date_entered
-                )
-                session.add(round_db)
-                session.commit()
+                    # Find track based on match course abbreviation
+                    track_db = None
+                    for tIdx in range(len(tracks_db)):
+                        if tracks_db[tIdx].name[0] == row['course_abbreviation'][-1]:
+                            track_db = tracks_db[tIdx]
+                    if not track_db:
+                        raise ValueError(f"Unable to find track for course '{course_db.name}' matching abbreviation '{row['course_abbreviation']}'")
 
-                print(f"Adding round-golfer link: round_id = {round_db.id}, golfer_id = {golfer_db.id}")
-                round_golfer_link_db = RoundGolferLink(
-                    round_id=round_db.id,
-                    golfer_id=golfer_db.id,
-                    golfer_handicap_index=row[f"p{pNum}_handicap"],
-                    golfer_playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
-                        par=tee_db.par,
-                        rating=tee_db.rating,
-                        slope=tee_db.slope,
-                        handicap_index=row[f"p{pNum}_handicap"]
+                    # Find round tee
+                    tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['course_abbreviation'].lower()) & (df_custom['tee'].str.lower() == division_db.name.lower())].iloc[0]['color']
+                    tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == division_db.gender)).one()
+
+                # Parse round date played and entered
+                date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
+                date_entered = datetime.strptime(row[f'date_entered'], '%Y-%m-%d %H:%M:%S')
+
+                # Add round
+                round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).one_or_none()
+                if not round_data_db:
+                    print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
+                    round_db = Round(
+                        tee_id=tee_db.id,
+                        type=RoundType.FLIGHT,
+                        date_played=date_played,
+                        date_updated=date_entered
                     )
-                )
-                session.add(round_golfer_link_db)
-                session.commit()
-                
-            else:
-                round_db = round_data_db[0]
-                round_golfer_link_db = round_data_db[1]
-
-            # Add match-round-link
-            match_round_link_db = session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_db.id).where(MatchRoundLink.round_id == round_db.id)).one_or_none()
-            if not match_round_link_db:
-                print(f"Adding match-round link: match_id = {match_db.id}, round_id = {round_db.id}")
-                match_round_link_db = MatchRoundLink(
-                    match_id=match_db.id,
-                    round_id=round_db.id
-                )
-                session.add(match_round_link_db)
-                session.commit()
-
-            # Add round hole results
-            hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
-
-            for hole_db in tee_db.holes:
-                if hole_db.id not in [h.hole_id for h in hole_results_db]:
-                    print(f"Adding hole #{hole_db.number} result")
-                    hNum = hole_db.number
-                    if hNum > 9:
-                        hNum -= 9
-                    gross_score = row[f"p{pNum}_h{hNum}_score"]
-                    handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
-                    hole_result_db = HoleResult(
-                        round_id=round_db.id,
-                        hole_id=hole_db.id,
-                        handicap_strokes=handicap_strokes,
-                        gross_score=gross_score,
-                        adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
-                        net_score=(gross_score - handicap_strokes)
-                    )
-                    session.add(hole_result_db)
+                    session.add(round_db)
                     session.commit()
+
+                    print(f"Adding round-golfer link: round_id = {round_db.id}, golfer_id = {golfer_db.id}")
+                    round_golfer_link_db = RoundGolferLink(
+                        round_id=round_db.id,
+                        golfer_id=golfer_db.id,
+                        golfer_handicap_index=row[f"p{pNum}_handicap"],
+                        golfer_playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
+                            par=tee_db.par,
+                            rating=tee_db.rating,
+                            slope=tee_db.slope,
+                            handicap_index=row[f"p{pNum}_handicap"]
+                        )
+                    )
+                    session.add(round_golfer_link_db)
+                    session.commit()
+                    
+                else:
+                    round_db = round_data_db[0]
+                    round_golfer_link_db = round_data_db[1]
+
+                # Add match-round-link
+                match_round_link_db = session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_db.id).where(MatchRoundLink.round_id == round_db.id)).one_or_none()
+                if not match_round_link_db:
+                    print(f"Adding match-round link: match_id = {match_db.id}, round_id = {round_db.id}")
+                    match_round_link_db = MatchRoundLink(
+                        match_id=match_db.id,
+                        round_id=round_db.id
+                    )
+                    session.add(match_round_link_db)
+                    session.commit()
+
+                # Add round hole results
+                hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
+
+                for hole_db in tee_db.holes:
+                    if hole_db.id not in [h.hole_id for h in hole_results_db]:
+                        print(f"Adding hole #{hole_db.number} result")
+                        hNum = hole_db.number
+                        if hNum > 9:
+                            hNum -= 9
+                        gross_score = row[f"p{pNum}_h{hNum}_score"]
+                        handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
+                        hole_result_db = HoleResult(
+                            round_id=round_db.id,
+                            hole_id=hole_db.id,
+                            handicap_strokes=handicap_strokes,
+                            gross_score=gross_score,
+                            adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
+                            net_score=(gross_score - handicap_strokes)
+                        )
+                        session.add(hole_result_db)
+                        session.commit()
 
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
