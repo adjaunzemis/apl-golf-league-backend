@@ -114,8 +114,8 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
                         hole_hcp = row['hcp' + str(holeNum)]
                         hole_hcp_custom = df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]
                         if hole_hcp != hole_hcp_custom:
-                            checks_pass = False
-                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries do not match")
+                            # checks_pass = False # TODO: check on mismatching hole handicaps
+                            print(f"WARN: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries do not match")
                     elif not pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
                         checks_pass = False
                         print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries missing")
@@ -180,45 +180,50 @@ def add_courses(session: Session, courses_file: str, custom_courses_file: str, c
             # Find matching row in custom courses data
             mask = (df_custom['abbreviation'].str.lower() == row['abbreviation'].lower()) & (df_custom['tee'].str.lower() == row['tee_name'].lower())
 
-            # Add tee to database
+            # Add tee to database (if not already added)
             tee_color = df_custom.loc[mask].iloc[0]['color'].title() if pd.notna(df_custom.loc[mask].iloc[0]['color']) else None
-            tee_db = Tee(
-                track_id=track_db.id,
-                name=tee_color if tee_color is not None else row["tee_name"],
-                gender=TeeGender.LADIES if row["tee_name"].lower() == "forward" else TeeGender.MENS,
-                rating=float(row["rating"]),
-                slope=int(row["slope"]),
-                color=tee_color.lower() if tee_color is not None else None
-            )
-            session.add(tee_db)
-            session.commit()
-
-            # Add holes to database
-            holeOffset = 0 if row["track_name"].lower() != "back" else 9
-            for holeNum in range(1, 10):
-                par = int(row['par' + str(holeNum)])
-
-                hcp = None
-                if pd.notna(row['hcp' + str(holeNum)]):
-                    hcp = int(row['hcp' + str(holeNum)])
-                elif pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
-                    hcp = df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]
-
-                yds = None
-                if pd.notna(row['yd' + str(holeNum)]):
-                    yds = int(row['yd' + str(holeNum)])
-                elif pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]):
-                    yds = df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]
-
-                hole_db = Hole(
-                    tee_id=tee_db.id,
-                    number=holeNum + holeOffset,
-                    par=par,
-                    yardage=yds,
-                    stroke_index=hcp
+            tee_name = tee_color if tee_color is not None else row["tee_name"]
+            tee_gender = TeeGender.LADIES if row["tee_name"].lower() == "forward" else TeeGender.MENS
+            tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == tee_gender)).one_or_none()
+            if not (tee_db):
+                print(f"Adding tee: {row['tee_name']}")
+                tee_db = Tee(
+                    track_id=track_db.id,
+                    name=tee_name,
+                    gender=tee_gender,
+                    rating=float(row["rating"]),
+                    slope=int(row["slope"]),
+                    color=tee_color.lower() if tee_color is not None else None
                 )
-                session.add(hole_db)
-            session.commit()
+                session.add(tee_db)
+                session.commit()
+
+                # Add holes to database
+                holeOffset = 0 if row["track_name"].lower() != "back" else 9
+                for holeNum in range(1, 10):
+                    par = int(row['par' + str(holeNum)])
+
+                    hcp = None
+                    if pd.notna(row['hcp' + str(holeNum)]):
+                        hcp = int(row['hcp' + str(holeNum)])
+                    elif pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
+                        hcp = df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]
+
+                    yds = None
+                    if pd.notna(row['yd' + str(holeNum)]):
+                        yds = int(row['yd' + str(holeNum)])
+                    elif pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]):
+                        yds = df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]
+
+                    hole_db = Hole(
+                        tee_id=tee_db.id,
+                        number=holeNum + holeOffset,
+                        par=par,
+                        yardage=yds,
+                        stroke_index=hcp
+                    )
+                    session.add(hole_db)
+                session.commit()
 
 def add_flights(session: Session, flights_file: str, custom_courses_file: str):
     """
@@ -243,7 +248,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
             print(f"Skipping flight: {row['name']}")
             continue
 
-        print(f"Adding flight: {row['name']}")
+        print(f"Processing flight: {row['name']}-{year}")
 
         # Handle misnamed home courses in flight info
         course_name = row['course']
@@ -257,14 +262,17 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
             raise ValueError(f"Cannot match home course in database: {course_name}")
 
         # Add flight to database
-        flight_db = Flight(
-            name=row["name"],
-            year=year,
-            home_course_id=course_db.id,
-            secretary=row["secretary"]
-        )
-        session.add(flight_db)
-        session.commit()
+        flight_db = session.exec(select(Flight).where(Flight.year == year).where(Flight.name == row["name"])).one_or_none()
+        if not (flight_db):
+            print(f"Adding flight: {row['name']}-{year}")
+            flight_db = Flight(
+                name=row["name"],
+                year=year,
+                home_course_id=course_db.id,
+                secretary=row["secretary"]
+            )
+            session.add(flight_db)
+            session.commit()
 
         # Find home track
         track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).one_or_none()
@@ -274,7 +282,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
         # For each division in this flight:
         for div_num in [1, 2, 3]:
             division_name = row[f"division_{div_num}_name"].title()
-            print(f"Adding division: {division_name}")
+            print(f"Processing division: {division_name}")
             
             # Get correct division tee name/color
             division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
@@ -286,32 +294,39 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 raise ValueError(f"Cannot match home tee in database: {division_tee}")
 
             # Add division to database
-            division_db = Division(
-                flight_id=flight_db.id,
-                name=division_name,
-                gender=tee_gender,
-                home_tee_id=tee_db.id
-            )
-            session.add(division_db)
-            session.commit()
+            division_db = session.exec(select(Division).where(Division.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
+            if not division_db:
+                print(f"Adding division: {division_name}")
+                division_db = Division(
+                    flight_id=flight_db.id,
+                    name=division_name,
+                    gender=tee_gender,
+                    home_tee_id=tee_db.id
+                )
+                session.add(division_db)
+                session.commit()
 
             # Add super senior division (same tees as forward division but with Men's rating and slope)
             if division_name.lower() == "forward":
-                print(f"Adding division: SuperSenior")
+                print(f"Processing division: SuperSenior")
+                division_name = "Super-Senior"
                 division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == "super-senior")].iloc[0]['color']
                 tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS)).one_or_none()
                 if not tee_db:
                     raise ValueError(f"Cannot match home tee in database: {division_tee}")
 
                 # Add division to database
-                division_db = Division(
-                    flight_id=flight_db.id,
-                    name="Super-Senior",
-                    gender=TeeGender.MENS,
-                    home_tee_id=tee_db.id
-                )
-                session.add(division_db)
-                session.commit()
+                division_db = session.exec(select(Division).where(Division.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_db.gender)).one_or_none()
+                if not division_db:
+                    print(f"Adding division: {division_name}")
+                    division_db = Division(
+                        flight_id=flight_db.id,
+                        name=division_name,
+                        gender=tee_db.gender,
+                        home_tee_id=tee_db.id
+                    )
+                    session.add(division_db)
+                    session.commit()
 
 def add_teams(session: Session, roster_file: str, flights_file: str):
     """
@@ -408,15 +423,18 @@ def add_teams(session: Session, roster_file: str, flights_file: str):
         if not division_db:
             raise ValueError(f"Unable to find division '{division_name}'")
         
-        # Add team-golfer link to database
-        team_golfer_link_db = TeamGolferLink(
-            team_id=team_db.id,
-            golfer_id=golfer_db.id,
-            division_id=division_db.id,
-            role=TeamRole.CAPTAIN if is_captain else TeamRole.PLAYER
-        )
-        session.add(team_golfer_link_db)
-        session.commit()
+        # Add team-golfer link to database (if needed)
+        team_golfer_link_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_db.id).where(TeamGolferLink.golfer_id == golfer_db.id)).one_or_none()
+        if not team_golfer_link_db:
+            print(f"Adding team-golfer link: team_id={team_db.id}, golfer_id={golfer_db.id}")
+            team_golfer_link_db = TeamGolferLink(
+                team_id=team_db.id,
+                golfer_id=golfer_db.id,
+                division_id=division_db.id,
+                role=TeamRole.CAPTAIN if is_captain else TeamRole.PLAYER
+            )
+            session.add(team_golfer_link_db)
+            session.commit()
 
 def add_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
     """
@@ -519,7 +537,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                 division_db: Division = None
 
                 # Find team-golfer link entries for golfer
-                team_golfer_links_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.golfer_id == golfer_db.id)).all()
+                team_golfer_links_db = session.exec(select(TeamGolferLink).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(TeamGolferLink.golfer_id == golfer_db.id).where(Flight.year == year)).all()
                 if not team_golfer_links_db:
                     golfer_division_name = df_subs.loc[df_subs['name'] == golfer_name].iloc[0]['division']
                     division_db = session.exec(select(Division).where(Division.flight_id == flight_team_link_db.flight_id).where(Division.name == golfer_division_name)).one()
@@ -582,7 +600,7 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
 
             # Add round
             round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).one_or_none()
-            if (not round_data_db) or (len(round_data_db) == 0):
+            if not round_data_db:
                 print(f"Adding round: {golfer_db.name} at {course_db.name} on {date_played}")
                 round_db = Round(
                     tee_id=tee_db.id,
@@ -646,9 +664,9 @@ def add_matches(session: Session, scores_file: str, flights_file: str, courses_f
                     session.commit()
 
 if __name__ == "__main__":
-    DELETE_EXISTING_DATABASE = True
+    DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
-    DATA_YEAR = 2021
+    DATA_YEAR = 2020
 
     DATABASE_FILE = "apl.db"
 

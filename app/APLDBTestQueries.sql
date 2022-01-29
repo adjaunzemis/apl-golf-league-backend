@@ -106,3 +106,14 @@ ALTER TABLE flight ADD logo_url varchar(255);
 ALTER TABLE flight DROP COLUMN logoURL;
 
 SELECT * FROM flight;
+
+SELECT * FROM round
+JOIN roundgolferlink ON roundgolferlink.round_id = round.id
+JOIN golfer ON golfer.id = roundgolferlink.golfer_id
+WHERE golfer.name = 'Charlie Overly';
+
+SELECT * FROM teamgolferlink
+JOIN golfer ON golfer.id = teamgolferlink.golfer_id
+JOIN flightteamlink on flightteamlink.team_id = teamgolferlink.team_id
+JOIN flight ON flight.id = flightteamlink.flight_id
+WHERE golfer.name = 'Charlie Overly' AND flight.year = 2021;
