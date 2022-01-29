@@ -24,7 +24,7 @@ class DivisionUpdate(SQLModel):
 class DivisionRead(DivisionBase):
     id: int
 
-class DivisionData(SQLModel):
+class FlightDivisionData(SQLModel):
     division_id: int
     flight_id: int
     name: str

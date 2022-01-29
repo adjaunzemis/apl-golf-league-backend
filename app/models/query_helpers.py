@@ -13,7 +13,7 @@ from .flight_team_link import FlightTeamLink
 from .flight_division_link import FlightDivisionLink
 from .team import Team, FlightTeamReadWithGolfers
 from .golfer import Golfer, GolferStatistics
-from .division import Division, DivisionData
+from .division import Division, FlightDivisionData
 from .match import Match, MatchData, MatchSummary
 from .round import Round, RoundData
 from .hole_result import HoleResult, HoleResultData
@@ -58,7 +58,7 @@ class FlightData(SQLModel):
     secretary: str = None
     secretary_contact: str = None
     home_course_name: str = None
-    divisions: List[DivisionData] = []
+    divisions: List[FlightDivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
     
@@ -94,7 +94,7 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         home_course_name=home_course.name
     ) for flight, home_course in flight_query_data]
 
-def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[DivisionData]:
+def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[FlightDivisionData]:
     """
     Retrieves division data for all divisions in the given flights.
     
@@ -112,7 +112,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
          
     """
     division_query_data = session.exec(select(Division, FlightDivisionLink, Tee).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Tee).where(FlightDivisionLink.flight_id.in_(flight_ids)))
-    return [DivisionData(
+    return [FlightDivisionData(
         division_id=division.id,
         flight_id=flight_division_link.flight_id,
         name=division.name,
