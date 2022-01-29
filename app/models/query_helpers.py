@@ -111,7 +111,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
         division data for division in the given flights
          
     """
-    division_query_data = session.exec(select(Division, FlightDivisionLink, Tee).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Tee).where(Division.flight_id.in_(flight_ids)))
+    division_query_data = session.exec(select(Division, FlightDivisionLink, Tee).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Tee).where(FlightDivisionLink.flight_id.in_(flight_ids)))
     return [DivisionData(
         division_id=division.id,
         flight_id=flight_division_link.flight_id,
