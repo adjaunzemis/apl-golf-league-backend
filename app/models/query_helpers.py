@@ -45,7 +45,6 @@ class GolferDataWithCount(SQLModel):
     
 class TeamWithMatchData(SQLModel):
     team_id: int
-    flight_id: int
     name: str
     golfers: List[TeamGolferData] = []
     matches: List[MatchData] = []

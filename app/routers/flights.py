@@ -150,7 +150,6 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
         golfer.statistics = compute_golfer_statistics_for_matches(golfer.golfer_id, team_matches)
     return TeamWithMatchData(
         team_id=team_query_data[0].id,
-        flight_id=team_query_data[0].flight_id,
         name=team_query_data[0].name,
         golfers=team_golfers,
         matches=team_matches
