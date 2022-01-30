@@ -1,7 +1,6 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-
 from .course import Course
 from .division import Division
 from .tournament_division_link import TournamentDivisionLink

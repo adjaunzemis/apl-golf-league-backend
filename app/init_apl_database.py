@@ -24,17 +24,20 @@ from models.course import Course
 from models.track import Track
 from models.tee import Tee, TeeGender
 from models.hole import Hole
-from models.flight import Flight
-from models.division import Division
-from models.flight_division_link import FlightDivisionLink
 from models.golfer import Golfer
 from models.team import Team
-from models.flight_team_link import FlightTeamLink
 from models.team_golfer_link import TeamGolferLink, TeamRole
-from models.match import Match
+from models.division import Division
+from models.flight import Flight
+from models.flight_division_link import FlightDivisionLink
+from models.flight_team_link import FlightTeamLink
+from models.tournament import Tournament
+from models.tournament_division_link import TournamentDivisionLink
+from models.tournament_team_link import TournamentTeamLink
 from models.round import Round, RoundType
 from models.hole_result import HoleResult
 from models.round_golfer_link import RoundGolferLink
+from models.match import Match
 from models.match_round_link import MatchRoundLink
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -778,11 +781,11 @@ if __name__ == "__main__":
                 if course_played not in courses_played:
                     courses_played.append(course_played)
 
-        # Find all courses played in tournament rounds
-        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
-        for course_played in find_tournament_courses_played(tournaments_file):
-            if course_played not in courses_played:
-                courses_played.append(course_played)
+        # # Find all courses played in tournament rounds
+        # tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
+        # for course_played in find_tournament_courses_played(tournaments_file):
+        #     if course_played not in courses_played:
+        #         courses_played.append(course_played)
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"

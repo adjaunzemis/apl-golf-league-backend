@@ -3,9 +3,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+
 from ..dependencies import get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.match import MatchSummary
+from ..models.flight_division_link import FlightDivisionLink
 from ..models.flight_team_link import FlightTeamLink
 from ..models.query_helpers import FlightData, FlightDataWithCount, get_divisions_in_flights, get_flights, get_matches_for_teams, get_teams_in_flights
 
@@ -80,6 +82,31 @@ async def delete_flight(*, session: Session = Depends(get_session), flight_id: i
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
     session.delete(flight_db)
+    session.commit()
+    return {"ok": True}
+
+@router.get("/division-links/", response_model=List[FlightDivisionLink])
+async def read_flight_division_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+    return session.exec(select(FlightDivisionLink).offset(offset).limit(limit)).all()
+
+@router.get("/{flight_id}/division-links/", response_model=List[FlightDivisionLink])
+async def read_flight_division_links_for_flight(*, session: Session = Depends(get_session), flight_id: int):
+    return session.exec(select(FlightDivisionLink).where(FlightDivisionLink.flight_id == flight_id)).all()
+
+@router.post("/{flight_id}/division-links/{division_id}", response_model=FlightDivisionLink)
+async def create_flight_division_link(*, session: Session = Depends(get_session), flight_id: int, division_id: int):
+    link_db = FlightDivisionLink(flight_id=flight_id, division_id=division_id)
+    session.add(link_db)
+    session.commit()
+    session.refresh(link_db)
+    return link_db
+
+@router.delete("/{flight_id}/division-links/{division_id}")
+async def delete_flight_division_link(*, session: Session = Depends(get_session), flight_id: int, division_id: int):
+    link_db = session.get(FlightDivisionLink, [flight_id, division_id])
+    if not link_db:
+        raise HTTPException(status_code=404, detail="Flight-division link not found")
+    session.delete(link_db)
     session.commit()
     return {"ok": True}
 
