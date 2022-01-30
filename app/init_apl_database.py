@@ -408,7 +408,7 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
         file containing flight information
 
     """
-    print(f"Adding team data from file: {roster_file}")
+    print(f"Adding flight team data from file: {roster_file}")
 
     year = int(roster_file.split("_")[-2])
     flight_abbreviation = roster_file.split("_")[-1][0:-4].upper()
@@ -871,6 +871,94 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 session.add(tournament_back_division_link_db)
                 session.commit()
 
+def add_tournament_teams(session: Session, roster_file: str, tournaments_file: str):
+    """
+    Adds tournament team-related data to database.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    roster_file : string
+        file containing tournament roster data
+    tournaments_file : string
+        file containing tournament information
+
+    """
+    print(f"Adding tournament team data from file: {roster_file}")
+
+    year = int(roster_file.split("_")[-2])
+    tournament_abbreviation = roster_file.split("_")[-1][0:-4]
+
+    # Read roster data spreadsheet
+    df_roster = pd.read_csv(roster_file)
+
+    # Read tournament data spreadsheet
+    df_tournaments = pd.read_csv(tournaments_file)
+
+    # Find flight
+    tournament_name = df_tournaments.loc[df_tournaments['abbreviation'] == tournament_abbreviation.lower()].iloc[0]['name']
+    tournament_db = session.exec(select(Tournament).where(Tournament.name == tournament_name).where(Flight.year == year)).one_or_none()
+    if not tournament_db:
+        raise ValueError(f"Unable to find tournament: {tournament_name}-{year}")
+
+    # For each roster entry:
+    for idx, row in df_roster.iterrows():
+        print(f"Processing team-golfer link for golfer: {row['name']}")
+        
+        # Find golfer
+        golfer_db = session.exec(select(Golfer).where(Golfer.name == row["name"])).one_or_none()
+        if not golfer_db:
+            print(f"Adding golfer: {row['name']}")
+
+            # Add golfer to database
+            # TODO: Add contact info
+            affiliation = None # TODO: Get affiliation from TOG rosters?
+            golfer_db = Golfer(name=row['name'], affiliation=affiliation)
+            session.add(golfer_db)
+            session.commit()
+
+        # Find team
+        is_captain = False
+        team_name = f"{tournament_abbreviation.upper()}-{row['team']}"
+        team_query_data = session.exec(select(Team, TournamentTeamLink).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).where(TournamentTeamLink.tournament_id == tournament_db.id).where(Team.name == team_name)).one_or_none()
+        if not team_query_data:
+            print(f"Adding team: {team_name}")
+            is_captain = True
+            
+            # Add team to database
+            team_db = Team(name=team_name)
+            session.add(team_db)
+            session.commit()
+
+            # Add flight-team link to database
+            print(f"Adding tournament-team link for team: {team_db.name}, flight: {tournament_db.name}-{tournament_db.year}")
+            tournament_team_link_db = TournamentTeamLink(tournament_id=tournament_db.id, team_id=team_db.id)
+            session.add(tournament_team_link_db)
+            session.commit()
+        else:
+            team_db = team_query_data[0]
+            tournament_team_link_db = team_query_data[1]
+
+        # Find division
+        division_name = "Super-Senior" if row['division'] == "SuperSenior" else row['division']
+        division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_team_link_db.tournament_id).where(Division.name == division_name)).one_or_none()
+        if not division_db:
+            raise ValueError(f"Unable to find division '{division_name}'")
+        
+        # Add team-golfer link to database (if needed)
+        team_golfer_link_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_db.id).where(TeamGolferLink.golfer_id == golfer_db.id)).one_or_none()
+        if not team_golfer_link_db:
+            print(f"Adding team-golfer link: team_id={team_db.id}, golfer_id={golfer_db.id}")
+            team_golfer_link_db = TeamGolferLink(
+                team_id=team_db.id,
+                golfer_id=golfer_db.id,
+                division_id=division_db.id,
+                role=TeamRole.CAPTAIN if is_captain else TeamRole.PLAYER
+            )
+            session.add(team_golfer_link_db)
+            session.commit()
+
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
@@ -926,15 +1014,20 @@ if __name__ == "__main__":
         # Add tournament data to database
         add_tournaments(session, tournaments_file, custom_courses_file)
 
-        # TODO: Add tournament teams and scores
-
         # Add flight roster data into database
         flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
         for roster_file in flight_roster_files:
             add_flight_teams(session, roster_file, flights_file)
 
+        # Add tournament roster data into database
+        tournament_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_roster_{DATA_YEAR}_"]
+        for roster_file in tournament_roster_files:
+            add_tournament_teams(session, roster_file, tournaments_file)
+
         # Add flight score data to database
         for scores_file in flight_scores_files:
             add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
+
+        # TODO: Add tournament scores
 
     print("Database initialized!")
