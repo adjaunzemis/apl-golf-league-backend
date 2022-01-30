@@ -753,6 +753,124 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                         session.add(hole_result_db)
                         session.commit()
 
+def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
+    """
+    Adds tournament data to database.
+    
+    Parameters
+    ----------
+    session : Session
+        database session
+    info_file : string
+        file containing tournament information from website
+    custom_courses_file : string
+        file containing manually-entered course information
+
+    """
+    print(f"Adding tournament data from file: {info_file}")
+
+    year = int(info_file.split(".")[0][-4:])
+
+    # Read tournament data spreadsheet
+    df_tournaments = pd.read_csv(info_file)
+
+    # Read custom course data spreadsheet
+    df_custom = pd.read_csv(custom_courses_file)
+
+    # For each tournament:
+    for idx, row in df_tournaments.iterrows():
+        print(f"Processing tournament: {row['name']}-{year} on {row['date']}")
+
+        # Find tournament course
+        course_name = row['course']
+        course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
+        if not course_db:
+            raise ValueError(f"Cannot match tournament course in database: {course_name}")
+
+        # Add tournament to database
+        tournament_db = session.exec(select(Tournament).where(Tournament.year == year).where(Tournament.name == row["name"])).one_or_none()
+        if not (tournament_db):
+            print(f"Adding tournament: {row['name']}-{year}")
+            tournament_db = Tournament(
+                name=row["name"],
+                year=year,
+                date=row['date'], # TODO: use date/datetime?
+                course_id=course_db.id,
+                secretary=row["in_charge"],
+                secretary_contact=row["in_charge_email"]
+            )
+            session.add(tournament_db)
+            session.commit()
+            
+        # Find tracks
+        front_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['front_track'].lower()].iloc[0]['track']
+        front_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == front_track_name)).one_or_none()
+        if not front_track_db:
+            raise ValueError(f"Cannot match front track in database: {front_track_name}")
+            
+        back_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['back_track'].lower()].iloc[0]['track']
+        back_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == back_track_name)).one_or_none()
+        if not back_track_db:
+            raise ValueError(f"Cannot match front track in database: {back_track_name}")
+
+        # For each division in this tournament:
+        for division_name in ['Middle', 'Senior', 'Super-Senior', 'Forward']:
+            # Get correct division tee name/color and gender
+            division_tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
+            tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
+
+            # Find front tees
+            front_division_name = f"{division_name} (Front)"
+            print(f"Processing division: {front_division_name}")
+
+            front_tee_db = session.exec(select(Tee).where(Tee.track_id == front_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
+            if not front_tee_db:
+                raise ValueError(f"Cannot match front tee in database: {division_tee_name}")
+
+            # Add front division to database if needed
+            front_division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == front_division_name).where(Division.gender == tee_gender)).one_or_none()
+            if not front_division_db:
+                print(f"Adding division: {front_division_name}")
+                front_division_db = Division(
+                    name=front_division_name,
+                    gender=tee_gender,
+                    home_tee_id=front_tee_db.id
+                )
+                session.add(front_division_db)
+                session.commit()
+                    
+                # Add tournament-division link to database
+                print(f"Adding tournament-division link for division: {front_division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
+                tournament_front_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=front_division_db.id)
+                session.add(tournament_front_division_link_db)
+                session.commit()
+            
+            # Find back tees
+            back_division_name = f"{division_name} (Back)"
+            print(f"Processing division: {back_division_name}")
+            
+            back_tee_db = session.exec(select(Tee).where(Tee.track_id == back_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
+            if not back_tee_db:
+                raise ValueError(f"Cannot match back tee in database: {division_tee_name}")
+
+            # Add back division to database
+            back_division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == back_division_name).where(Division.gender == tee_gender)).one_or_none()
+            if not front_division_db:
+                print(f"Adding division: {back_division_name}")
+                back_division_db = Division(
+                    name=back_division_name,
+                    gender=tee_gender,
+                    home_tee_id=back_tee_db.id
+                )
+                session.add(back_division_db)
+                session.commit()
+                    
+                # Add tournament-division link to database
+                print(f"Adding tournament-division link for division: {back_division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
+                tournament_back_division_link_db = TournamentDivisionLink(tournamend_id=tournament_db.id, division_id=back_division_db.id)
+                session.add(tournament_back_division_link_db)
+                session.commit()
+
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
@@ -781,11 +899,11 @@ if __name__ == "__main__":
                 if course_played not in courses_played:
                     courses_played.append(course_played)
 
-        # # Find all courses played in tournament rounds
-        # tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
-        # for course_played in find_tournament_courses_played(tournaments_file):
-        #     if course_played not in courses_played:
-        #         courses_played.append(course_played)
+        # Find all courses played in tournament rounds
+        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
+        for course_played in find_tournament_courses_played(tournaments_file):
+            if course_played not in courses_played:
+                courses_played.append(course_played)
 
         # Check course data before continuing
         courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
@@ -805,12 +923,17 @@ if __name__ == "__main__":
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
         add_flights(session, flights_file, custom_courses_file)
 
-        # Add roster data into database
+        # Add tournament data to database
+        add_tournaments(session, tournaments_file, custom_courses_file)
+
+        # TODO: Add tournament teams and scores
+
+        # Add flight roster data into database
         flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
         for roster_file in flight_roster_files:
             add_flight_teams(session, roster_file, flights_file)
 
-        # Add score data to database
+        # Add flight score data to database
         for scores_file in flight_scores_files:
             add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
