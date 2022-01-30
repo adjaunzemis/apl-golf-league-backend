@@ -40,6 +40,7 @@ from models.round_golfer_link import RoundGolferLink
 from models.match import Match
 from models.match_round_link import MatchRoundLink
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from utilities.world_handicap_system import WorldHandicapSystem
 
 def find_flight_courses_played(scores_file: str):
     """
@@ -511,7 +512,7 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
 
 def add_flight_matches(session: Session, scores_file: str, flights_file: str, courses_file: str, custom_courses_file: str, subs_file: str):
     """
-    Adds match-related data to database.
+    Adds flight match data to database.
     
     Parameters
     ----------
@@ -529,7 +530,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
         file containing substitute golfer data
 
     """
-    print(f"Adding match data from file: {scores_file}")
+    print(f"Adding flight match data from file: {scores_file}")
 
     year = int(scores_file.split("_")[-2])
     flight_abbreviation = scores_file.split("_")[-1][0:-4].upper()
@@ -562,7 +563,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
 
     # For each scores entry:
     for idx, row in df_scores.iterrows():
-        print(f"Adding match: {flight_abbreviation}-{year} week {row['week']} {row['team_1']}v{row['team_2']}")
+        print(f"Processing flight match: {flight_abbreviation}-{year} week {row['week']} {row['team_1']}v{row['team_2']}")
 
         # Find match course
         course_name = df_courses.loc[df_courses['abbreviation'] == row['course_abbreviation']].iloc[0]['course_name']
@@ -586,6 +587,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
         # Add match
         match_db = session.exec(select(Match).where(Match.flight_id == flight_db.id).where(Match.week == row['week']).where(Match.home_team_id == home_team_db.id).where(Match.away_team_id == away_team_db.id)).one_or_none()
         if not match_db:
+            print(f"Adding match: {flight_abbreviation}-{year} week {row['week']} {row['team_1']}v{row['team_2']}")
             match_db = Match(
                 flight_id=flight_db.id,
                 week=row['week'],
@@ -596,8 +598,6 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
             )
             session.add(match_db)
             session.commit()
-        else:
-            print(f"Match already exists")
 
         # For each round:
         for pNum in [1, 2, 3, 4]:
@@ -937,6 +937,115 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
             session.add(team_golfer_link_db)
             session.commit()
 
+def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: str):
+    """
+    Adds tournament round data to database.
+    
+    Parameters
+    ----------
+    session : Session
+        database session
+    scores_file : string
+        file containing tournament round results
+    tournaments_file : string
+        file containing tournament information
+
+    """
+    print(f"Adding tournament round data from file: {scores_file}")
+
+    year = int(scores_file.split("_")[-2])
+    tournament_abbreviation = scores_file.split("_")[-1][0:-4].upper()
+
+    # Initialize handicap system, use WHS for tournaments (18-hole)
+    whs = WorldHandicapSystem()
+
+    # Read tournament data spreadsheet
+    df_flights = pd.read_csv(tournaments_file)
+
+    # Find tournament
+    tournament_name = df_flights.loc[df_flights['abbreviation'] == tournament_abbreviation.lower()].iloc[0]['name']
+    tournament_db = session.exec(select(Tournament).where(Tournament.name == tournament_name).where(Tournament.year == year)).one_or_none()
+    if not tournament_db:
+        raise ValueError(f"Unable to find tournament '{tournament_name}-{year}'")
+
+    # Find tournament divisions
+    divisions_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.tournament_id == tournament_db.id)).all()
+    if (not divisions_db) or (len(divisions_db) == 0):
+        raise ValueError(f"Unable to find divisions for tournament '{tournament_name}-{year}'")
+
+    # Read scores data spreadsheet
+    df_scores = pd.read_csv(scores_file)
+
+    # For each scores entry:
+    for idx, row in df_scores.iterrows():
+        golfer_name = row['name'].strip()
+        print(f"Processing tournament round: {tournament_abbreviation}-{year}, {golfer_name}")
+
+        # Find golfer
+        golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer_name)).one_or_none()
+        if not golfer_db:
+            raise ValueError(f"Unable to find tournament golfer: {golfer_name}")
+
+        # Find tees for golfer
+        primary_tee_db = session.exec(select(Tee).join(Division, onclause=Division.primary_tee_id == Tee.id).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(TournamentTeamLink, onclause=TournamentTeamLink.tournament_id == TournamentDivisionLink.tournament_id).join(TeamGolferLink, onclause=TeamGolferLink.team_id == TournamentTeamLink.team_id).join(Golfer, onclause=Golfer.id == TeamGolferLink.golfer_id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Golfer.id == golfer_db.id).where(TeamGolferLink.division_id == Division.id)).one_or_none()
+        if not primary_tee_db:
+            raise ValueError(f"Unable to find primary tee assignment for tournament golfer: {golfer_name}")
+        
+        secondary_tee_db = session.exec(select(Tee).join(Division, onclause=Division.secondary_tee_id == Tee.id).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(TournamentTeamLink, onclause=TournamentTeamLink.tournament_id == TournamentDivisionLink.tournament_id).join(TeamGolferLink, onclause=TeamGolferLink.team_id == TournamentTeamLink.team_id).join(Golfer, onclause=Golfer.id == TeamGolferLink.golfer_id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Golfer.id == golfer_db.id).where(TeamGolferLink.division_id == Division.id)).one_or_none()
+        if not secondary_tee_db:
+            raise ValueError(f"Unable to find secondary tee assignment for tournament golfer: {golfer_name}")
+
+        # Parse round date played and entered
+        date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date() # TODO: Fix parsing of these date formats
+        date_entered = None # TODO: Add date-entered information, if available
+
+        # Add rounds
+        for tee_db in [primary_tee_db, secondary_tee_db]:
+            round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).one_or_none()
+            if not round_data_db:
+                print(f"Adding tournament round for {golfer_name} on tee_id={tee_db.id}")
+                round_db = Round(
+                    tee_id=tee_db.id,
+                    type=RoundType.TOURNAMENT,
+                    date_played=date_played,
+                    date_updated=date_entered
+                )
+                session.add(round_db)
+                session.commit()
+
+                print(f"Adding tournament round-golfer link: round_id = {round_db.id}, golfer_id = {golfer_db.id}")
+                round_golfer_link_db = RoundGolferLink(
+                    round_id=round_db.id,
+                    golfer_id=golfer_db.id,
+                    golfer_handicap_index=row['course_handicap'], # TODO: Remove handicap index?
+                    golfer_playing_handicap=row['course_handicap']
+                )
+                session.add(round_golfer_link_db)
+                session.commit()
+            else:
+                round_db = round_data_db[0]
+                round_golfer_link_db = round_data_db[1]
+
+            # Add primary round hole results
+            hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
+
+            for hole_db in tee_db.holes:
+                if hole_db.id not in [h.hole_id for h in hole_results_db]:
+                    print(f"Adding hole #{hole_db.number} result")
+                    hNum = hole_db.number
+                    gross_score = row[f"hole_{hNum}"]
+                    handicap_strokes = whs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
+                    hole_result_db = HoleResult(
+                        round_id=round_db.id,
+                        hole_id=hole_db.id,
+                        handicap_strokes=handicap_strokes,
+                        gross_score=gross_score,
+                        adjusted_gross_score=whs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
+                        net_score=(gross_score - handicap_strokes)
+                    )
+                    session.add(hole_result_db)
+                    session.commit()
+
 if __name__ == "__main__":
     DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
@@ -1006,6 +1115,9 @@ if __name__ == "__main__":
         for scores_file in flight_scores_files:
             add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
-        # TODO: Add tournament scores
+        # Add tournament score data to database
+        tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{DATA_YEAR}_"]
+        for scores_file in tournament_scores_files:
+            add_tournament_rounds(session, scores_file, tournaments_file)
 
     print("Database initialized!")

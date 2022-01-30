@@ -101,10 +101,6 @@ JOIN flight on match.flight_id = flight.id
 JOIN team AS home_team on match.home_team_id = home_team.id
 JOIN team AS away_team on match.away_team_id = away_team.id;
 
-ALTER TABLE flight ADD logo_url varchar(255);
-
-ALTER TABLE flight DROP COLUMN logoURL;
-
 SELECT * FROM flight;
 
 SELECT * FROM round
@@ -117,3 +113,11 @@ JOIN golfer ON golfer.id = teamgolferlink.golfer_id
 JOIN flightteamlink on flightteamlink.team_id = teamgolferlink.team_id
 JOIN flight ON flight.id = flightteamlink.flight_id
 WHERE golfer.name = 'Charlie Overly' AND flight.year = 2021;
+
+SELECT tee.* FROM tee
+JOIN division ON division.primary_tee_id = tee.id
+JOIN tournamentdivisionlink ON tournamentdivisionlink.division_id = division.id
+JOIN tournamentteamlink ON tournamentteamlink.tournament_id = tournamentdivisionlink.tournament_id
+JOIN teamgolferlink ON teamgolferlink.team_id = tournamentteamlink.team_id
+JOIN golfer ON golfer.id = teamgolferlink.golfer_id
+WHERE tournamentdivisionlink.tournament_id = 1 AND golfer.id = 115 AND teamgolferlink.division_id = division.id;
