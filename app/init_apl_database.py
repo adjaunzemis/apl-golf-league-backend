@@ -996,8 +996,11 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
             raise ValueError(f"Unable to find secondary tee assignment for tournament golfer: {golfer_name}")
 
         # Parse round date played and entered
-        date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date() # TODO: Fix parsing of these date formats
-        date_entered = None # TODO: Add date-entered information, if available
+        try:
+            date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date()
+        except:
+            date_played = datetime.strptime(tournament_db.date, '%Y-%b-%d').date()
+        date_entered = datetime.now() # TODO: Add date-entered from website, if available
 
         # Add rounds
         for tee_db in [primary_tee_db, secondary_tee_db]:
