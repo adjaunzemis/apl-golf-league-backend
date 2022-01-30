@@ -2,6 +2,7 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from .golfer import Golfer
+from .round import Round
 from .flight_team_link import FlightTeamLink
 from .tournament_team_link import TournamentTeamLink
 from .team_golfer_link import TeamGolferLink
@@ -31,4 +32,4 @@ class FlightTeamReadWithGolfers(TeamRead):
 class TournamentTeamData(TeamRead):
     tournament_id: int
     golfers: List[Golfer]
-    rounds: Optional[List["Round"]] = []
+    rounds: Optional[List[Round]] = []

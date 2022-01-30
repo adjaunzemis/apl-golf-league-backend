@@ -475,7 +475,7 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
         rounds played for the given tournament
 
     """
-    round_ids = session.exec(select(Round.id).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).where(MatchRoundLink.match_id.in_(match_ids))).all()
+    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id == tournament_id)).all()
     return get_tournament_rounds(session=session, round_ids=round_ids)
 
 def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
@@ -483,7 +483,6 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
     Retrieves round data for the given tournament-play rounds, including results.
 
     TODO: Consolidate with `get_flight_rounds`.
-    TODO: Fix to remove dependence on MatchRoundLink and Match
 
     Parameters
     ----------
@@ -498,10 +497,11 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
         round data for the given rounds
     
     """
-    round_query_data = session.exec(select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Track, Tee, Team).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Tee).join(Track).join(Course).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Match, onclause=Match.id == MatchRoundLink.match_id).join(TeamGolferLink, ((TeamGolferLink.golfer_id == Golfer.id) & (TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id))))).join(Team, onclause=Team.id == TeamGolferLink.team_id).where(Round.id.in_(round_ids)))
+    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids))).all()
     round_data = [RoundData(
         round_id=round.id,
-        team_id=team.id,
+        match_id=None, # TODO: remove match_id from RoundData
+        team_id=None, # TODO: remove team_id from RoundData
         round_type=round.type,
         date_played=round.date_played,
         date_updated=round.date_updated,
@@ -509,7 +509,7 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
         golfer_name=golfer.name,
         golfer_handicap_index=round_golfer_link.golfer_handicap_index,
         golfer_playing_handicap=round_golfer_link.golfer_playing_handicap,
-        team_name=team.name,
+        team_name=None, # TODO: remove team_name from RoundData
         course_name=course.name,
         track_name=track.name,
         tee_name=tee.name,
@@ -517,7 +517,7 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
         tee_rating=tee.rating,
         tee_slope=tee.slope,
         tee_color=tee.color if tee.color else "none",
-    ) for round, match_round_link, round_golfer_link, golfer, course, track, tee, team in round_query_data]
+    ) for round, round_golfer_link, golfer, course, track, tee in round_query_data]
 
     # Query hole data for selected rounds
     hole_result_data = get_hole_results_for_rounds(session=session, round_ids=[r.round_id for r in round_data])
