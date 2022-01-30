@@ -855,7 +855,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
 
             # Add back division to database
             back_division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == back_division_name).where(Division.gender == tee_gender)).one_or_none()
-            if not front_division_db:
+            if not back_division_db:
                 print(f"Adding division: {back_division_name}")
                 back_division_db = Division(
                     name=back_division_name,
@@ -867,7 +867,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                     
                 # Add tournament-division link to database
                 print(f"Adding tournament-division link for division: {back_division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
-                tournament_back_division_link_db = TournamentDivisionLink(tournamend_id=tournament_db.id, division_id=back_division_db.id)
+                tournament_back_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=back_division_db.id)
                 session.add(tournament_back_division_link_db)
                 session.commit()
 
