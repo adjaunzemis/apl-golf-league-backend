@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, rounds, flights, matches, tournaments, handicapping
+from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping
 
 description = """
 APLGolfLeague API
@@ -28,10 +28,12 @@ app.add_middleware(
 
 app.include_router(courses.router)
 app.include_router(golfers.router)
-app.include_router(rounds.router)
+app.include_router(teams.router)
 app.include_router(flights.router)
-app.include_router(matches.router)
 app.include_router(tournaments.router)
+app.include_router(divisions.router)
+app.include_router(rounds.router)
+app.include_router(matches.router)
 app.include_router(handicapping.router)
 
 @app.on_event("startup")
