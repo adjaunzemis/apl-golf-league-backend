@@ -815,60 +815,38 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
 
         # For each division in this tournament:
         for division_name in ['Middle', 'Senior', 'Super-Senior', 'Forward']:
+            print(f"Processing division: {division_name}")
+            
             # Get correct division tee name/color and gender
             division_tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
             tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
 
             # Find front tees
-            front_division_name = f"{division_name} (Front)"
-            print(f"Processing division: {front_division_name}")
-
             front_tee_db = session.exec(select(Tee).where(Tee.track_id == front_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
             if not front_tee_db:
                 raise ValueError(f"Cannot match front tee in database: {division_tee_name}")
 
-            # Add front division to database if needed
-            front_division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == front_division_name).where(Division.gender == tee_gender)).one_or_none()
-            if not front_division_db:
-                print(f"Adding division: {front_division_name}")
-                front_division_db = Division(
-                    name=front_division_name,
-                    gender=tee_gender,
-                    primary_tee_id=front_tee_db.id
-                )
-                session.add(front_division_db)
-                session.commit()
-                    
-                # Add tournament-division link to database
-                print(f"Adding tournament-division link for division: {front_division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
-                tournament_front_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=front_division_db.id)
-                session.add(tournament_front_division_link_db)
-                session.commit()
-            
-            # Find back tees
-            back_division_name = f"{division_name} (Back)"
-            print(f"Processing division: {back_division_name}")
-            
             back_tee_db = session.exec(select(Tee).where(Tee.track_id == back_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
             if not back_tee_db:
                 raise ValueError(f"Cannot match back tee in database: {division_tee_name}")
-
-            # Add back division to database
-            back_division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == back_division_name).where(Division.gender == tee_gender)).one_or_none()
-            if not back_division_db:
-                print(f"Adding division: {back_division_name}")
-                back_division_db = Division(
-                    name=back_division_name,
+            
+            # Add front division to database if needed
+            division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
+            if not division_db:
+                print(f"Adding division: {division_name}")
+                division_db = Division(
+                    name=division_name,
                     gender=tee_gender,
-                    primary_tee_id=back_tee_db.id
+                    primary_tee_id=front_tee_db.id,
+                    secondary_tee_id=back_tee_db.id
                 )
-                session.add(back_division_db)
+                session.add(division_db)
                 session.commit()
                     
                 # Add tournament-division link to database
-                print(f"Adding tournament-division link for division: {back_division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
-                tournament_back_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=back_division_db.id)
-                session.add(tournament_back_division_link_db)
+                print(f"Adding tournament-division link for division: {division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
+                tournament_front_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=division_db.id)
+                session.add(tournament_front_division_link_db)
                 session.commit()
 
 def add_tournament_teams(session: Session, roster_file: str, tournaments_file: str):
@@ -898,7 +876,7 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
 
     # Find flight
     tournament_name = df_tournaments.loc[df_tournaments['abbreviation'] == tournament_abbreviation.lower()].iloc[0]['name']
-    tournament_db = session.exec(select(Tournament).where(Tournament.name == tournament_name).where(Flight.year == year)).one_or_none()
+    tournament_db = session.exec(select(Tournament).where(Tournament.name == tournament_name).where(Tournament.year == year)).one_or_none()
     if not tournament_db:
         raise ValueError(f"Unable to find tournament: {tournament_name}-{year}")
 
@@ -920,7 +898,7 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
 
         # Find team
         is_captain = False
-        team_name = f"{tournament_abbreviation.upper()}-{row['team']}"
+        team_name = f"{tournament_abbreviation.upper()}-{row['group']}"
         team_query_data = session.exec(select(Team, TournamentTeamLink).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).where(TournamentTeamLink.tournament_id == tournament_db.id).where(Team.name == team_name)).one_or_none()
         if not team_query_data:
             print(f"Adding team: {team_name}")
@@ -932,7 +910,7 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
             session.commit()
 
             # Add flight-team link to database
-            print(f"Adding tournament-team link for team: {team_db.name}, flight: {tournament_db.name}-{tournament_db.year}")
+            print(f"Adding tournament-team link for team: {team_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
             tournament_team_link_db = TournamentTeamLink(tournament_id=tournament_db.id, team_id=team_db.id)
             session.add(tournament_team_link_db)
             session.commit()
@@ -941,7 +919,7 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
             tournament_team_link_db = team_query_data[1]
 
         # Find division
-        division_name = "Super-Senior" if row['division'] == "SuperSenior" else row['division']
+        division_name = "Super-Senior" if (row['tees'] == "SuperSenior" or row['tees'] == "SuperSr") else row['tees']
         division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_team_link_db.tournament_id).where(Division.name == division_name)).one_or_none()
         if not division_db:
             raise ValueError(f"Unable to find division '{division_name}'")
