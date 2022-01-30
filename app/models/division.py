@@ -8,7 +8,8 @@ from .tournament_division_link import TournamentDivisionLink
 class DivisionBase(SQLModel):
     name: str
     gender: TeeGender
-    home_tee_id: int = Field(default=None, foreign_key="tee.id")
+    primary_tee_id: int = Field(default=None, foreign_key="tee.id")
+    secondary_tee_id: Optional[int] = Field(default=None, foreign_key="tee.id")
 
 class Division(DivisionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -21,7 +22,8 @@ class DivisionCreate(DivisionBase):
 class DivisionUpdate(SQLModel):
     name: Optional[str] = None
     gender: Optional[TeeGender] = None
-    home_tee_id: Optional[int] = None
+    primary_tee_id: Optional[int] = None
+    secondary_tee_id: Optional[int] = None
 
 class DivisionRead(DivisionBase):
     id: int
@@ -31,15 +33,18 @@ class FlightDivisionData(SQLModel):
     flight_id: int
     name: str
     gender: str
-    home_tee_name: str
-    home_tee_rating: float
-    home_tee_slope: int
+    tee_name: str
+    tee_rating: float
+    tee_slope: int
 
 class TournamentDivisionData(SQLModel):
     division_id: int
     tournament_id: int
     name: str
     gender: str
-    tee_name: str
-    tee_rating: float
-    tee_slope: int
+    primary_tee_name: str
+    primary_tee_rating: float
+    primary_tee_slope: int
+    secondary_tee_name: str
+    secondary_tee_rating: float
+    secondary_tee_slope: int

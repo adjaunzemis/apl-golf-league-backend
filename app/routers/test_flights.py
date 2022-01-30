@@ -177,8 +177,8 @@ def test_create_division_invalid(client: TestClient, name: str, gender: str, fli
 
 def test_read_divisions(session: Session, client: TestClient):
     divisions = [
-        Division(name="Test Division 1", gender="M", flight_id=1, home_tee_id=1),
-        Division(name="Test Division 2", gender="F", flight_id=2, home_tee_id=2)
+        Division(name="Test Division 1", gender="M", flight_id=1, primary_tee_id=1),
+        Division(name="Test Division 2", gender="F", flight_id=2, primary_tee_id=2)
     ]
     for division in divisions:
         session.add(division)
@@ -193,11 +193,11 @@ def test_read_divisions(session: Session, client: TestClient):
         assert data[dIdx]["name"] == divisions[dIdx].name
         assert data[dIdx]["gender"] == divisions[dIdx].gender
         assert data[dIdx]["flight_id"] == divisions[dIdx].flight_id
-        assert data[dIdx]["home_tee_id"] == divisions[dIdx].home_tee_id
+        assert data[dIdx]["home_tee_id"] == divisions[dIdx].primary_tee_id
         assert data[dIdx]["id"] == divisions[dIdx].id
 
 def test_read_division(session: Session, client: TestClient):
-    division = Division(name="Test Division 1", gender="M", flight_id=1, home_tee_id=1)
+    division = Division(name="Test Division 1", gender="M", flight_id=1, primary_tee_id=1)
     session.add(division)
     session.commit()
 
@@ -208,11 +208,11 @@ def test_read_division(session: Session, client: TestClient):
     assert data["name"] == division.name
     assert data["gender"] == division.gender
     assert data["flight_id"] == division.flight_id
-    assert data["home_tee_id"] == division.home_tee_id
+    assert data["home_tee_id"] == division.primary_tee_id
     assert data["id"] == division.id
 
 def test_update_division(session: Session, client: TestClient):
-    division = Division(name="Test Flight 1", gender="M", flight_id=1, home_tee_id=1)
+    division = Division(name="Test Flight 1", gender="M", flight_id=1, primary_tee_id=1)
     session.add(division)
     session.commit()
 
@@ -223,11 +223,11 @@ def test_update_division(session: Session, client: TestClient):
     assert data["name"] == "Awesome Division"
     assert data["gender"] == division.gender
     assert data["flight_id"] == division.flight_id
-    assert data["home_tee_id"] == division.home_tee_id
+    assert data["home_tee_id"] == division.primary_tee_id
     assert data["id"] == division.id
 
 def test_delete_division(session: Session, client: TestClient):
-    division = Division(name="Test Flight 1", gender="M", flight_id=1, home_tee_id=1)
+    division = Division(name="Test Flight 1", gender="M", flight_id=1, primary_tee_id=1)
     session.add(division)
     session.commit()
 

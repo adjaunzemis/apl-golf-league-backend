@@ -132,9 +132,9 @@ def add_flight(session: Session, name: str):
     session.add(flight)
     session.commit()
 
-    session.add(Division(name="Middle", gender="M", flight_id=flight.id, home_tee_id=1))
-    session.add(Division(name="Senior", gender="M", flight_id=flight.id, home_tee_id=2))
-    session.add(Division(name="Forward", gender="F", flight_id=flight.id, home_tee_id=3))
+    session.add(Division(name="Middle", gender="M", flight_id=flight.id, primary_tee_id=1))
+    session.add(Division(name="Senior", gender="M", flight_id=flight.id, primary_tee_id=2))
+    session.add(Division(name="Forward", gender="F", flight_id=flight.id, primary_tee_id=3))
     session.commit()
 
 def add_team(session: Session, name: str):

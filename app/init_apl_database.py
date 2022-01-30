@@ -355,7 +355,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     flight_id=flight_db.id,
                     name=division_name,
                     gender=tee_gender,
-                    home_tee_id=tee_db.id
+                    primary_tee_id=tee_db.id
                 )
                 session.add(division_db)
                 session.commit()
@@ -383,7 +383,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                         flight_id=flight_db.id,
                         name=division_name,
                         gender=tee_db.gender,
-                        home_tee_id=tee_db.id
+                        primary_tee_id=tee_db.id
                     )
                     session.add(division_db)
                     session.commit()
@@ -656,7 +656,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                 division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
 
                 # Find division home tee
-                home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.home_tee_id)).one()
+                home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.primary_tee_id)).one()
 
                 # Find division home track
                 home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
@@ -834,7 +834,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 front_division_db = Division(
                     name=front_division_name,
                     gender=tee_gender,
-                    home_tee_id=front_tee_db.id
+                    primary_tee_id=front_tee_db.id
                 )
                 session.add(front_division_db)
                 session.commit()
@@ -860,7 +860,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 back_division_db = Division(
                     name=back_division_name,
                     gender=tee_gender,
-                    home_tee_id=back_tee_db.id
+                    primary_tee_id=back_tee_db.id
                 )
                 session.add(back_division_db)
                 session.commit()

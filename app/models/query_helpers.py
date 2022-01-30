@@ -163,9 +163,9 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Fl
         flight_id=flight_division_link.flight_id,
         name=division.name,
         gender=division.gender,
-        home_tee_name=home_tee.name,
-        home_tee_rating=home_tee.rating,
-        home_tee_slope=home_tee.slope
+        tee_name=home_tee.name,
+        tee_rating=home_tee.rating,
+        tee_slope=home_tee.slope
     ) for division, flight_division_link, home_tee in division_query_data]
 
 def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentDivisionData]:
