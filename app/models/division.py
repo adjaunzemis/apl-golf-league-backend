@@ -33,6 +33,7 @@ class FlightDivisionData(SQLModel):
     flight_id: int
     name: str
     gender: str
+    track_name: str
     tee_name: str
     tee_rating: float
     tee_slope: int
@@ -42,9 +43,11 @@ class TournamentDivisionData(SQLModel):
     tournament_id: int
     name: str
     gender: str
+    primary_track_name: str
     primary_tee_name: str
     primary_tee_rating: float
     primary_tee_slope: int
+    secondary_track_name: str
     secondary_tee_name: str
     secondary_tee_rating: float
     secondary_tee_slope: int
