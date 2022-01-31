@@ -187,7 +187,7 @@ def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) ->
     """
     primary_tee = aliased(Tee)
     secondary_tee = aliased(Tee)
-    division_query_data = session.exec(select(Division, TournamentDivisionLink, primary_tee, secondary_tee).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(secondary_tee, onclause=Division.secondary_tee_id == primary_tee.id).where(TournamentDivisionLink.tournament_id.in_(tournament_ids)))
+    division_query_data = session.exec(select(Division, TournamentDivisionLink, primary_tee, secondary_tee).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id).where(TournamentDivisionLink.tournament_id.in_(tournament_ids)))
     return [TournamentDivisionData(
         division_id=division.id,
         tournament_id=tournament_division_link.tournament_id,
