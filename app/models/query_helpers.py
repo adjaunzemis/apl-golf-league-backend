@@ -223,8 +223,9 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[Flight
         teams in the given flights
     
     """
-    query_data = session.exec(select(Team, Flight).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id.in_(flight_ids))).all()
-    return [FlightTeamReadWithGolfers(id=team.id, flight_id=flight.id, name=team.name, golfers=team.golfers) for team, flight in query_data]
+    query_data = session.exec(select(Team.id, Team.name, Flight).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id.in_(flight_ids))).all()
+    golfer_query_data = session.exec(select(Golfer, TeamGolferLink.team_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(FlightTeamLink, FlightTeamLink.team_id == TeamGolferLink.team_id).where(FlightTeamLink.flight_id.in_(flight_ids))).all()
+    return [FlightTeamReadWithGolfers(id=team_id, flight_id=flight.id, name=team_name, golfers=[golfer for golfer, golfer_team_id in golfer_query_data if golfer_team_id == team_id]) for team_id, team_name, flight in query_data]
 
 def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentTeamData]:
     """
@@ -243,8 +244,9 @@ def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> Lis
         teams in the given tournaments
     
     """
-    query_data = session.exec(select(Team, Tournament).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id.in_(tournament_ids))).all()
-    return [TournamentTeamData(id=team.id, tournament_id=tournament.id, name=team.name, golfers=team.golfers) for team, tournament in query_data]
+    tournament_query_data = session.exec(select(Team.id, Team.name, Tournament).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id.in_(tournament_ids))).all()
+    golfer_query_data = session.exec(select(Golfer, TeamGolferLink.team_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id.in_(tournament_ids))).all()
+    return [TournamentTeamData(id=team_id, tournament_id=tournament.id, name=team_name, golfers=[golfer for golfer, golfer_team_id in golfer_query_data if golfer_team_id == team_id]) for team_id, team_name, tournament in tournament_query_data]
 
 def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     """
