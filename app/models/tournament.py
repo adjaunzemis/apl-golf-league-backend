@@ -11,7 +11,7 @@ from .tournament_team_link import TournamentTeamLink
 class TournamentBase(SQLModel):
     name: str
     year: int
-    date: Optional[date] = None
+    date: date
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None

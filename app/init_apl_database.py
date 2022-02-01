@@ -17,7 +17,7 @@ import os
 import numpy as np
 import pandas as pd
 from typing import List
-from datetime import datetime
+from datetime import datetime, time
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from models.course import Course
@@ -781,8 +781,22 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
     for idx, row in df_tournaments.iterrows():
         print(f"Processing tournament: {row['name']}-{year} on {row['date']}")
 
-        # Find tournament course
+        # Handle misnamed course in tournament info
         course_name = row['course']
+        if course_name == "Northwest Park Course":
+            course_name = "Northwest Golf Course"
+            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+        elif course_name == "Musket Ridge":
+            course_name = "Musket Ridge Golf Course"
+            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+        elif course_name == "Turf Valley":
+            course_name = "Turf Valley Hialeah Golf Course"
+            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+        elif course_name == "Woodlands Golf Course":
+            course_name = "The Woodlands Golf Course"
+            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+
+        # Find tournament course
         course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
         if not course_db:
             raise ValueError(f"Cannot match tournament course in database: {course_name}")
@@ -995,19 +1009,16 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
         if not secondary_tee_db:
             raise ValueError(f"Unable to find secondary tee assignment for tournament golfer: {golfer_name}")
 
-        # Parse round entered
-        date_entered = tournament_db.date # TODO: Add date-entered from website, if available
-
         # Add rounds
         for tee_db in [primary_tee_db, secondary_tee_db]:
-            round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == date_played).where(Round.tee_id == tee_db.id)).one_or_none()
+            round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == tournament_db.date).where(Round.tee_id == tee_db.id)).one_or_none()
             if not round_data_db:
                 print(f"Adding tournament round for {golfer_name} on tee_id={tee_db.id}")
                 round_db = Round(
                     tee_id=tee_db.id,
                     type=RoundType.TOURNAMENT,
                     date_played=tournament_db.date,
-                    date_updated=date_entered
+                    date_updated=datetime.combine(tournament_db.date, time(21, 0, 0)) # TODO: Add date-entered from website, if available
                 )
                 session.add(round_db)
                 session.commit()
@@ -1117,9 +1128,9 @@ if __name__ == "__main__":
         for roster_file in tournament_roster_files:
             add_tournament_teams(session, roster_file, tournaments_file)
 
-        # Add flight score data to database
-        for scores_file in flight_scores_files:
-            add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
+        # # Add flight score data to database
+        # for scores_file in flight_scores_files:
+        #     add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
         # Add tournament score data to database
         tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{DATA_YEAR}_"]
