@@ -787,12 +787,6 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
         if not course_db:
             raise ValueError(f"Cannot match tournament course in database: {course_name}")
 
-        # Parse tournament date played
-        try:
-            date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date()
-        except:
-            date_played = datetime.strptime(tournament_db.date, '%Y-%b-%d').date()
-
         # Add tournament to database
         tournament_db = session.exec(select(Tournament).where(Tournament.year == year).where(Tournament.name == row["name"])).one_or_none()
         if not (tournament_db):
@@ -800,7 +794,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
             tournament_db = Tournament(
                 name=row["name"],
                 year=year,
-                date=date_played,
+                date=row["date"],
                 course_id=course_db.id,
                 secretary=row["in_charge"],
                 secretary_contact=row["in_charge_email"]

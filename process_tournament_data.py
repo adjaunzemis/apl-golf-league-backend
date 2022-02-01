@@ -9,6 +9,7 @@ Andris Jaunzemis
 
 import os
 import pandas as pd
+from datetime import datetime
 
 def parse_tournament_info_file(file: str, year: int):
     info = {"name": None, "abbreviation": None, "in_charge": None, "in_charge_email": None,
@@ -31,7 +32,14 @@ def parse_tournament_info_file(file: str, year: int):
                             info["in_charge"] = " ".join(line_parts[1:3])
                             info["in_charge_email"] = line_parts[4]
                     elif line_parts[0].lower() == 'date':
-                        info["date"] =f'{year}-{line_parts[1]}-{line_parts[2]}'                                
+                        date_str = f'{year}-{line_parts[1]}-{line_parts[2]}'
+                        try:
+                            info["date"] = datetime.strptime(date_str, '%Y-%B-%d').date()
+                        except:
+                            try:
+                                info["date"] = datetime.strptime(date_str, '%Y-%b-%d').date()
+                            except:
+                                raise ValueError("Unable to parse tournament date: " + date_str)
                     elif line_parts[0].lower() == 'course':
                         info["course"] = " ".join(line_parts[1:])
                     elif line_parts[0].lower() == 'front_nick':
@@ -152,7 +160,6 @@ def parse_tournament_results_file(file: str):
 if __name__ == "__main__":
     CUSTOM_TOURNAMENTS_FILE = "data/tournaments_custom.csv"
     data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
-    data_dirs = (data_dirs[-1],) # TODO: Remove this!
     for data_dir in data_dirs:
         data_year = 2000 + int(data_dir[-2:])
 
