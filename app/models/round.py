@@ -52,7 +52,6 @@ class RoundData(SQLModel):
     date_updated: datetime
     golfer_id: int
     golfer_name: str
-    golfer_handicap_index: float
     golfer_playing_handicap: int
     team_name: Optional[str] = None
     course_name: str
