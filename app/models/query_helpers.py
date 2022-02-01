@@ -17,7 +17,7 @@ from .team import Team, FlightTeamReadWithGolfers, TournamentTeamData
 from .golfer import Golfer, GolferStatistics
 from .division import Division, FlightDivisionData, TournamentDivisionData
 from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData
+from .round import Round, RoundData, RoundType
 from .hole_result import HoleResult, HoleResultData
 from .round_golfer_link import RoundGolferLink
 from .match_round_link import MatchRoundLink
@@ -129,7 +129,7 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         tournament data from database
     
     """
-    tournament_query_data = session.exec(select(Tournament, Course).join(Course).where(Tournament.id.in_(tournament_ids)).order_by(Tournament.year))
+    tournament_query_data = session.exec(select(Tournament, Course).join(Course).where(Tournament.id.in_(tournament_ids)).order_by(Tournament.date))
     return [TournamentData(
         tournament_id=tournament.id,
         year=tournament.year,
@@ -487,7 +487,7 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
         rounds played for the given tournament
 
     """
-    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id == tournament_id)).all()
+    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(TournamentTeamLink.tournament_id == tournament_id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == Tournament.date)).all()
     return get_tournament_rounds(session=session, round_ids=round_ids)
 
 def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:

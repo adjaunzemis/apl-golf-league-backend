@@ -1,5 +1,6 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
+from datetime import date
 
 from .course import Course
 from .division import Division
@@ -10,7 +11,7 @@ from .tournament_team_link import TournamentTeamLink
 class TournamentBase(SQLModel):
     name: str
     year: int
-    date: Optional[str] = None
+    date: Optional[date] = None
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
@@ -28,7 +29,7 @@ class TournamentCreate(TournamentBase):
 class TournamentUpdate(SQLModel):
     name: Optional[str] = None
     year: Optional[int] = None
-    date: Optional[str] = None
+    date: Optional[date] = None
     course_id: Optional[int] = None
     logo_url: Optional[str] = None
     secretary: Optional[str] = None

@@ -787,6 +787,12 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
         if not course_db:
             raise ValueError(f"Cannot match tournament course in database: {course_name}")
 
+        # Parse tournament date played
+        try:
+            date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date()
+        except:
+            date_played = datetime.strptime(tournament_db.date, '%Y-%b-%d').date()
+
         # Add tournament to database
         tournament_db = session.exec(select(Tournament).where(Tournament.year == year).where(Tournament.name == row["name"])).one_or_none()
         if not (tournament_db):
@@ -794,7 +800,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
             tournament_db = Tournament(
                 name=row["name"],
                 year=year,
-                date=row['date'], # TODO: use date/datetime?
+                date=date_played,
                 course_id=course_db.id,
                 secretary=row["in_charge"],
                 secretary_contact=row["in_charge_email"]
@@ -995,12 +1001,8 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
         if not secondary_tee_db:
             raise ValueError(f"Unable to find secondary tee assignment for tournament golfer: {golfer_name}")
 
-        # Parse round date played and entered
-        try:
-            date_played = datetime.strptime(tournament_db.date, '%Y-%B-%d').date()
-        except:
-            date_played = datetime.strptime(tournament_db.date, '%Y-%b-%d').date()
-        date_entered = datetime.now() # TODO: Add date-entered from website, if available
+        # Parse round entered
+        date_entered = tournament_db.date # TODO: Add date-entered from website, if available
 
         # Add rounds
         for tee_db in [primary_tee_db, secondary_tee_db]:
@@ -1010,7 +1012,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                 round_db = Round(
                     tee_id=tee_db.id,
                     type=RoundType.TOURNAMENT,
-                    date_played=date_played,
+                    date_played=tournament_db.date,
                     date_updated=date_entered
                 )
                 session.add(round_db)

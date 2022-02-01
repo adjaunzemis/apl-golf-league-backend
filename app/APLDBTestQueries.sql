@@ -121,3 +121,26 @@ JOIN tournamentteamlink ON tournamentteamlink.tournament_id = tournamentdivision
 JOIN teamgolferlink ON teamgolferlink.team_id = tournamentteamlink.team_id
 JOIN golfer ON golfer.id = teamgolferlink.golfer_id
 WHERE tournamentdivisionlink.tournament_id = 1 AND golfer.id = 115 AND teamgolferlink.division_id = division.id;
+
+SELECT * FROM round
+JOIN roundgolferlink ON roundgolferlink.round_id = round.id
+JOIN golfer ON golfer.id = roundgolferlink.golfer_id
+JOIN teamgolferlink ON teamgolferlink.golfer_id = golfer.id
+JOIN tournamentteamlink ON tournamentteamlink.team_id = teamgolferlink.team_id
+JOIN tournament ON tournament.id = tournamentteamlink.tournament_id
+WHERE tournament.id = 5 AND round.date_played = tournament.date;
+
+SELECT * FROM round WHERE round.type = "Tournament" ORDER BY date_played;
+
+SELECT * FROM tournament;
+PRAGMA table_info(tournament);
+
+SELECT * FROM tournamentteamlink
+JOIN teamgolferlink ON teamgolferlink.team_id = tournamentteamlink.team_id
+JOIN golfer ON golfer.id = teamgolferlink.golfer_id
+JOIN roundgolferlink ON roundgolferlink.golfer_id = golfer.id
+WHERE tournamentteamlink.tournament_id = 1;
+
+SELECT team.* FROM team
+JOIN tournamentteamlink ON tournamentteamlink.team_id = team.id
+WHERE tournamentteamlink.tournament_id = 1;
