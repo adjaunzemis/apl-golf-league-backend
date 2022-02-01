@@ -1128,9 +1128,9 @@ if __name__ == "__main__":
         for roster_file in tournament_roster_files:
             add_tournament_teams(session, roster_file, tournaments_file)
 
-        # # Add flight score data to database
-        # for scores_file in flight_scores_files:
-        #     add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
+        # Add flight score data to database
+        for scores_file in flight_scores_files:
+            add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
 
         # Add tournament score data to database
         tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{DATA_YEAR}_"]
