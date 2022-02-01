@@ -85,34 +85,36 @@ def parse_tournament_scores_file(file: str):
             if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
                 line_parts = line.split(',')
                 if (len(line_parts) > 1):
-                    scores.append({
-                        "group": int(line_parts[0]),
-                        "name": line_parts[1],
-                        "course_handicap": int(line_parts[2]),
-                        "hole_1": int(line_parts[3]),
-                        "hole_2": int(line_parts[4]),
-                        "hole_3": int(line_parts[5]),
-                        "hole_4": int(line_parts[6]),
-                        "hole_5": int(line_parts[7]),
-                        "hole_6": int(line_parts[8]),
-                        "hole_7": int(line_parts[9]),
-                        "hole_8": int(line_parts[10]),
-                        "hole_9": int(line_parts[11]),
-                        "hole_10": int(line_parts[12]),
-                        "hole_11": int(line_parts[13]),
-                        "hole_12": int(line_parts[14]),
-                        "hole_13": int(line_parts[15]),
-                        "hole_14": int(line_parts[16]),
-                        "hole_15": int(line_parts[17]),
-                        "hole_16": int(line_parts[18]),
-                        "hole_17": int(line_parts[19]),
-                        "hole_18": int(line_parts[20]),
-                        "front_gross": int(line_parts[21]),
-                        "back_gross": int(line_parts[22]),
-                        "total_gross": int(line_parts[23]),
-                        "front_adj_gross": int(line_parts[24]),
-                        "back_adj_gross": int(line_parts[25])
-                    })
+                    line_name = line_parts[1].strip()
+                    if (line_name[:6].lower() != 'group '):
+                        scores.append({
+                            "group": int(line_parts[0]),
+                            "name": line_name,
+                            "course_handicap": int(line_parts[2]),
+                            "hole_1": int(line_parts[3]),
+                            "hole_2": int(line_parts[4]),
+                            "hole_3": int(line_parts[5]),
+                            "hole_4": int(line_parts[6]),
+                            "hole_5": int(line_parts[7]),
+                            "hole_6": int(line_parts[8]),
+                            "hole_7": int(line_parts[9]),
+                            "hole_8": int(line_parts[10]),
+                            "hole_9": int(line_parts[11]),
+                            "hole_10": int(line_parts[12]),
+                            "hole_11": int(line_parts[13]),
+                            "hole_12": int(line_parts[14]),
+                            "hole_13": int(line_parts[15]),
+                            "hole_14": int(line_parts[16]),
+                            "hole_15": int(line_parts[17]),
+                            "hole_16": int(line_parts[18]),
+                            "hole_17": int(line_parts[19]),
+                            "hole_18": int(line_parts[20]),
+                            "front_gross": int(line_parts[21]),
+                            "back_gross": int(line_parts[22]),
+                            "total_gross": int(line_parts[23]),
+                            "front_adj_gross": int(line_parts[24]),
+                            "back_adj_gross": int(line_parts[25])
+                        })
     return scores
 
 def parse_tournament_scores_summary_file(file: str):
@@ -150,6 +152,7 @@ def parse_tournament_results_file(file: str):
 if __name__ == "__main__":
     CUSTOM_TOURNAMENTS_FILE = "data/tournaments_custom.csv"
     data_dirs = [f for f in os.listdir("data/") if f[0:10] == "golf_data."]
+    data_dirs = (data_dirs[-1],) # TODO: Remove this!
     for data_dir in data_dirs:
         data_year = 2000 + int(data_dir[-2:])
 

@@ -486,6 +486,7 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
         rounds played for the given tournament
 
     """
+    # TODO: Use tournament-round-link table
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(TournamentTeamLink.tournament_id == tournament_id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == Tournament.date)).all()
     return get_tournament_rounds(session=session, round_ids=round_ids)
 
