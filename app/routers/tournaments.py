@@ -50,6 +50,7 @@ async def read_tournament(*, session: Session = Depends(get_session), tournament
     round_data = get_rounds_for_tournament(session=session, tournament_id=tournament_id)
     for team in tournament_data.teams:
         team.rounds = [round for round in round_data if round.team_id == team.id]
+        print(f"Team {team.name} has {len(team.rounds)} rounds")
     return tournament_data
 
 @router.patch("/{tournament_id}", response_model=TournamentRead)
