@@ -34,6 +34,7 @@ from models.flight_team_link import FlightTeamLink
 from models.tournament import Tournament
 from models.tournament_division_link import TournamentDivisionLink
 from models.tournament_team_link import TournamentTeamLink
+from models.tournament_round_link import TournamentRoundLink
 from models.round import Round, RoundType
 from models.hole_result import HoleResult
 from models.round_golfer_link import RoundGolferLink
@@ -1018,7 +1019,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                 session.add(round_db)
                 session.commit()
 
-                print(f"Adding tournament round-golfer link: round_id = {round_db.id}, golfer_id = {golfer_db.id}")
+                print(f"Adding round-golfer link: round_id={round_db.id}, golfer_id={golfer_db.id}")
                 round_golfer_link_db = RoundGolferLink(
                     round_id=round_db.id,
                     golfer_id=golfer_db.id,
@@ -1026,6 +1027,14 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     golfer_playing_handicap=row['course_handicap']
                 )
                 session.add(round_golfer_link_db)
+                session.commit()
+
+                print(f"Adding tournament-round link: tournament_id={tournament_db.id}, round_id={round_db.id}")
+                tournament_round_link_db = TournamentRoundLink(
+                    tournament_id=tournament_db.id,
+                    round_id=round_db.id
+                )
+                session.add(tournament_round_link_db)
                 session.commit()
             else:
                 round_db = round_data_db[0]
