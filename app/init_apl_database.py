@@ -706,8 +706,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                     round_golfer_link_db = RoundGolferLink(
                         round_id=round_db.id,
                         golfer_id=golfer_db.id,
-                        golfer_handicap_index=row[f"p{pNum}_handicap"],
-                        golfer_playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
+                        playing_handicap=alhs.compute_course_handicap( # TODO: Use "adjusted handicap" calculation for playing handicap
                             par=tee_db.par,
                             rating=tee_db.rating,
                             slope=tee_db.slope,
@@ -742,13 +741,13 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                         if hNum > 9:
                             hNum -= 9
                         gross_score = row[f"p{pNum}_h{hNum}_score"]
-                        handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
+                        handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.playing_handicap)
                         hole_result_db = HoleResult(
                             round_id=round_db.id,
                             hole_id=hole_db.id,
                             handicap_strokes=handicap_strokes,
                             gross_score=gross_score,
-                            adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
+                            adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.playing_handicap),
                             net_score=(gross_score - handicap_strokes)
                         )
                         session.add(hole_result_db)
@@ -1023,8 +1022,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                 round_golfer_link_db = RoundGolferLink(
                     round_id=round_db.id,
                     golfer_id=golfer_db.id,
-                    golfer_handicap_index=row['course_handicap'], # TODO: Remove handicap index?
-                    golfer_playing_handicap=row['course_handicap']
+                    playing_handicap=row['course_handicap']
                 )
                 session.add(round_golfer_link_db)
                 session.commit()
@@ -1048,13 +1046,13 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     print(f"Adding hole #{hole_db.number} result")
                     hNum = hole_db.number
                     gross_score = row[f"hole_{hNum}"]
-                    handicap_strokes = whs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.golfer_playing_handicap)
+                    handicap_strokes = whs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.playing_handicap)
                     hole_result_db = HoleResult(
                         round_id=round_db.id,
                         hole_id=hole_db.id,
                         handicap_strokes=handicap_strokes,
                         gross_score=gross_score,
-                        adjusted_gross_score=whs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.golfer_playing_handicap),
+                        adjusted_gross_score=whs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.playing_handicap),
                         net_score=(gross_score - handicap_strokes)
                     )
                     session.add(hole_result_db)
