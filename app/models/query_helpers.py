@@ -72,6 +72,7 @@ class FlightDataWithCount(SQLModel):
 class TournamentData(SQLModel):
     tournament_id: int
     year: int
+    date: date
     name: str
     logo_url: str = None
     secretary: str = None
@@ -133,6 +134,7 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
     return [TournamentData(
         tournament_id=tournament.id,
         year=tournament.year,
+        date=tournament.date,
         name=tournament.name,
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
