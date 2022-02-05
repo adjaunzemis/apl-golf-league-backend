@@ -1,7 +1,10 @@
 from typing import List
 from datetime import date
+from sqlalchemy import false
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
+
+from app.utilities.world_handicap_system import WorldHandicapSystem
 
 from .course import Course
 from .track import Track
@@ -19,7 +22,7 @@ from .team_golfer_link import TeamGolferLink
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData
+from .round import Round, RoundData, RoundSummary
 from .hole_result import HoleResult, HoleResultData
 from .match_round_link import MatchRoundLink
 from .round_golfer_link import RoundGolferLink
@@ -27,6 +30,11 @@ from .round_golfer_link import RoundGolferLink
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 # TODO: Move custom route data models elsewhere
+class HandicapIndexData(SQLModel):
+    handicap_index: float
+    date: date
+    scoring_record: List[RoundSummary] = []
+
 class TeamGolferData(SQLModel):
     team_id: int
     golfer_id: int
@@ -42,6 +50,7 @@ class GolferData(SQLModel):
     name: str
     affiliation: str = None
     team_golfer_data: List[TeamGolferData] = []
+    handicap_index_data: HandicapIndexData = None
 
 class GolferDataWithCount(SQLModel):
     num_golfers: int
@@ -262,7 +271,7 @@ def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> Lis
     golfer_query_data = session.exec(select(Golfer, TeamGolferLink.team_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id.in_(tournament_ids))).all()
     return [TournamentTeamData(id=team_id, tournament_id=tournament.id, name=team_name, golfers=[golfer for golfer, golfer_team_id in golfer_query_data if golfer_team_id == team_id]) for team_id, team_name, tournament in tournament_query_data]
 
-def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
+def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record: bool = False) -> List[GolferData]:
     """
     Retrieves golfer data for the given golfers.
     
@@ -272,6 +281,9 @@ def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
         database session
     golfer_ids : list of integers
         golfer identifiers
+    include_scoring_record: boolean, optional
+        if true, includes scoring record with handicap index data
+        Default: False
         
     Returns
     -------
@@ -283,7 +295,8 @@ def get_golfers(session: Session, golfer_ids: List[int]) -> List[GolferData]:
     golfer_data = [GolferData(
         golfer_id=golfer.id,
         name=golfer.name,
-        affiliation=golfer.affiliation
+        affiliation=golfer.affiliation,
+        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, date=date.today(), limit=10, include_record=include_scoring_record, use_legacy_handicapping=True)
     ) for golfer in golfer_query_data]
 
     # Add team-golfer data to golfer data and return
@@ -686,3 +699,42 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, l
     """
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
     return get_flight_rounds(session=session, round_ids=round_ids)
+
+def get_handicap_index_data(session: Session, golfer_id: int, date: date, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
+    """
+    Extracts round data for golfer's scoring record and computes handicap index.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    golfer_id : int
+        golfer identifier in database
+    date : date
+        latest date allowed for rounds in this scoring record
+    limit : int, optional
+        maximum rounds allowed in scoring record
+        Default: 20
+    include_record : boolean, optional
+        if true, includes scoring record data in result
+        Default: False
+    use_legacy_handicapping : boolean, optional
+        if true, uses APL legacy handicapping system
+        Default: False
+
+    Returns
+    -------
+    data : HandicapIndexData
+        computed handicap index and supporting data if requested
+    
+    """
+    if use_legacy_handicapping:
+        handicap_system = APLLegacyHandicapSystem()
+    else:
+        raise ValueError("Non-legacy handicapping not implemented yet!")
+    rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, date=date, limit=limit)
+    record = [handicap_system.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score) for r in rounds]
+    data = HandicapIndexData(date=date, handicap_index=handicap_system.compute_handicap_index(record=record))
+    if include_record:
+        data.scoring_record = rounds
+    return data

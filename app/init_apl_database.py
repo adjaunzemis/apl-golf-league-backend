@@ -844,7 +844,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 course_id=course_db.id,
                 secretary=row["in_charge"],
                 secretary_contact=row["in_charge_email"]
-        
+            )
             session.add(tournament_db)
             session.commit()
             

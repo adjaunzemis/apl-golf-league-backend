@@ -3,7 +3,7 @@ from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, date
 
-from .tee import Tee, TeeRead
+from .tee import Tee, TeeGender, TeeRead
 from .golfer import Golfer, GolferRead
 from .round_golfer_link import RoundGolferLink
 from .hole_result import HoleResult, HoleResultReadWithHole, HoleResultData
@@ -42,6 +42,22 @@ class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
     golfers: Optional[List[GolferRead]] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
+
+class RoundSummary(SQLModel):
+    date_played: date
+    round_type: RoundType
+    golfer_name: str
+    golfer_playing_handicap: float
+    course_name: str
+    track_name: str
+    tee_name: str
+    tee_gender: TeeGender
+    tee_rating: float
+    tee_slope: float
+    gross_score: int
+    adjusted_gross_score: int
+    net_score: int
+    score_differential: float
 
 class RoundData(SQLModel):
     round_id: int

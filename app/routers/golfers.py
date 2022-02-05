@@ -31,7 +31,7 @@ async def create_golfer(*, session: Session = Depends(get_session), golfer: Golf
 
 @router.get("/{golfer_id}", response_model=GolferData)
 async def read_golfer(*, session: Session = Depends(get_session), golfer_id: int):
-    golfer_db = get_golfers(session=session, golfer_ids=[golfer_id,])
+    golfer_db = get_golfers(session=session, golfer_ids=[golfer_id,], include_scoring_record=True)
     if (not golfer_db) or (len(golfer_db) == 0):
         raise HTTPException(status_code=404, detail="Golfer not found")
     return golfer_db[0]
