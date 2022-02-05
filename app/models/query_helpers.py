@@ -167,6 +167,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Fl
         gender=division.gender,
         track_name=track.name,
         tee_name=tee.name,
+        tee_par=tee.par,
         tee_rating=tee.rating,
         tee_slope=tee.slope
     ) for division, flight_division_link, tee, track in division_query_data]
@@ -200,10 +201,12 @@ def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) ->
         gender=division.gender,
         primary_track_name=primary_track_db.name,
         primary_tee_name=primary_tee_db.name,
+        primary_tee_par=primary_tee_db.par,
         primary_tee_rating=primary_tee_db.rating,
         primary_tee_slope=primary_tee_db.slope,
         secondary_track_name=secondary_track_db.name,
         secondary_tee_name=secondary_tee_db.name,
+        secondary_tee_par=secondary_tee_db.par,
         secondary_tee_rating=secondary_tee_db.rating,
         secondary_tee_slope=secondary_tee_db.slope
     ) for division, tournament_division_link, primary_tee_db, primary_track_db, secondary_tee_db, secondary_track_db in division_query_data]
