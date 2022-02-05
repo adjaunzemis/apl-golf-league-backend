@@ -9,26 +9,20 @@ from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.match import MatchSummary
 from ..models.flight_division_link import FlightDivisionLink
 from ..models.flight_team_link import FlightTeamLink
-from ..models.query_helpers import FlightData, FlightDataWithCount, get_divisions_in_flights, get_flights, get_matches_for_teams, get_teams_in_flights
+from ..models.query_helpers import FlightData, FlightInfoWithCount, get_divisions_in_flights, get_flights, get_matches_for_teams, get_teams_in_flights
 
 router = APIRouter(
     prefix="/flights",
     tags=["Flights"]
 )
 
-@router.get("/", response_model=FlightDataWithCount)
+@router.get("/", response_model=FlightInfoWithCount)
 async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     # TODO: Process query parameters to further limit flight results returned from database
     flight_ids = session.exec(select(Flight.id).offset(offset).limit(limit)).all()
-    flight_data = get_flights(session=session, flight_ids=flight_ids)
-    # Add division and team data to flight data
-    division_data = get_divisions_in_flights(session=session, flight_ids=flight_ids)
-    team_data = get_teams_in_flights(session=session, flight_ids=flight_ids)
-    for f in flight_data:
-        f.divisions = [d for d in division_data if d.flight_id == f.flight_id]
-        f.teams = [t for t in team_data if t.flight_id == f.flight_id]
-    # Return count of relevant flights from database and flight data list
-    return FlightDataWithCount(num_flights=len(flight_ids), flights=flight_data)
+    flight_info = get_flights(session=session, flight_ids=flight_ids)
+    # Return count of relevant flights from database and flight info list
+    return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
 @router.post("/", response_model=FlightRead)
 async def create_flight(*, session: Session = Depends(get_session), flight: FlightCreate):

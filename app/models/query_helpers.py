@@ -61,38 +61,53 @@ class TeamWithMatchData(SQLModel):
     name: str
     golfers: List[TeamGolferData] = []
     matches: List[MatchData] = []
-    
-class FlightData(SQLModel):
-    flight_id: int
+
+class FlightInfo(SQLModel):
+    id: int
     year: int
     name: str
+    course: str
+    logo_url: str = None
+
+class FlightData(SQLModel):
+    id: int
+    year: int
+    name: str
+    course: str
     logo_url: str = None
     secretary: str = None
     secretary_contact: str = None
-    course_name: str
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
     
-class FlightDataWithCount(SQLModel):
+class FlightInfoWithCount(SQLModel):
     num_flights: int
-    flights: List[FlightData]
+    flights: List[FlightInfo]
 
-class TournamentData(SQLModel):
-    tournament_id: int
+class TournamentInfo(SQLModel):
+    id: int
     year: int
     date: date
     name: str
+    course: str = None
+    logo_url: str = None
+
+class TournamentData(SQLModel):
+    id: int
+    year: int
+    date: date
+    name: str
+    course: str = None
     logo_url: str = None
     secretary: str = None
     secretary_contact: str = None
-    course_name: str = None
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
 
-class TournamentDataWithCount(SQLModel):
+class TournamentInfoWithCount(SQLModel):
     num_tournaments: int
-    tournaments: List[TournamentData]
+    tournaments: List[TournamentInfo]
 
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
     """
@@ -113,13 +128,13 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
     """
     flight_query_data = session.exec(select(Flight, Course).join(Course).where(Flight.id.in_(flight_ids)).order_by(Flight.year))
     return [FlightData(
-        flight_id=flight.id,
+        id=flight.id,
         year=flight.year,
         name=flight.name,
         logo_url=flight.logo_url,
         secretary=flight.secretary,
         secretary_contact=flight.secretary_contact,
-        course_name=course.name
+        course=course.name
     ) for flight, course in flight_query_data]
 
 def get_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentData]:
@@ -141,14 +156,14 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
     """
     tournament_query_data = session.exec(select(Tournament, Course).join(Course).where(Tournament.id.in_(tournament_ids)).order_by(Tournament.date))
     return [TournamentData(
-        tournament_id=tournament.id,
+        id=tournament.id,
         year=tournament.year,
         date=tournament.date,
         name=tournament.name,
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
         secretary_contact=tournament.secretary_contact,
-        course_name=course.name
+        course=course.name
     ) for tournament, course in tournament_query_data]
 
 def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[DivisionData]:

@@ -7,26 +7,20 @@ from ..dependencies import get_session
 from ..models.tournament import Tournament, TournamentCreate, TournamentUpdate, TournamentRead
 from ..models.tournament_division_link import TournamentDivisionLink
 from ..models.tournament_team_link import TournamentTeamLink
-from ..models.query_helpers import TournamentData, TournamentDataWithCount, get_rounds_for_tournament, get_tournaments, get_divisions_in_tournaments, get_teams_in_tournaments
+from ..models.query_helpers import TournamentData, TournamentInfoWithCount, get_rounds_for_tournament, get_tournaments, get_divisions_in_tournaments, get_teams_in_tournaments
 
 router = APIRouter(
     prefix="/tournaments",
     tags=["Tournaments"]
 )
 
-@router.get("/", response_model=TournamentDataWithCount)
+@router.get("/", response_model=TournamentInfoWithCount)
 async def read_tournaments(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     # TODO: Process query parameters to further limit tournament results returned from database
     tournament_ids = session.exec(select(Tournament.id).offset(offset).limit(limit)).all()
-    tournament_data = get_tournaments(session=session, tournament_ids=tournament_ids)
-    # Add division and team data to tournament data
-    division_data = get_divisions_in_tournaments(session=session, tournament_ids=tournament_ids)
-    team_data = get_teams_in_tournaments(session=session, tournament_ids=tournament_ids)
-    for tournament in tournament_data:
-        tournament.divisions = [d for d in division_data if d.tournament_id == tournament.tournament_id]
-        tournament.teams = [t for t in team_data if t.tournament_id == tournament.tournament_id]
-    # Return count of relevant tournaments from database and tournament data list
-    return TournamentDataWithCount(num_tournaments=len(tournament_ids), tournaments=tournament_data)
+    tournament_info = get_tournaments(session=session, tournament_ids=tournament_ids)
+    # Return count of relevant tournaments from database and tournament info list
+    return TournamentInfoWithCount(num_tournaments=len(tournament_ids), tournaments=tournament_info)
 
 @router.post("/", response_model=TournamentRead)
 async def create_tournament(*, session: Session = Depends(get_session), tournament: TournamentCreate):
