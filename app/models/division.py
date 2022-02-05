@@ -29,8 +29,9 @@ class DivisionRead(DivisionBase):
     id: int
 
 class DivisionData(SQLModel):
-    division_id: int
-    tournament_id: int
+    id: int
+    flight_id: int = None
+    tournament_id: int = None
     name: str
     gender: str
     primary_track_name: str

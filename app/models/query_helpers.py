@@ -165,7 +165,7 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Di
     secondary_tee = aliased(Tee)
     division_query_data = session.exec(select(Division, FlightDivisionLink, primary_tee, primary_track, secondary_tee, secondary_track).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(primary_track, onclause=primary_tee.track_id == primary_track.id).join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id).join(secondary_track, onclause=secondary_tee.track_id == secondary_track.id).where(FlightDivisionLink.flight_id.in_(flight_ids)))
     return [DivisionData(
-        division_id=division.id,
+        id=division.id,
         flight_id=flight_division_link.flight_id,
         name=division.name,
         gender=division.gender,
@@ -204,7 +204,7 @@ def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) ->
     secondary_tee = aliased(Tee)
     division_query_data = session.exec(select(Division, TournamentDivisionLink, primary_tee, primary_track, secondary_tee, secondary_track).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(primary_track, onclause=primary_tee.track_id == primary_track.id).join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id).join(secondary_track, onclause=secondary_tee.track_id == secondary_track.id).where(TournamentDivisionLink.tournament_id.in_(tournament_ids)))
     return [DivisionData(
-        division_id=division.id,
+        id=division.id,
         tournament_id=tournament_division_link.tournament_id,
         name=division.name,
         gender=division.gender,
