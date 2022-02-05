@@ -17,7 +17,7 @@ from .tournament import Tournament
 from .team import Team, FlightTeamReadWithGolfers, TournamentTeamData
 from .team_golfer_link import TeamGolferLink
 from .golfer import Golfer, GolferStatistics
-from .division import Division, FlightDivisionData, TournamentDivisionData
+from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
 from .round import Round, RoundData
 from .hole_result import HoleResult, HoleResultData
@@ -60,8 +60,8 @@ class FlightData(SQLModel):
     logo_url: str = None
     secretary: str = None
     secretary_contact: str = None
-    home_course_name: str = None
-    divisions: List[FlightDivisionData] = []
+    course_name: str
+    divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
     
@@ -78,7 +78,7 @@ class TournamentData(SQLModel):
     secretary: str = None
     secretary_contact: str = None
     course_name: str = None
-    divisions: List[TournamentDivisionData] = []
+    divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
 
 class TournamentDataWithCount(SQLModel):
@@ -110,8 +110,8 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         logo_url=flight.logo_url,
         secretary=flight.secretary,
         secretary_contact=flight.secretary_contact,
-        home_course_name=home_course.name
-    ) for flight, home_course in flight_query_data]
+        course_name=course.name
+    ) for flight, course in flight_query_data]
 
 def get_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentData]:
     """
@@ -142,7 +142,7 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         course_name=course.name
     ) for tournament, course in tournament_query_data]
 
-def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[FlightDivisionData]:
+def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[DivisionData]:
     """
     Retrieves division data for all divisions in the given flights.
     
@@ -155,24 +155,33 @@ def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[Fl
     
     Returns
     -------
-    division_data : list of FlightDivisionData
+    division_data : list of DivisionData
         division data for division in the given flights
          
     """
-    division_query_data = session.exec(select(Division, FlightDivisionLink, Tee, Track).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Tee, onclause=Tee.id == Division.primary_tee_id).join(Track, onclause=Track.id == Tee.track_id).where(FlightDivisionLink.flight_id.in_(flight_ids)))
-    return [FlightDivisionData(
+    primary_track = aliased(Track)
+    primary_tee = aliased(Tee)
+    secondary_track = aliased(Track)
+    secondary_tee = aliased(Tee)
+    division_query_data = session.exec(select(Division, FlightDivisionLink, primary_tee, primary_track, secondary_tee, secondary_track).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(primary_track, onclause=primary_tee.track_id == primary_track.id).join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id).join(secondary_track, onclause=secondary_tee.track_id == secondary_track.id).where(FlightDivisionLink.flight_id.in_(flight_ids)))
+    return [DivisionData(
         division_id=division.id,
         flight_id=flight_division_link.flight_id,
         name=division.name,
         gender=division.gender,
-        track_name=track.name,
-        tee_name=tee.name,
-        tee_par=tee.par,
-        tee_rating=tee.rating,
-        tee_slope=tee.slope
-    ) for division, flight_division_link, tee, track in division_query_data]
+        primary_track_name=primary_track_db.name,
+        primary_tee_name=primary_tee_db.name,
+        primary_tee_par=primary_tee_db.par,
+        primary_tee_rating=primary_tee_db.rating,
+        primary_tee_slope=primary_tee_db.slope,
+        secondary_track_name=secondary_track_db.name,
+        secondary_tee_name=secondary_tee_db.name,
+        secondary_tee_par=secondary_tee_db.par,
+        secondary_tee_rating=secondary_tee_db.rating,
+        secondary_tee_slope=secondary_tee_db.slope
+    ) for division, flight_division_link, primary_tee_db, primary_track_db, secondary_tee_db, secondary_track_db in division_query_data]
 
-def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentDivisionData]:
+def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) -> List[DivisionData]:
     """
     Retrieves division data for all teams in the given tournaments.
 
@@ -185,7 +194,7 @@ def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) ->
     
     Returns
     -------
-    division_data : list of TournamentDivisionData
+    division_data : list of DivisionData
         division data for division in the given tournaments
 
     """
@@ -194,7 +203,7 @@ def get_divisions_in_tournaments(session: Session, tournament_ids: List[int]) ->
     secondary_track = aliased(Track)
     secondary_tee = aliased(Tee)
     division_query_data = session.exec(select(Division, TournamentDivisionLink, primary_tee, primary_track, secondary_tee, secondary_track).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id).join(primary_track, onclause=primary_tee.track_id == primary_track.id).join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id).join(secondary_track, onclause=secondary_tee.track_id == secondary_track.id).where(TournamentDivisionLink.tournament_id.in_(tournament_ids)))
-    return [TournamentDivisionData(
+    return [DivisionData(
         division_id=division.id,
         tournament_id=tournament_division_link.tournament_id,
         name=division.name,

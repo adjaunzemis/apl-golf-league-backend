@@ -9,7 +9,7 @@ class DivisionBase(SQLModel):
     name: str
     gender: TeeGender
     primary_tee_id: int = Field(default=None, foreign_key="tee.id")
-    secondary_tee_id: Optional[int] = Field(default=None, foreign_key="tee.id")
+    secondary_tee_id: int = Field(default=None, foreign_key="tee.id")
 
 class Division(DivisionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -28,18 +28,7 @@ class DivisionUpdate(SQLModel):
 class DivisionRead(DivisionBase):
     id: int
 
-class FlightDivisionData(SQLModel):
-    division_id: int
-    flight_id: int
-    name: str
-    gender: str
-    track_name: str
-    tee_name: str
-    tee_par: int
-    tee_rating: float
-    tee_slope: int
-
-class TournamentDivisionData(SQLModel):
+class DivisionData(SQLModel):
     division_id: int
     tournament_id: int
     name: str
