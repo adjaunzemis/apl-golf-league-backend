@@ -40,7 +40,7 @@ class TeamGolferData(SQLModel):
 class GolferData(SQLModel):
     golfer_id: int
     name: str
-    affiliation: str
+    affiliation: str = None
     team_golfer_data: List[TeamGolferData] = []
 
 class GolferDataWithCount(SQLModel):
@@ -684,5 +684,5 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, l
         round data for rounds in golfer's scoring record
     
     """
-    round_ids = session.exec(select(Round.id).where(Round.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
+    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
     return get_flight_rounds(session=session, round_ids=round_ids)
