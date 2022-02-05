@@ -52,6 +52,7 @@ class RoundSummary(SQLModel):
     track_name: str
     tee_name: str
     tee_gender: TeeGender
+    tee_par: int
     tee_rating: float
     tee_slope: float
     gross_score: int
@@ -74,9 +75,9 @@ class RoundData(SQLModel):
     track_name: str
     tee_name: str
     tee_gender: str
+    tee_par: int
     tee_rating: float
     tee_slope: float
-    tee_par: int = None
     tee_color: str
     gross_score: int = None
     adjusted_gross_score: int = None

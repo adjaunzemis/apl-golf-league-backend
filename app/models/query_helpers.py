@@ -457,6 +457,7 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
         track_name=track.name,
         tee_name=tee.name,
         tee_gender=tee.gender,
+        tee_par=tee.par,
         tee_rating=tee.rating,
         tee_slope=tee.slope,
         tee_color=tee.color if tee.color else "none",
@@ -551,6 +552,7 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
         track_name=track.name,
         tee_name=tee.name,
         tee_gender=tee.gender,
+        tee_par=tee.par,
         tee_rating=tee.rating,
         tee_slope=tee.slope,
         tee_color=tee.color if tee.color else "none",
@@ -675,6 +677,8 @@ def compute_golfer_statistics_for_matches(golfer_id: int, matches: List[MatchDat
 def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, limit: int = 20) -> List[RoundData]:
     """
     Extracts round data for rounds in golfer's scoring record.
+
+    TODO: Include tournament rounds
 
     Scoring record is used for calculating handicap index and includes the
     golfer's most recent rounds as of the given date.
