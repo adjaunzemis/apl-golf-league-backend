@@ -387,7 +387,7 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 if not primary_tee_db:
                     raise ValueError(f"Cannot match primary tee in database: {division_tee}")
                 
-                secondary_tee_db = session.exec(select(Tee).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender)).one_or_none()
+                secondary_tee_db = session.exec(select(Tee).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS)).one_or_none()
                 if not secondary_tee_db:
                     raise ValueError(f"Cannot match secondary tee in database: {division_tee}")
 
