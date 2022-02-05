@@ -70,8 +70,8 @@ def test_create_flight_invalid(client: TestClient, name: str, year: int, home_co
 
 def test_read_flights(session: Session, client: TestClient):
     flights = [
-        Flight(name="Test Flight 1", year=2021, home_course_id=1),
-        Flight(name="Test Flight 2", year=2021, home_course_id=2)
+        Flight(name="Test Flight 1", year=2021, course_id=1),
+        Flight(name="Test Flight 2", year=2021, course_id=2)
     ]
     for flight in flights:
         session.add(flight)
@@ -85,11 +85,11 @@ def test_read_flights(session: Session, client: TestClient):
     for dIdx in range(len(data)):
         assert data[dIdx]["name"] == flights[dIdx].name
         assert data[dIdx]["year"] == flights[dIdx].year
-        assert data[dIdx]["home_course_id"] == flights[dIdx].home_course_id
+        assert data[dIdx]["home_course_id"] == flights[dIdx].course_id
         assert data[dIdx]["id"] == flights[dIdx].id
 
 def test_read_flight(session: Session, client: TestClient):
-    flight = Flight(name="Test Flight 1", year=2021, home_course_id=1)
+    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
     session.add(flight)
     session.commit()
 
@@ -99,13 +99,13 @@ def test_read_flight(session: Session, client: TestClient):
     data = response.json()
     assert data["name"] == flight.name
     assert data["year"] == flight.year
-    assert data["home_course_id"] == flight.home_course_id
+    assert data["home_course_id"] == flight.course_id
     assert data["id"] == flight.id
     assert len(data["divisions"]) == 0
     assert len(data["teams"]) == 0
 
 def test_update_flight(session: Session, client: TestClient):
-    flight = Flight(name="Test Flight 1", year=2021, home_course_id=1)
+    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
     session.add(flight)
     session.commit()
 
@@ -115,11 +115,11 @@ def test_update_flight(session: Session, client: TestClient):
     data = response.json()
     assert data["name"] == "Awesome Flight"
     assert data["year"] == flight.year
-    assert data["home_course_id"] == flight.home_course_id
+    assert data["home_course_id"] == flight.course_id
     assert data["id"] == flight.id
 
 def test_delete_flight(session: Session, client: TestClient):
-    flight = Flight(name="Test Flight 1", year=2021, home_course_id=1)
+    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
     session.add(flight)
     session.commit()
 

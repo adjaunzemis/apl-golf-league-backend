@@ -10,14 +10,14 @@ from .flight_division_link import FlightDivisionLink
 class FlightBase(SQLModel):
     name: str
     year: int
-    home_course_id: int = Field(default=None, foreign_key="course.id")
+    course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
     secretary_contact: Optional[str] = None
 
 class Flight(FlightBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    home_course: Course = Relationship()
+    course: Course = Relationship()
     divisions: Optional[List[Division]] = Relationship(link_model=FlightDivisionLink)
     teams: Optional[List[Team]] = Relationship(link_model=FlightTeamLink)
 
@@ -27,7 +27,7 @@ class FlightCreate(FlightBase):
 class FlightUpdate(SQLModel):
     name: Optional[str] = None
     year: Optional[int] = None
-    home_course_id: Optional[int] = None
+    course_id: Optional[int] = None
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
     secretary_contact: Optional[str] = None

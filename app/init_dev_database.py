@@ -128,7 +128,7 @@ def add_golfer(session: Session, name: str, affiliation: str):
 
 def add_flight(session: Session, name: str):
     print(f"Adding flight: {name}")
-    flight = Flight(name=name, year=2021, home_course_id=1)
+    flight = Flight(name=name, year=2021, course_id=1)
     session.add(flight)
     session.commit()
 
