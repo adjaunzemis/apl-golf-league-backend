@@ -14,18 +14,18 @@ Andris Jaunzemis
 """
 
 import os
+from xml.sax.handler import DTDHandler
 import numpy as np
 import pandas as pd
 from typing import List
 from datetime import datetime, time
 from sqlmodel import Session, SQLModel, create_engine, select
-from app.models.golfer import GolferAffiliation
 
 from models.course import Course
 from models.track import Track
 from models.tee import Tee, TeeGender
 from models.hole import Hole
-from models.golfer import Golfer
+from models.golfer import Golfer, GolferAffiliation
 from models.team import Team
 from models.team_golfer_link import TeamGolferLink, TeamRole
 from models.division import Division
@@ -457,7 +457,7 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
                 elif row['affiliation'].lower() == "apl_family_member":
                     affiliation = GolferAffiliation.APL_FAMILY
                 elif row['affiliation'].lower() == "apl_employee":
-                    affiliation = GolferAffiliation.APL_EMPLYOEE
+                    affiliation = GolferAffiliation.APL_EMPLOYEE
                 elif row['affiliation'].lower() == "non_apl_employee":
                     affiliation = GolferAffiliation.NON_APL_EMPLOYEE
                 else:
@@ -1100,7 +1100,11 @@ if __name__ == "__main__":
     DATA_DIR = "data/"
     DATA_YEAR = 2021
 
+    # DATABASE_FILE = "apl_golf_league"
+    # DATABASE_URL = f"mysql+mysqlconnector://localhost:3306/{DATABASE_FILE}"
+
     DATABASE_FILE = "apl.db"
+    DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
 
     if DELETE_EXISTING_DATABASE and os.path.isfile(DATABASE_FILE):
         print(f"Deleting existing database: {DATABASE_FILE}")
@@ -1108,9 +1112,9 @@ if __name__ == "__main__":
     
     print(f"Initializing database: {DATABASE_FILE}")
     engine = create_engine(
-        f"sqlite:///{DATABASE_FILE}",
+        DATABASE_URL,
         echo=False,
-        connect_args={"check_same_thread": False}
+        connect_args={"check_same_thread": False} # only needed for SQLite
     )
     SQLModel.metadata.create_all(engine)  
 
