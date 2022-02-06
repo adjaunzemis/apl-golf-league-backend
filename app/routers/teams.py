@@ -27,16 +27,17 @@ async def create_team(*, session: Session = Depends(get_session), team: TeamCrea
 
 @router.get("/{team_id}", response_model=TeamWithMatchData)
 async def read_team(*, session: Session = Depends(get_session), team_id: int):
-    team_query_data = session.exec(select(Team).where(Team.id == team_id)).all()
-    if not team_query_data:
+    team_db = session.exec(select(Team).where(Team.id == team_id)).one_or_none()
+    if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
     team_matches = get_matches_for_teams(session=session, team_ids=(team_id,))
     team_golfers = get_team_golfers_for_teams(session=session, team_ids=(team_id,))
     for golfer in team_golfers:
         golfer.statistics = compute_golfer_statistics_for_matches(golfer.golfer_id, team_matches)
     return TeamWithMatchData(
-        team_id=team_query_data[0].id,
-        name=team_query_data[0].name,
+        id=team_db.id,
+        name=team_db.name,
+        year=team_golfers[0].year,
         golfers=team_golfers,
         matches=team_matches
     )
