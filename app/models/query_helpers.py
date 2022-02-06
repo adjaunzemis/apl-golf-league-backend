@@ -47,6 +47,7 @@ class GolferData(SQLModel):
     golfer_id: int
     name: str
     affiliation: str = None
+    member_since: int = None
     team_golfer_data: List[TeamGolferData] = []
     handicap_index_data: HandicapIndexData = None
 
@@ -309,6 +310,7 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
         golfer_id=golfer.id,
         name=golfer.name,
         affiliation=golfer.affiliation,
+        member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
         handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, date=date.today(), limit=10, include_record=include_scoring_record, use_legacy_handicapping=True)
     ) for golfer in golfer_query_data]
 
@@ -787,3 +789,25 @@ def get_handicap_index_data(session: Session, golfer_id: int, date: date, limit:
     if include_record:
         data.scoring_record = rounds
     return data
+
+def get_golfer_year_joined(session: Session, golfer_id: int) -> int:
+    """
+    Determines year golfer joined league based on oldest round in database.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    golfer_id : integer
+        golfer identifier
+    
+    Returns
+    -------
+    year_joined : date
+        year of golfer's oldest round, or None if no rounds found
+    
+    """
+    oldest_round_date = session.exec(select(Round.date_played).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).order_by(Round.date_played).limit(1)).one_or_none()
+    if not oldest_round_date:
+        return None
+    return oldest_round_date.year
