@@ -19,7 +19,7 @@ from .team_golfer_link import TeamGolferLink
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData, RoundSummary, RoundType
+from .round import Round, RoundData, RoundSummary
 from .hole_result import HoleResult, HoleResultData
 from .match_round_link import MatchRoundLink
 from .round_golfer_link import RoundGolferLink
@@ -468,8 +468,11 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
         golfer_name=golfer.name,
         golfer_playing_handicap=round_golfer_link.playing_handicap,
         team_name=team.name,
+        course_id=course.id,
         course_name=course.name,
+        track_id=track.id,
         track_name=track.name,
+        tee_id=tee.id,
         tee_name=tee.name,
         tee_gender=tee.gender,
         tee_par=tee.par,
@@ -563,8 +566,11 @@ def get_tournament_rounds(session: Session, tournament_id: int, round_ids: List[
         golfer_name=golfer.name,
         golfer_playing_handicap=round_golfer_link.playing_handicap,
         team_name=team.name,
+        course_id=course.id,
         course_name=course.name,
+        track_id=track.id,
         track_name=track.name,
+        tee_id=tee.id,
         tee_name=tee.name,
         tee_gender=tee.gender,
         tee_par=tee.par,
