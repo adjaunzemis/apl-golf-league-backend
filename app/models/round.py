@@ -44,6 +44,7 @@ class RoundReadWithData(RoundRead):
     hole_results: Optional[List[HoleResultReadWithHole]] = None
 
 class RoundSummary(SQLModel):
+    round_id: int
     date_played: date
     round_type: RoundType
     golfer_name: str
@@ -55,10 +56,10 @@ class RoundSummary(SQLModel):
     tee_par: int
     tee_rating: float
     tee_slope: float
-    gross_score: int
-    adjusted_gross_score: int
-    net_score: int
-    score_differential: float
+    gross_score: int = None
+    adjusted_gross_score: int = None
+    net_score: int = None
+    score_differential: float = None
 
 class RoundData(SQLModel):
     round_id: int

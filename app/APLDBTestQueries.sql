@@ -144,3 +144,17 @@ WHERE tournamentteamlink.tournament_id = 1;
 SELECT team.* FROM team
 JOIN tournamentteamlink ON tournamentteamlink.team_id = team.id
 WHERE tournamentteamlink.tournament_id = 1;
+
+SELECT * FROM round
+JOIN roundgolferlink ON roundgolferlink.round_id = round.id
+JOIN golfer ON golfer.id = roundgolferlink.golfer_id
+JOIN teamgolferlink ON teamgolferlink.golfer_id = golfer.id
+WHERE round.id IN (1669, 1670);
+
+SELECT * FROM round
+JOIN roundgolferlink ON roundgolferlink.round_id = round.id
+JOIN golfer ON golfer.id = roundgolferlink.golfer_id
+JOIN tee ON tee.id = round.tee_id
+JOIN track ON track.id = tee.track_id
+JOIN course ON course.id = track.course_id
+WHERE round.id IN (1669, 1670);

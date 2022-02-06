@@ -1,10 +1,7 @@
 from typing import List
 from datetime import date
-from sqlalchemy import false
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
-
-from app.utilities.world_handicap_system import WorldHandicapSystem
 
 from .course import Course
 from .track import Track
@@ -22,11 +19,12 @@ from .team_golfer_link import TeamGolferLink
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData, RoundSummary
+from .round import Round, RoundData, RoundSummary, RoundType
 from .hole_result import HoleResult, HoleResultData
 from .match_round_link import MatchRoundLink
 from .round_golfer_link import RoundGolferLink
 
+from ..utilities.world_handicap_system import WorldHandicapSystem
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 # TODO: Move custom route data models elsewhere
@@ -530,18 +528,18 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
 
     """
     round_ids = session.exec(select(Round.id).join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id).where(TournamentRoundLink.tournament_id == tournament_id)).all()
-    return get_tournament_rounds(session=session, round_ids=round_ids)
+    return get_tournament_rounds(session=session, tournament_id=tournament_id, round_ids=round_ids)
 
-def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
+def get_tournament_rounds(session: Session, tournament_id: int, round_ids: List[int]) -> List[RoundData]:
     """
     Retrieves round data for the given tournament-play rounds, including results.
-
-    TODO: Consolidate with `get_flight_rounds`.
 
     Parameters
     ----------
     session : Session
         database session
+    tournament_id : integer
+        tournament identifier
     round_ids : list of integers
         round identifiers
     
@@ -551,7 +549,7 @@ def get_tournament_rounds(session: Session, round_ids: List[int]) -> List[RoundD
         round data for the given rounds
     
     """
-    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Team, onclause=Team.id == TeamGolferLink.team_id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids))).all()
+    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Team, onclause=Team.id == TeamGolferLink.team_id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids)).where(TournamentTeamLink.tournament_id == tournament_id)).all()
     round_data = [RoundData(
         round_id=round.id,
         match_id=None, # TODO: remove match_id from RoundData
@@ -689,11 +687,43 @@ def compute_golfer_statistics_for_matches(golfer_id: int, matches: List[MatchDat
         rounds.extend([round for round in match.rounds if round.golfer_id == golfer_id])
     return compute_golfer_statistics_for_rounds(golfer_id, rounds)
 
-def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, limit: int = 20) -> List[RoundData]:
+def get_round_summaries(session: Session, round_ids: List[int]) -> List[RoundSummary]:
+    """
+    """
+    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids))).all()
+    round_summaries = [RoundSummary(
+        round_id=round.id,
+        date_played=round.date_played,
+        round_type=round.type,
+        golfer_name=golfer.name,
+        golfer_playing_handicap=round_golfer_link.playing_handicap,
+        course_name=course.name,
+        track_name=track.name,
+        tee_name=tee.name,
+        tee_gender=tee.gender,
+        tee_par=tee.par,
+        tee_rating=tee.rating,
+        tee_slope=tee.slope,
+        tee_color=tee.color if tee.color else "none",
+    ) for round, round_golfer_link, golfer, course, track, tee in round_query_data]
+    
+    # Query hole data for selected rounds
+    hole_result_data = get_hole_results_for_rounds(session=session, round_ids=round_ids)
+
+    # Add hole data to round data and return
+    ahs = APLLegacyHandicapSystem() # TODO: replace legacy handicap system with updated version
+    for r in round_summaries:
+        round_holes = [h for h in hole_result_data if h.round_id == r.round_id]
+        r.tee_par = sum([h.par for h in round_holes])
+        r.gross_score = sum([h.gross_score for h in round_holes])
+        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in round_holes])
+        r.net_score = sum([h.net_score for h in round_holes])
+        r.score_differential = ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score)
+    return round_summaries
+
+def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, limit: int = 20) -> List[RoundSummary]:
     """
     Extracts round data for rounds in golfer's scoring record.
-
-    TODO: Include tournament rounds
 
     Scoring record is used for calculating handicap index and includes the
     golfer's most recent rounds as of the given date.
@@ -717,7 +747,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, l
     
     """
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
-    return get_flight_rounds(session=session, round_ids=round_ids)
+    return sorted(get_round_summaries(session=session, round_ids=round_ids), key=lambda round_summary: round_summary.date_played, reverse=True)
 
 def get_handicap_index_data(session: Session, golfer_id: int, date: date, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
     """
