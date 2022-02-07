@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
 
 from .dependencies import create_db_and_tables
 from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping
 
 description = """
-APLGolfLeague API
+APL Golf League API
 """
 
 app = FastAPI(
-    title="APLGolfLeague",
+    title="APL Golf League",
     description=description,
     version="0.1.0",
     contact={
@@ -20,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:4200"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,3 +40,5 @@ app.include_router(handicapping.router)
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+
+handler = Mangum(app)
