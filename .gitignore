@@ -138,3 +138,4 @@ data/
 
 # Configuration files
 config/
+.env

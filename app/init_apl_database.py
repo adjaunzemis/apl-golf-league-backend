@@ -14,7 +14,7 @@ Andris Jaunzemis
 """
 
 import os
-from xml.sax.handler import DTDHandler
+from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from typing import List
@@ -1096,27 +1096,23 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     session.commit()
 
 if __name__ == "__main__":
-    DELETE_EXISTING_DATABASE = False
     DATA_DIR = "data/"
     DATA_YEAR = 2021
 
-    # DATABASE_FILE = "apl_golf_league"
-    # DATABASE_URL = f"mysql+mysqlconnector://localhost:3306/{DATABASE_FILE}"
+    load_dotenv()
 
-    DATABASE_FILE = "apl.db"
-    DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
+    DATABASE_USER = os.environ.get("APLGL_DATABASE_USER")
+    DATABASE_PASSWORD = os.environ.get("APLGL_DATABASE_PASSWORD")
+    DATABASE_ADDRESS = os.environ.get("APLGL_DATABASE_ADDRESS")
+    DATABASE_PORT = os.environ.get("APLGL_DATABASE_PORT")
+    DATABASE_NAME = os.environ.get("APLGL_DATABASE_NAME")
 
-    if DELETE_EXISTING_DATABASE and os.path.isfile(DATABASE_FILE):
-        print(f"Deleting existing database: {DATABASE_FILE}")
-        os.remove(DATABASE_FILE)
+    DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
+    print(DATABASE_URL)
     
-    print(f"Initializing database: {DATABASE_FILE}")
-    engine = create_engine(
-        DATABASE_URL,
-        echo=False,
-        connect_args={"check_same_thread": False} # only needed for SQLite
-    )
-    SQLModel.metadata.create_all(engine)  
+    print(f"Updating database: {DATABASE_NAME}")
+    engine = create_engine(DATABASE_URL, echo=False)
+    SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
         # Find all courses played in flight rounds
