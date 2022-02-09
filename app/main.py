@@ -37,6 +37,10 @@ app.include_router(rounds.router)
 app.include_router(matches.router)
 app.include_router(handicapping.router)
 
+@app.get('/')
+def hello_world():
+    return {"message": "Hello from APLGolfLeagueAPI!"}
+
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
