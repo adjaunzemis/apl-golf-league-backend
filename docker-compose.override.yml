@@ -1,0 +1,12 @@
+services:
+
+  backend:
+    ports:
+      - 80:80
+
+    environment:
+      - APLGL_DATABASE_ECHO=True
+
+networks:
+  traefik-public:
+    external: false

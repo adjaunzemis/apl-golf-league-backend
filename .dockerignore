@@ -1,0 +1,12 @@
+__pycache__
+.pytest_cache
+.vscode
+.venv
+build
+config
+data
+.db
+.sql
+# .env
+
+docker-compose.override.yml
