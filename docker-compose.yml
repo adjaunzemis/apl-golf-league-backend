@@ -1,6 +1,14 @@
 services:
 
   backend:
+    environment:
+      # Pass environment variables to container from shell
+      - APLGL_DATABASE_USER
+      - APLGL_DATABASE_PASSWORD
+      - APLGL_DATABASE_ADDRESS
+      - APLGL_DATABASE_PORT
+      - APLGL_DATABASE_NAME
+      - APLGL_DATABASE_ECHO
     build: ./
     restart: always
     labels:
