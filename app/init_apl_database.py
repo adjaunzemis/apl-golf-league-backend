@@ -41,6 +41,7 @@ from models.hole_result import HoleResult
 from models.round_golfer_link import RoundGolferLink
 from models.match import Match
 from models.match_round_link import MatchRoundLink
+from models.officer import Officer, Committee
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 from utilities.world_handicap_system import WorldHandicapSystem
 
@@ -1095,6 +1096,62 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     session.add(hole_result_db)
                     session.commit()
 
+def add_officers(session: Session, officers_file: str):
+    """
+    Adds officer data to database.
+    
+    Parameters
+    ----------
+    session : Session
+        database session
+    officers_file : string
+        file containing officer data
+
+    """
+    print(f"Adding officer data from file: {officers_file}")
+
+    year = int(courses_file.split(".")[0][-4:])
+
+    # Read officers data spreadsheet
+    df_officers = pd.read_csv(officers_file)
+
+    # For each officer entry:
+    for idx, row in df_officers.iterrows():
+        # Parse officer committee
+        if row['committee'].lower() == "league":
+            committee = Committee.LEAGUE
+        elif row['committee'].lower() == "executive":
+            committee = Committee.EXECUTIVE
+        elif row['committee'].lower() == "rules":
+            committee = Committee.RULES
+        elif row['committee'].lower() == "tournament":
+            committee = Committee.TOURNAMENT
+        elif row['committee'].lower() == "banquet":
+            committee = Committee.BANQUET_AND_AWARDS
+        elif row['committee'].lower() == "publicity":
+            committee = Committee.PUBLICITY
+        elif row['committee'].lower() == "planning":
+            committee = Committee.PLANNING
+        else:
+            raise ValueError(f"Unable to assign committee to officer: {row['name']}")
+
+        # Find officer, add if not found
+        officer_db = session.exec(select(Officer).where(Officer.year == year).where(Officer.name == row["name"]).where(Officer.committee == committee)).one_or_none()
+        if not officer_db:
+            print(f"Adding officer: {row['name']}, year={year}, committee={committee}")
+
+            # Add officer to database
+            officer_db = Officer(
+                name=row['name'],
+                year=year,
+                committee=committee,
+                role=row['role'],
+                email=row['email'] if row['email'] else None,
+                phone=row['phone'] if len(row['phone']) > 0 else None
+            )
+            session.add(officer_db)
+            session.commit()
+
 if __name__ == "__main__":
     DATA_DIR = "data/"
     DATA_YEAR = 2021
@@ -1108,7 +1165,6 @@ if __name__ == "__main__":
     DATABASE_NAME = os.environ.get("APLGL_DATABASE_NAME")
 
     DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
-    print(DATABASE_URL)
     
     print(f"Updating database: {DATABASE_NAME}")
     engine = create_engine(DATABASE_URL, echo=False)
@@ -1142,6 +1198,10 @@ if __name__ == "__main__":
 
         # Add relevant course data to database
         add_courses(session, courses_file, custom_courses_file, courses_played)
+
+        # Add officer data to database
+        officers_file = f"{DATA_DIR}/officers_{DATA_YEAR}.csv"
+        add_officers(session, officers_file)
 
         # Add flight data to database
         flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
