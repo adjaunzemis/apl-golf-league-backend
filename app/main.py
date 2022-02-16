@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping
+from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping, officers
 
 description = """
 APL Golf League API
@@ -35,6 +35,7 @@ app.include_router(tournaments.router)
 app.include_router(divisions.router)
 app.include_router(rounds.router)
 app.include_router(matches.router)
+app.include_router(officers.router)
 app.include_router(handicapping.router)
 
 @app.get('/')
