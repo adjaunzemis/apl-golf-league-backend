@@ -1,9 +1,11 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
+import logging
 
-from .dependencies import create_db_and_tables, log_request_data
+from .dependencies import create_db_and_tables
 from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping, officers
+from .utilities.custom_logger import CustomizeLogger
 
 description = """
 APL Golf League API
@@ -18,6 +20,40 @@ app = FastAPI(
         "email": "adjaunzemis@gmail.com",
     }
 )
+
+CONFIG_PATH = "logs/logging.config"
+logger = logging.getLogger(__name__)
+logger = CustomizeLogger.make_logger(CONFIG_PATH)
+app.logger = logger
+
+async def log_request_data(request: Request):
+    """
+    Logs request with parameters and headers.
+
+    Included as router-level dependency.
+
+    Parameters
+    ----------
+    request : Request
+        request to log
+    
+    References
+    ----------
+    https://stackoverflow.com/questions/63400683/python-logging-with-loguru-log-request-params-on-fastapi-app
+
+    """
+    logger.debug(f"{request.method} {request.url}")
+    logger.debug("Params:")
+    for name, value in request.path_params.items():
+        logger.debug(f"\t{name}: {value}")
+    logger.debug("Headers:")
+    for name, value in request.headers.items():
+        logger.debug(f"\t{name}: {value}")
+    # TODO: Log request body, handle errors when request has no body
+    # req_body = await request.json()
+    # if req_body:
+    #     logger.debug(f"Body:")
+    #     logger.debug(f"\t{req_body}")
 
 app.add_middleware(
     CORSMiddleware,
