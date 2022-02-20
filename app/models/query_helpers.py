@@ -77,7 +77,8 @@ class FlightData(SQLModel):
     course: str
     logo_url: str = None
     secretary: str = None
-    secretary_contact: str = None
+    secretary_email: str = None
+    secretary_phone: str = None
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
@@ -102,7 +103,8 @@ class TournamentData(SQLModel):
     course: str = None
     logo_url: str = None
     secretary: str = None
-    secretary_contact: str = None
+    secretary_email: str = None
+    secretary_phone: str = None
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
 
@@ -134,7 +136,8 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         name=flight.name,
         logo_url=flight.logo_url,
         secretary=flight.secretary,
-        secretary_contact=flight.secretary_contact,
+        secretary_email=flight.secretary_email,
+        secretary_phone=flight.secretary_phone,
         course=course.name
     ) for flight, course in flight_query_data]
 
@@ -163,7 +166,8 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         name=tournament.name,
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
-        secretary_contact=tournament.secretary_contact,
+        secretary_email=tournament.secretary_email,
+        secretary_phone=tournament.secretary_phone,
         course=course.name
     ) for tournament, course in tournament_query_data]
 

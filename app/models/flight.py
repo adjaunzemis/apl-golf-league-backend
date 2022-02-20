@@ -13,7 +13,8 @@ class FlightBase(SQLModel):
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
-    secretary_contact: Optional[str] = None
+    secretary_email: Optional[str] = None
+    secretary_phone: Optional[str] = None
 
 class Flight(FlightBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -30,7 +31,8 @@ class FlightUpdate(SQLModel):
     course_id: Optional[int] = None
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
-    secretary_contact: Optional[str] = None
+    secretary_email: Optional[str] = None
+    secretary_phone: Optional[str] = None
 
 class FlightRead(FlightBase):
     id: int

@@ -15,7 +15,8 @@ class TournamentBase(SQLModel):
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
-    secretary_contact: Optional[str] = None
+    secretary_email: Optional[str] = None
+    secretary_phone: Optional[str] = None
 
 class Tournament(TournamentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,7 +34,8 @@ class TournamentUpdate(SQLModel):
     course_id: Optional[int] = None
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
-    secretary_contact: Optional[str] = None
+    secretary_email: Optional[str] = None
+    secretary_phone: Optional[str] = None
 
 class TournamentRead(TournamentBase):
     id: int
