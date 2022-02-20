@@ -824,6 +824,8 @@ def get_handicap_index_data(session: Session, golfer_id: int, date: datetime_dat
     else:
         raise ValueError("Non-legacy handicapping not implemented yet!")
     rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, date=date, limit=limit)
+    if len(rounds) == 0:
+        return None
     record = [handicap_system.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score) for r in rounds]
     data = HandicapIndexData(date=date, handicap_index=handicap_system.compute_handicap_index(record=record))
     if include_record:
