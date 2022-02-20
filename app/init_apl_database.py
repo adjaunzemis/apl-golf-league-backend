@@ -528,10 +528,24 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
         if not golfer_db:
             print(f"Adding golfer: {row['name']}")
 
+            # Set golfer affiliation
+            if row['affiliation'].lower() == "retiree":
+                affiliation = GolferAffiliation.APL_RETIREE
+            elif row['affiliation'].lower() == "apl_family_member":
+                affiliation = GolferAffiliation.APL_FAMILY
+            elif row['affiliation'].lower() == "apl_employee":
+                affiliation = GolferAffiliation.APL_EMPLOYEE
+            elif row['affiliation'].lower() == "non_apl_employee":
+                affiliation = GolferAffiliation.NON_APL_EMPLOYEE
+            else:
+                affiliation = None
+
             # Add golfer to database
             # TODO: Add contact info
-            affiliation = "APL_RETIREE" if row['affiliation'].lower() == "retiree" else "APL_FAMILY" if row['affiliation'].lower() == "apl_family_member" else row['affiliation'].upper()
-            golfer_db = Golfer(name=row['name'], affiliation=affiliation)
+            golfer_db = Golfer(
+                name=row['name'],
+                affiliation=affiliation
+            )
             session.add(golfer_db)
             session.commit()
 
