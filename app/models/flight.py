@@ -16,8 +16,8 @@ class FlightBase(SQLModel):
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
-    signup_begin: Optional[date] = None
-    signup_end: Optional[date] = None
+    signup_start_date: Optional[date] = None
+    signup_stop_date: Optional[date] = None
     start_date: Optional[date] = None
     weeks: Optional[int] = None
     locked: Optional[bool] = False
@@ -39,8 +39,8 @@ class FlightUpdate(SQLModel):
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
-    signup_begin: Optional[date] = None
-    signup_end: Optional[date] = None
+    signup_start_date: Optional[date] = None
+    signup_stop_date: Optional[date] = None
     start_date: Optional[date] = None
     weeks: Optional[int] = None
     locked: Optional[bool] = None

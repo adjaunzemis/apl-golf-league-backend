@@ -1,5 +1,6 @@
 from typing import List
 from datetime import date as datetime_date
+from datetime import time as datetime_time
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
@@ -69,8 +70,8 @@ class FlightInfo(SQLModel):
     name: str
     course: str
     logo_url: str = None
-    signup_begin: datetime_date = None
-    signup_end: datetime_date = None
+    signup_start_date: datetime_date = None
+    signup_stop_date: datetime_date = None
     start_date: datetime_date = None
     weeks: int = None
 
@@ -83,8 +84,8 @@ class FlightData(SQLModel):
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
-    signup_begin: datetime_date = None
-    signup_end: datetime_date = None
+    signup_start_date: datetime_date = None
+    signup_stop_date: datetime_date = None
     start_date: datetime_date = None
     weeks: int = None
     locked: bool = False
@@ -99,25 +100,27 @@ class FlightInfoWithCount(SQLModel):
 class TournamentInfo(SQLModel):
     id: int
     year: int
-    date: datetime_date
     name: str
+    date: datetime_date = None
+    start_time: datetime_time = None
     course: str = None
     logo_url: str = None
-    signup_begin: datetime_date = None
-    signup_end: datetime_date = None
+    signup_start_date: datetime_date = None
+    signup_stop_date: datetime_date = None
 
 class TournamentData(SQLModel):
     id: int
     year: int
-    date: datetime_date
     name: str
+    date: datetime_date = None
+    start_time: datetime_time = None
     course: str = None
     logo_url: str = None
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
-    signup_begin: datetime_date = None
-    signup_end: datetime_date = None
+    signup_start_date: datetime_date = None
+    signup_stop_date: datetime_date = None
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
@@ -152,8 +155,8 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         secretary=flight.secretary,
         secretary_email=flight.secretary_email,
         secretary_phone=flight.secretary_phone,
-        signup_begin=flight.signup_begin,
-        signup_end=flight.signup_end,
+        signup_start_date=flight.signup_start_date,
+        signup_stop_date=flight.signup_stop_date,
         start_date=flight.start_date,
         weeks=flight.weeks,
         locked=flight.locked,
@@ -181,14 +184,15 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
     return [TournamentData(
         id=tournament.id,
         year=tournament.year,
-        date=tournament.date,
         name=tournament.name,
+        date=tournament.date,
+        start_time=tournament.start_time,
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
         secretary_email=tournament.secretary_email,
         secretary_phone=tournament.secretary_phone,
-        signup_begin=tournament.signup_begin,
-        signup_end=tournament.signup_end,
+        signup_start_date=tournament.signup_start_date,
+        signup_stop_date=tournament.signup_stop_date,
         locked=tournament.locked,
         course=course.name,
     ) for tournament, course in tournament_query_data]

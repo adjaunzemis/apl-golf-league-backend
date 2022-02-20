@@ -9,12 +9,13 @@ Andris Jaunzemis
 
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def parse_tournament_info_file(file: str, year: int):
     info = {"name": None, "abbreviation": None, "in_charge": None, "in_charge_email": None,
-        "date": None, "course": None, "front_track": None, "back_track": None, "shotgun": None,
-        "strokeplay": None, "bestball": None, "scramble": None, "ryder_cup": None, "individual": None,
+        "date": None, "signup_start_date": None, "signup_stop_date": None, "course": None,
+        "front_track": None, "back_track": None, "shotgun": None, "strokeplay": None,
+        "bestball": None, "scramble": None, "ryder_cup": None, "individual": None,
         "chachacha": None, "softspikes": None}
     with open(file, 'r') as fp:
         for line in fp:
@@ -37,6 +38,12 @@ def parse_tournament_info_file(file: str, year: int):
                             info["date"] = datetime.strptime(date_str, '%Y-%b-%d').date()
                         except:
                             raise ValueError("Unable to parse tournament date: " + date_str)
+                    elif line_parts[0].lower() == 'signup_begins':
+                        info["signup_start_date"] = info["date"] - timedelta(days=int(line_parts[-1]))
+                    elif line_parts[0].lower() == 'signup_ends':
+                        info["signup_stop_date"] = info["date"] - timedelta(days=int(line_parts[-1]))
+                    elif line_parts[0].lower() == 'start_time':
+                        info["start_time"] = datetime.strptime(line_parts[-1], "%I:%M").time()
                     elif line_parts[0].lower() == 'course':
                         info["course"] = " ".join(line_parts[1:])
                     elif line_parts[0].lower() == 'front_nick':

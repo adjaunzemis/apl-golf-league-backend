@@ -332,10 +332,11 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 course_id=course_db.id,
                 logo_url=logo_url,
                 secretary=row["secretary"],
-                signup_begin=row["signup_begin"],
-                signup_end=row["signup_end"],
+                signup_start_date=row["signup_start_date"],
+                signup_stop_date=row["signup_stop_date"],
                 start_date=row["start_date"],
-                weeks=row["weeks"]
+                weeks=row["weeks"],
+                locked=True
             )
             session.add(flight_db)
             session.commit()
@@ -845,10 +846,14 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 name=row["name"],
                 year=year,
                 date=row["date"],
+                start_time=row["start_time"],
                 logo_url=logo_url,
                 course_id=course_db.id,
                 secretary=row["in_charge"],
-                secretary_email=row["in_charge_email"]
+                secretary_email=row["in_charge_email"],
+                signup_start_date=row["signup_start_date"],
+                signup_stop_date=row["signup_stop_date"],
+                locked=True
             )
             session.add(tournament_db)
             session.commit()

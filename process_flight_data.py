@@ -45,9 +45,9 @@ def parse_season_parameters(file: str):
             if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
                 line_parts = line.split()
                 if line_parts[0].lower() == 'league_signup_date':
-                    flight_dates['signup_begin'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                    flight_dates['signup_start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
                 elif line_parts[0].lower() == 'end_league_signup_date':
-                    flight_dates['signup_end'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                    flight_dates['signup_stop_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
                 elif line_parts[0].lower() == 'league_start_date':
                     flight_dates['start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
     return flight_dates
@@ -68,8 +68,8 @@ def parse_flight_schedule(abbreviation: str, data_dir: str):
                 # TODO: Parse weekly schedule data
     return flight_schedule
 
-def parse_flight_info(abbreviation: str, data_dir: str, signup_begin: date, signup_end: date, start_date: date, weeks: int):
-    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "signup_begin": signup_begin, "signup_end": signup_end, "start_date": start_date, "weeks": weeks}
+def parse_flight_info(abbreviation: str, data_dir: str, signup_start_date: date, signup_stop_date: date, start_date: date, weeks: int):
+    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "signup_start_date": signup_start_date, "signup_stop_date": signup_stop_date, "start_date": start_date, "weeks": weeks}
     
     flight_info_file = f"{data_dir}/{abbreviation}.info"
     print(f"\tProcessing flight info file: {flight_info_file}")
@@ -147,8 +147,8 @@ if __name__ == "__main__":
                     flight_info = parse_flight_info(
                         abbreviation=flight_dict["abbreviation"],
                         data_dir=f"data/{data_dir}",
-                        signup_begin=flight_dates["signup_begin"],
-                        signup_end=flight_dates["signup_end"],
+                        signup_start_date=flight_dates["signup_start_date"],
+                        signup_stop_date=flight_dates["signup_stop_date"],
                         start_date=flight_dates["start_date"],
                         weeks=flight_schedule['weeks']
                     )
