@@ -45,6 +45,37 @@ from models.officer import Officer, Committee
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 from utilities.world_handicap_system import WorldHandicapSystem
 
+def initialize_golfers(session: Session):
+    """
+    Initializes golfers table with specific golfers.
+
+    Parameters
+    ----------
+    session : Session
+        databse session
+
+    """
+    golfers = [
+        {'name': "George P. Burdell", "affiliation": GolferAffiliation.NON_APL_EMPLOYEE},
+        {'name': "Merle Tuve", "affiliation": GolferAffiliation.APL_RETIREE},
+        {'name': "Andris Jaunzemis", "affiliation": GolferAffiliation.APL_EMPLOYEE}
+    ]
+
+    for golfer in golfers:
+        # Find golfer
+        golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer["name"])).one_or_none()
+        if not golfer_db:
+            print(f"Adding golfer: {golfer['name']}")
+
+            # Add golfer to database
+            # TODO: Add contact info
+            golfer_db = Golfer(
+                name=golfer['name'],
+                affiliation=golfer['affiliation']
+            )
+            session.add(golfer_db)
+            session.commit()
+
 def find_flight_courses_played(scores_file: str):
     """
     Finds all courses played in the given flight matches.
@@ -1180,6 +1211,9 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
+        # Initialize golfers table
+        initialize_golfers(session)
+
         # Find all courses played in flight rounds
         flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
         courses_played = []
