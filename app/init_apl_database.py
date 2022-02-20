@@ -864,16 +864,19 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
         course_name = row['course']
         if course_name == "Northwest Park Course":
             course_name = "Northwest Golf Course"
-            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+            print(f"Adjusted tournament course name: {row['course']} -> {course_name}")
         elif course_name == "Musket Ridge":
             course_name = "Musket Ridge Golf Course"
-            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+            print(f"Adjusted tournament course name: {row['course']} -> {course_name}")
         elif course_name == "Turf Valley":
             course_name = "Turf Valley Hialeah Golf Course"
-            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+            print(f"Adjusted tournament course name: {row['course']} -> {course_name}")
         elif course_name == "Woodlands Golf Course":
             course_name = "The Woodlands Golf Course"
-            print(f"Adjusted flight course name: {row['course']} -> {course_name}")
+            print(f"Adjusted tournament course name: {row['course']} -> {course_name}")
+        elif course_name == "Blue Mash":
+            course_name = "Blue Mash Golf Course"
+            print(f"Adjusted tournament course  name: {row['course']} -> {course_name}")
 
         # Find tournament course
         course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
