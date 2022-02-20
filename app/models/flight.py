@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import date
 from sqlmodel import SQLModel, Field, Relationship
 
 from .course import Course
@@ -15,6 +16,11 @@ class FlightBase(SQLModel):
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
+    signup_begin: Optional[date] = None
+    signup_end: Optional[date] = None
+    start_date: Optional[date] = None
+    weeks: Optional[int] = None
+    locked: Optional[bool] = False
 
 class Flight(FlightBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,6 +39,11 @@ class FlightUpdate(SQLModel):
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
+    signup_begin: Optional[date] = None
+    signup_end: Optional[date] = None
+    start_date: Optional[date] = None
+    weeks: Optional[int] = None
+    locked: Optional[bool] = None
 
 class FlightRead(FlightBase):
     id: int

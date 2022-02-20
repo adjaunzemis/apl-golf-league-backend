@@ -331,7 +331,11 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 year=year,
                 course_id=course_db.id,
                 logo_url=logo_url,
-                secretary=row["secretary"]
+                secretary=row["secretary"],
+                signup_begin=row["signup_begin"],
+                signup_end=row["signup_end"],
+                start_date=row["start_date"],
+                weeks=row["weeks"]
             )
             session.add(flight_db)
             session.commit()

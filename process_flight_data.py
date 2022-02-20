@@ -12,6 +12,7 @@ Andris Jaunzemis
 """
 
 import os
+from datetime import datetime, date
 
 def parse_flight_data_from_file(file: str):
     flights = []
@@ -35,8 +36,40 @@ def parse_flight_data_from_file(file: str):
                     flights[-1]["type"] = " ".join(line.split()[1:])
     return flights
 
-def parse_flight_info(abbreviation: str, data_dir: str):
-    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None}
+def parse_season_parameters(file: str):
+    flight_dates = {}
+    with open(file, 'r') as fp:
+        for line in fp:
+            line = line.strip()
+            line = line.replace(',', ' ')
+            if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
+                line_parts = line.split()
+                if line_parts[0].lower() == 'league_signup_date':
+                    flight_dates['signup_begin'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                elif line_parts[0].lower() == 'end_league_signup_date':
+                    flight_dates['signup_end'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                elif line_parts[0].lower() == 'league_start_date':
+                    flight_dates['start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+    return flight_dates
+
+def parse_flight_schedule(abbreviation: str, data_dir: str):    
+    flight_schedule_file = f"{data_dir}/{abbreviation}.sked"
+    print(f"\tProcessing flight schedule file: {flight_schedule_file}")
+    
+    flight_schedule = {}
+    with open(flight_schedule_file, 'r') as fp:
+        for line in fp:
+            line = line.strip()
+            line = line.replace(',', ' ')
+            if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
+                line_parts = line.split()
+                if (line_parts[0].lower() == 'tm') or (line_parts[0].lower() == 'team'):
+                    flight_schedule['weeks'] = int(line_parts[-1])
+                # TODO: Parse weekly schedule data
+    return flight_schedule
+
+def parse_flight_info(abbreviation: str, data_dir: str, signup_begin: date, signup_end: date, start_date: date, weeks: int):
+    flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "signup_begin": signup_begin, "signup_end": signup_end, "start_date": start_date, "weeks": weeks}
     
     flight_info_file = f"{data_dir}/{abbreviation}.info"
     print(f"\tProcessing flight info file: {flight_info_file}")
@@ -93,26 +126,39 @@ if __name__ == "__main__":
         flight_files = [f for f in os.listdir(f"data/{data_dir}") if f == "apl.flights.data"]
         for flight_file in flight_files:
             print(f"Processing {data_year} flights file: {flight_file}")
-
-            output_file = f"data/flights_{data_year}.csv"
-
             flight_dict_list = []
             try:
                 flight_dict_list = parse_flight_data_from_file(f"data/{data_dir}/{flight_file}")
             except ValueError:
                 print("\tERROR: Unable to process flight file!")
+
+            print(f"Processing {data_year} season parameters file")
+            try:
+                flight_dates = parse_season_parameters(f"data/{data_dir}/season_parameters.data")
+            except ValueError:
+                print("\tERROR: Unable to process season parameters file!")
             
             if len(flight_dict_list) == 0:
                 print("\tNo flight data to output")
             else:
                 for flight_dict in flight_dict_list:
-                    flight_info = parse_flight_info(abbreviation=flight_dict["abbreviation"], data_dir=f"data/{data_dir}")
+                    flight_schedule = parse_flight_schedule(abbreviation=flight_dict["abbreviation"], data_dir=f"data/{data_dir}")
+
+                    flight_info = parse_flight_info(
+                        abbreviation=flight_dict["abbreviation"],
+                        data_dir=f"data/{data_dir}",
+                        signup_begin=flight_dates["signup_begin"],
+                        signup_end=flight_dates["signup_end"],
+                        start_date=flight_dates["start_date"],
+                        weeks=flight_schedule['weeks']
+                    )
                     flight_dict.update(flight_info)
 
                 csv_data = ",".join([str(k) for k,v in flight_dict_list[0].items()])
                 for flight_dict in flight_dict_list:
                     csv_data += "\n" + ",".join([str(v) for k,v in flight_dict.items()])
 
+                output_file = f"data/flights_{data_year}.csv"
                 print(f"\tWriting processed data to file: {output_file}")
                 with open(output_file, "w") as fp:
                     fp.write(csv_data)

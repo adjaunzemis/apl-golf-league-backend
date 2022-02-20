@@ -1,5 +1,5 @@
 from typing import List
-from datetime import date
+from datetime import date as datetime_date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
@@ -30,7 +30,7 @@ from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 # TODO: Move custom route data models elsewhere
 class HandicapIndexData(SQLModel):
     handicap_index: float
-    date: date
+    date: datetime_date
     scoring_record: List[RoundSummary] = []
 
 class TeamGolferData(SQLModel):
@@ -69,6 +69,10 @@ class FlightInfo(SQLModel):
     name: str
     course: str
     logo_url: str = None
+    signup_begin: datetime_date = None
+    signup_end: datetime_date = None
+    start_date: datetime_date = None
+    weeks: int = None
 
 class FlightData(SQLModel):
     id: int
@@ -79,6 +83,11 @@ class FlightData(SQLModel):
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
+    signup_begin: datetime_date = None
+    signup_end: datetime_date = None
+    start_date: datetime_date = None
+    weeks: int = None
+    locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
@@ -90,21 +99,26 @@ class FlightInfoWithCount(SQLModel):
 class TournamentInfo(SQLModel):
     id: int
     year: int
-    date: date
+    date: datetime_date
     name: str
     course: str = None
     logo_url: str = None
+    signup_begin: datetime_date = None
+    signup_end: datetime_date = None
 
 class TournamentData(SQLModel):
     id: int
     year: int
-    date: date
+    date: datetime_date
     name: str
     course: str = None
     logo_url: str = None
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
+    signup_begin: datetime_date = None
+    signup_end: datetime_date = None
+    locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
 
@@ -138,6 +152,11 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         secretary=flight.secretary,
         secretary_email=flight.secretary_email,
         secretary_phone=flight.secretary_phone,
+        signup_begin=flight.signup_begin,
+        signup_end=flight.signup_end,
+        start_date=flight.start_date,
+        weeks=flight.weeks,
+        locked=flight.locked,
         course=course.name
     ) for flight, course in flight_query_data]
 
@@ -168,7 +187,10 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         secretary=tournament.secretary,
         secretary_email=tournament.secretary_email,
         secretary_phone=tournament.secretary_phone,
-        course=course.name
+        signup_begin=tournament.signup_begin,
+        signup_end=tournament.signup_end,
+        locked=tournament.locked,
+        course=course.name,
     ) for tournament, course in tournament_query_data]
 
 def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[DivisionData]:
@@ -317,7 +339,7 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
         name=golfer.name,
         affiliation=golfer.affiliation,
         member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
-        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, date=date.today(), limit=10, include_record=include_scoring_record, use_legacy_handicapping=True)
+        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, date=datetime_date.today(), limit=10, include_record=include_scoring_record, use_legacy_handicapping=True)
     ) for golfer in golfer_query_data]
 
     # Add team-golfer data to golfer data and return
@@ -737,7 +759,7 @@ def get_round_summaries(session: Session, round_ids: List[int]) -> List[RoundSum
         r.score_differential = ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score)
     return round_summaries
 
-def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, limit: int = 20) -> List[RoundSummary]:
+def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: datetime_date, limit: int = 20) -> List[RoundSummary]:
     """
     Extracts round data for rounds in golfer's scoring record.
 
@@ -765,7 +787,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: date, l
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
     return sorted(get_round_summaries(session=session, round_ids=round_ids), key=lambda round_summary: round_summary.date_played, reverse=True)
 
-def get_handicap_index_data(session: Session, golfer_id: int, date: date, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
+def get_handicap_index_data(session: Session, golfer_id: int, date: datetime_date, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
     """
     Extracts round data for golfer's scoring record and computes handicap index.
 
