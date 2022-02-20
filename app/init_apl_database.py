@@ -1208,7 +1208,7 @@ def add_officers(session: Session, officers_file: str):
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
-    DATA_YEAR = 2021
+    DATA_YEARS = [2021, 2020, 2019, 2018]
 
     load_dotenv()
 
@@ -1228,62 +1228,65 @@ if __name__ == "__main__":
         # Initialize golfers table
         initialize_golfers(session)
 
-        # Find all courses played in flight rounds
-        flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{DATA_YEAR}_"]
-        courses_played = []
-        for scores_file in flight_scores_files:
-            for course_played in find_flight_courses_played(scores_file):
+        for data_year in DATA_YEARS:
+            print(f"Processing data for year: {data_year}")
+
+            # Find all courses played in flight rounds
+            flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{data_year}_"]
+            courses_played = []
+            for scores_file in flight_scores_files:
+                for course_played in find_flight_courses_played(scores_file):
+                    if course_played not in courses_played:
+                        courses_played.append(course_played)
+
+            # Find all courses played in tournament rounds
+            tournaments_file = f"{DATA_DIR}/tournaments_{data_year}.csv"
+            for course_played in find_tournament_courses_played(tournaments_file):
                 if course_played not in courses_played:
                     courses_played.append(course_played)
 
-        # Find all courses played in tournament rounds
-        tournaments_file = f"{DATA_DIR}/tournaments_{DATA_YEAR}.csv"
-        for course_played in find_tournament_courses_played(tournaments_file):
-            if course_played not in courses_played:
-                courses_played.append(course_played)
+            # Check course data before continuing
+            courses_file = f"{DATA_DIR}/courses_{data_year}.csv"
+            custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
 
-        # Check course data before continuing
-        courses_file = f"{DATA_DIR}/courses_{DATA_YEAR}.csv"
-        custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
+            print(f"Courses played: {courses_played}")
+            
+            checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
+            if not checks_pass:
+                raise RuntimeError("Missing or inconsistent course data, halting database initialization")
+            print(f"Validated course entry data")
 
-        print(f"Courses played: {courses_played}")
-        
-        checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
-        if not checks_pass:
-            raise RuntimeError("Missing or inconsistent course data, halting database initialization")
-        print(f"Validated course entry data")
+            # Add relevant course data to database
+            add_courses(session, courses_file, custom_courses_file, courses_played)
 
-        # Add relevant course data to database
-        add_courses(session, courses_file, custom_courses_file, courses_played)
+            # Add officer data to database
+            officers_file = f"{DATA_DIR}/officers_{data_year}.csv"
+            add_officers(session, officers_file)
 
-        # Add officer data to database
-        officers_file = f"{DATA_DIR}/officers_{DATA_YEAR}.csv"
-        add_officers(session, officers_file)
+            # Add flight data to database
+            flights_file = f"{DATA_DIR}/flights_{data_year}.csv"
+            add_flights(session, flights_file, custom_courses_file)
 
-        # Add flight data to database
-        flights_file = f"{DATA_DIR}/flights_{DATA_YEAR}.csv"
-        add_flights(session, flights_file, custom_courses_file)
+            # Add tournament data to database
+            add_tournaments(session, tournaments_file, custom_courses_file)
 
-        # Add tournament data to database
-        add_tournaments(session, tournaments_file, custom_courses_file)
+            # Add flight roster data into database
+            flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{data_year}_"]
+            for roster_file in flight_roster_files:
+                add_flight_teams(session, roster_file, flights_file)
 
-        # Add flight roster data into database
-        flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{DATA_YEAR}_"]
-        for roster_file in flight_roster_files:
-            add_flight_teams(session, roster_file, flights_file)
+            # Add tournament roster data into database
+            tournament_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_roster_{data_year}_"]
+            for roster_file in tournament_roster_files:
+                add_tournament_teams(session, roster_file, tournaments_file)
 
-        # Add tournament roster data into database
-        tournament_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_roster_{DATA_YEAR}_"]
-        for roster_file in tournament_roster_files:
-            add_tournament_teams(session, roster_file, tournaments_file)
+            # Add flight score data to database
+            for scores_file in flight_scores_files:
+                add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{data_year}_subs.csv")
 
-        # Add flight score data to database
-        for scores_file in flight_scores_files:
-            add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{DATA_YEAR}_subs.csv")
-
-        # Add tournament score data to database
-        tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{DATA_YEAR}_"]
-        for scores_file in tournament_scores_files:
-            add_tournament_rounds(session, scores_file, tournaments_file)
+            # Add tournament score data to database
+            tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{data_year}_"]
+            for scores_file in tournament_scores_files:
+                add_tournament_rounds(session, scores_file, tournaments_file)
 
     print("Database initialized!")
