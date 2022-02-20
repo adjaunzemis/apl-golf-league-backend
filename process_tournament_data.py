@@ -9,7 +9,7 @@ Andris Jaunzemis
 
 import os
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 def parse_tournament_info_file(file: str, year: int):
     info = {"name": None, "abbreviation": None, "in_charge": None, "in_charge_email": None,
@@ -43,7 +43,9 @@ def parse_tournament_info_file(file: str, year: int):
                     elif line_parts[0].lower() == 'signup_ends':
                         info["signup_stop_date"] = info["date"] - timedelta(days=int(line_parts[-1]))
                     elif line_parts[0].lower() == 'start_time':
-                        info["start_time"] = datetime.strptime(line_parts[-1], "%I:%M").time()
+                        info["start_time"] = datetime.strptime(line_parts[-1], "%H:%M").time()
+                        if info["start_time"] < time(7, 0):
+                            info["start_time"] = (datetime.strptime(line_parts[-1], "%H:%M") + timedelta(hours=12)).time()
                     elif line_parts[0].lower() == 'course':
                         info["course"] = " ".join(line_parts[1:])
                     elif line_parts[0].lower() == 'front_nick':
