@@ -21,6 +21,10 @@ async def read_golfers(*, session: Session = Depends(get_session), offset: int =
     return GolferDataWithCount(num_golfers=len(golfer_ids), golfers=get_golfers(session=session, golfer_ids=golfer_ids)
 )
 
+@router.get("/info", response_model=List[GolferRead])
+async def read_all_golfers(*, session: Session = Depends(get_session)):
+    return session.exec(select(Golfer)).all()
+
 @router.post("/", response_model=GolferRead)
 async def create_golfer(*, session: Session = Depends(get_session), golfer: GolferCreate):
     golfer_db = Golfer.from_orm(golfer)
