@@ -255,10 +255,36 @@ def add_golfer_to_team(*, session: Session, golfer_id: int, team_id: int, role: 
         session.commit()
     return team_golfer_link_db
 
-# def add_match(*, session: Session, flight_id: int, week: int, home_team_id: int, away_team_id: int, home_score: float = None, away_score: float = None):
-#     print(f"Adding week {week} match between team ids: {home_team_id}, {away_team_id}")
-#     session.add(Match(week=week, flight_id=flight_id, home_team_id=home_team_id, away_team_id=away_team_id, home_score=home_score, away_score=away_score))
-#     session.commit()
+def add_scheduled_matches(*, session: Session, flight_db: Flight):
+    flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_db.id)).all()
+    if (not flight_team_links_db) or (len(flight_team_links_db) == 0):
+        raise ValueError("Unable to find flight: " + flight_db.name + " (" + flight_db.year + ")")
+    
+    if len(flight_team_links_db) != 6:
+        raise ValueError("Expected 6 teams")
+    
+    # TODO: Determine matchup matrix, create match entries
+    matchup_matrix = [ # 6 teams
+        [6, 5, 4, 3, 2, 1], # week 1
+        [5, 4, 6, 2, 1 ,3], # week 2
+        [4, 3, 2, 1, 6, 5], # week 3
+        [3, 6, 1, 5, 4, 2], # week 4
+        [2, 1, 5, 6, 3, 4], # week 5
+        [6, 5, 4, 3, 2, 1], # week 6
+        [None, None, None, None, None, None], # week 7
+        [5, 4, 6, 2, 1, 3], # week 8
+        [4, 3, 2, 1, 6, 5], # week 9
+        [3, 6, 1, 5, 4, 2], # week 10
+        [2, 1, 5, 6, 3, 4], # week 11
+        [None, None, None, None, None, None], # week 12
+        [6, 5, 4, 3, 2, 1], # week 13
+        [5, 4, 6, 2, 1 ,3], # week 14
+        [4, 3, 2, 1, 6, 5], # week 15
+        [3, 6, 1, 5, 4, 2], # week 16
+        [2, 1, 5, 6, 3, 4], # week 17
+        [6, 5, 4, 3, 2, 1], # week 18
+        [6, 5, 4, 3, 2, 1], # week 19
+    ]
 
 if __name__ == "__main__":
     UPDATE_MYSQL_DB = True # if false, overwrites local sqlite database
