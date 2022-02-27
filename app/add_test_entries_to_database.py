@@ -255,36 +255,50 @@ def add_golfer_to_team(*, session: Session, golfer_id: int, team_id: int, role: 
         session.commit()
     return team_golfer_link_db
 
-def add_scheduled_matches(*, session: Session, flight_db: Flight):
-    flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_db.id)).all()
+def add_scheduled_matches(*, session: Session, flight: Flight):
+    flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight.id)).all()
     if (not flight_team_links_db) or (len(flight_team_links_db) == 0):
-        raise ValueError("Unable to find flight: " + flight_db.name + " (" + flight_db.year + ")")
+        raise ValueError("Unable to find flight: " + flight.name + " (" + flight.year + ")")
     
-    if len(flight_team_links_db) != 6:
-        raise ValueError("Expected 6 teams")
-    
-    # TODO: Determine matchup matrix, create match entries
-    matchup_matrix = [ # 6 teams
-        [6, 5, 4, 3, 2, 1], # week 1
-        [5, 4, 6, 2, 1 ,3], # week 2
-        [4, 3, 2, 1, 6, 5], # week 3
-        [3, 6, 1, 5, 4, 2], # week 4
-        [2, 1, 5, 6, 3, 4], # week 5
-        [6, 5, 4, 3, 2, 1], # week 6
-        [None, None, None, None, None, None], # week 7
-        [5, 4, 6, 2, 1, 3], # week 8
-        [4, 3, 2, 1, 6, 5], # week 9
-        [3, 6, 1, 5, 4, 2], # week 10
-        [2, 1, 5, 6, 3, 4], # week 11
-        [None, None, None, None, None, None], # week 12
-        [6, 5, 4, 3, 2, 1], # week 13
-        [5, 4, 6, 2, 1 ,3], # week 14
-        [4, 3, 2, 1, 6, 5], # week 15
-        [3, 6, 1, 5, 4, 2], # week 16
-        [2, 1, 5, 6, 3, 4], # week 17
-        [6, 5, 4, 3, 2, 1], # week 18
-        [6, 5, 4, 3, 2, 1], # week 19
-    ]
+    team_ids = [link.team_id for link in flight_team_links_db]
+
+    if (flight.weeks == 19) and (len(team_ids) == 6):
+        matchup_matrix = [ # 6 teams, 19 weeks
+            [6, 5, 4, 3, 2, 1], # week 1
+            [5, 4, 6, 2, 1 ,3], # week 2
+            [4, 3, 2, 1, 6, 5], # week 3
+            [3, 6, 1, 5, 4, 2], # week 4
+            [2, 1, 5, 6, 3, 4], # week 5
+            [6, 5, 4, 3, 2, 1], # week 6
+            [None, None, None, None, None, None], # week 7
+            [5, 4, 6, 2, 1, 3], # week 8
+            [4, 3, 2, 1, 6, 5], # week 9
+            [3, 6, 1, 5, 4, 2], # week 10
+            [2, 1, 5, 6, 3, 4], # week 11
+            [None, None, None, None, None, None], # week 12
+            [6, 5, 4, 3, 2, 1], # week 13
+            [5, 4, 6, 2, 1, 3], # week 14
+            [4, 3, 2, 1, 6, 5], # week 15
+            [3, 6, 1, 5, 4, 2], # week 16
+            [2, 1, 5, 6, 3, 4], # week 17
+            [6, 5, 4, 3, 2, 1], # week 18
+            [6, 5, 4, 3, 2, 1], # week 19
+        ]
+    else:
+        raise ValueError(f"No pre-defined {flight.weeks}-week matchup matrix for {len(team_ids)} teams")
+
+    for week_idx in range(len(matchup_matrix)):
+        week = week_idx + 1
+        for team_idx in range(len(team_ids)):
+            team_id = team_ids[team_idx]
+            if matchup_matrix[week_idx][team_idx]: # check for byes
+                opponent_team_id = team_ids[matchup_matrix[week_idx][team_idx] - 1]
+                match_db = session.exec(select(Match).where(Match.flight_id == flight.id).where(Match.week == week).where(((Match.home_team_id == team_id) & (Match.away_team_id == opponent_team_id)) | (Match.home_team_id == opponent_team_id) & (Match.away_team_id == team_id))).one_or_none()
+                if not match_db:
+                    print(f"Adding match: week={week}, home_team_id={team_id}, away_team_id={opponent_team_id}")
+                    match_db = Match(flight_id=flight.id, week=week, home_team_id=team_id, away_team_id=opponent_team_id)
+                    session.add(match_db)
+                    session.commit()
 
 if __name__ == "__main__":
     UPDATE_MYSQL_DB = True # if false, overwrites local sqlite database
@@ -414,9 +428,7 @@ if __name__ == "__main__":
         add_golfer_to_team(session=session, golfer_id=sm_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=dr_middle_mens_division_db.id)
         add_golfer_to_team(session=session, golfer_id=he_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=dr_middle_mens_division_db.id)
         
-        # TODO: Add matches to set flight schedule
-        
-        # add_match(session, 1, 1, 1, 2, 7.5, 3.5)
-        # add_match(session, 1, 2, 2, 1)
+        # Add matches to set flight schedule
+        add_scheduled_matches(session=session, flight=dr_flight_db)
 
     print("Database updates complete!")
