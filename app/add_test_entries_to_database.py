@@ -377,7 +377,7 @@ if __name__ == "__main__":
         he_golfer_db = add_golfer(session=session, name="Hawkeye", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
         # Flight and Divisions
-        dr_flight_db = add_flight(session=session, name="Diamond Ridge", year=2022, course_id=dr_course_db.id, logo_url="courses/DiamondRidge/logo.png", secretary="Buck Showalter", secretary_email="adjaunzemis@gmail.com", signup_start_date=date(2022, 2, 14), signup_stop_date=date(2022, 3, 31), start_date=date(2022, 4, 7), weeks=19)
+        dr_flight_db = add_flight(session=session, name="Diamond Ridge", year=2022, course_id=dr_course_db.id, logo_url="courses/DiamondRidge/logo.png", secretary="Buck Showalter", secretary_email="adjaunzemis@gmail.com", signup_start_date=date(2022, 2, 14), signup_stop_date=date(2022, 3, 31), start_date=date(2022, 4, 4), weeks=19)
 
         dr_middle_mens_division_db = add_division(session=session, name="Middle", gender=TeeGender.MENS, primary_tee_id=dr_front_white_mens_tee_db.id, secondary_tee_id=dr_back_white_mens_tee_db.id, flight_id=dr_flight_db.id)
         dr_senior_mens_division_db = add_division(session=session, name="Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_gold_mens_tee_db.id, secondary_tee_id=dr_back_gold_mens_tee_db.id, flight_id=dr_flight_db.id)
