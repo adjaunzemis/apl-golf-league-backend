@@ -49,11 +49,11 @@ class MatchSummary(SQLModel):
     away_team_name: str
     flight_name: str
     week: int
-    home_score: float
-    away_score: float
+    home_score: Optional[float] = None
+    away_score: Optional[float] = None
 
 class MatchData(MatchSummary):
-    rounds: List[RoundData] = []
+    rounds: Optional[List[RoundData]] = []
 
 class MatchDataWithCount(SQLModel):
     num_matches: int
