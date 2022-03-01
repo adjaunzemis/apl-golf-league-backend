@@ -4,7 +4,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_session
-from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchReadWithData, MatchDataWithCount
+from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchData, MatchDataWithCount
 from ..models.match_round_link import MatchRoundLink
 from ..models.query_helpers import get_matches
 
@@ -32,12 +32,12 @@ async def create_match(*, session: Session = Depends(get_session), match: MatchC
     session.refresh(match_db)
     return match_db
 
-@router.get("/{match_id}", response_model=MatchReadWithData)
+@router.get("/{match_id}", response_model=MatchData)
 async def read_match(*, session: Session = Depends(get_session), match_id: int):
-    match_db = session.get(Match, match_id)
-    if not match_db:
+    match_db = get_matches(session=session, match_ids=(match_id,))
+    if (not match_db) or (len(match_db) != 1):
         raise HTTPException(status_code=404, detail="Match not found")
-    return match_db
+    return match_db[0]
 
 @router.patch("/{match_id}", response_model=MatchRead)
 async def update_match(*, session: Session = Depends(get_session), match_id: int, match: MatchUpdate):
