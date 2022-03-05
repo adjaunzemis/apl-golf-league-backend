@@ -12,12 +12,11 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[OfficerRead])
-async def read_officers(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    # TODO: Process query parameters to further limit results returned from database
-    if year:
-        officer_ids = session.exec(select(Officer.id).where(Officer.year == year).offset(offset).limit(limit)).all()
-    else:
-        officer_ids = session.exec(select(Officer.id).offset(offset).limit(limit)).all()
+async def read_officers(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000)):
+    if year: # filter to a certain year
+        officer_ids = session.exec(select(Officer.id).where(Officer.year == year)).all()
+    else: # get all
+        officer_ids = session.exec(select(Officer.id)).all()
     return session.exec(select(Officer).where(Officer.id.in_(officer_ids))).all()
 
 @router.post("/", response_model=OfficerRead)
