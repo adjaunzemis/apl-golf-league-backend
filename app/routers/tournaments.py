@@ -15,11 +15,12 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=TournamentInfoWithCount)
-async def read_tournaments(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    # TODO: Process query parameters to further limit tournament results returned from database
-    tournament_ids = session.exec(select(Tournament.id).offset(offset).limit(limit)).all()
+async def read_tournaments(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000)):
+    if year: # filter to a certain year
+        tournament_ids = session.exec(select(Tournament.id).where(Tournament.year == year)).all()
+    else: # get all
+        tournament_ids = session.exec(select(Tournament.id)).all()
     tournament_info = get_tournaments(session=session, tournament_ids=tournament_ids)
-    # Return count of relevant tournaments from database and tournament info list
     return TournamentInfoWithCount(num_tournaments=len(tournament_ids), tournaments=tournament_info)
 
 @router.post("/", response_model=TournamentRead)
