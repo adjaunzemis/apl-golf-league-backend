@@ -3,9 +3,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+
 from ..dependencies import get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink
+from ..models.flight_team_link import FlightTeamLink
+from ..models.tournament_team_link import TournamentTeamLink
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_team_golfers_for_teams, get_matches_for_teams
 
 router = APIRouter(
@@ -60,7 +63,30 @@ async def delete_team(*, session: Session = Depends(get_session), team_id: int):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    # Find and remove all team-golfer links
+    team_golfer_links_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)).all()
+    for team_golfer_link_db in team_golfer_links_db:
+        print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
+        session.delete(team_golfer_link_db)
+
+    # Find and remove all flight-team links
+    flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)).all()
+    for flight_team_link_db in flight_team_links_db:
+        print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
+        session.delete(flight_team_link_db)
+
+    # Find and remove all tournament-team links
+    tournament_team_links_db = session.exec(select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)).all()
+    for tournament_team_link_db in tournament_team_links_db:
+        print(f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}")
+        session.delete(tournament_team_link_db)
+
+    # Remove team
+    print(f"Deleting team: id={team_db.id}")
     session.delete(team_db)
+
+    # Commit database changes
     session.commit()
     return {"ok": True}
 
