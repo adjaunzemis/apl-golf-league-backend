@@ -2,7 +2,6 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from .golfer import Golfer
-from .round import RoundData
 from .flight_team_link import FlightTeamLink
 from .tournament_team_link import TournamentTeamLink
 from .team_golfer_link import TeamGolferLink
@@ -24,15 +23,3 @@ class TeamUpdate(SQLModel):
 
 class TeamRead(TeamBase):
     id: int
-
-class FlightTeamReadWithGolfers(TeamRead):
-    flight_id: int
-    golfers: List[Golfer]
-
-class TournamentTeamData(TeamRead):
-    id: int
-    name: str
-    year: int
-    tournament_id: int
-    golfers: List[Golfer]
-    rounds: Optional[List[RoundData]] = []
