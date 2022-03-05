@@ -9,7 +9,7 @@ from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink
 from ..models.flight_team_link import FlightTeamLink
 from ..models.tournament_team_link import TournamentTeamLink
-from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_team_golfers_for_teams, get_matches_for_teams
+from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
 
 router = APIRouter(
     prefix="/teams",
@@ -34,7 +34,7 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
     team_matches = get_matches_for_teams(session=session, team_ids=(team_id,))
-    team_golfers = get_team_golfers_for_teams(session=session, team_ids=(team_id,))
+    team_golfers = get_flight_team_golfers_for_teams(session=session, team_ids=(team_id,))
     for golfer in team_golfers:
         golfer.statistics = compute_golfer_statistics_for_matches(golfer.golfer_id, team_matches)
     return TeamWithMatchData(

@@ -39,7 +39,8 @@ class TeamGolferData(SQLModel):
     golfer_id: int
     golfer_name: str
     division_name: str
-    flight_name: str
+    flight_name: Optional[str] = None
+    tournament_name: Optional[str] = None
     team_name: str
     role: str
     year: int
@@ -73,7 +74,7 @@ class TournamentTeamData(TeamRead):
     name: str
     year: int
     tournament_id: int
-    golfers: List[Golfer]
+    golfers: List[TeamGolferData]
     rounds: Optional[List[RoundData]] = []
 
 class FlightInfo(SQLModel):
@@ -305,7 +306,7 @@ def get_teams_in_flights(session: Session, flight_ids: List[int]) -> List[Flight
     
     """
     team_query_data = session.exec(select(Team.id, Team.name, Flight).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id.in_(flight_ids))).all()
-    team_golfers = get_team_golfers_for_teams(session=session, team_ids=(team_id for team_id, team_name, flight in team_query_data))
+    team_golfers = get_flight_team_golfers_for_teams(session=session, team_ids=(team_id for team_id, team_name, flight in team_query_data))
     return [FlightTeamReadWithGolfers(id=team_id, flight_id=flight.id, name=team_name, golfers=[golfer for golfer in team_golfers if golfer.team_id == team_id]) for team_id, team_name, flight in team_query_data]
 
 def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentTeamData]:
@@ -325,9 +326,9 @@ def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> Lis
         teams in the given tournaments
     
     """
-    tournament_query_data = session.exec(select(Team.id, Team.name, Tournament).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id.in_(tournament_ids))).all()
-    golfer_query_data = session.exec(select(Golfer, TeamGolferLink.team_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id.in_(tournament_ids))).all()
-    return [TournamentTeamData(id=team_id, tournament_id=tournament.id, name=team_name, year=tournament.year, golfers=[golfer for golfer, golfer_team_id in golfer_query_data if golfer_team_id == team_id]) for team_id, team_name, tournament in tournament_query_data]
+    team_query_data = session.exec(select(Team.id, Team.name, Tournament).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id.in_(tournament_ids))).all()
+    team_golfers = get_tournament_team_golfers_for_teams(session=session, team_ids=(team_id for team_id, team_name, tournament in team_query_data))
+    return [TournamentTeamData(id=team_id, tournament_id=tournament.id, name=team_name, year=tournament.year, golfers=[golfer for golfer in team_golfers if golfer.team_id == team_id]) for team_id, team_name, tournament in team_query_data]
 
 def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record: bool = False) -> List[GolferData]:
     """
@@ -393,7 +394,7 @@ def get_team_golfers(session: Session, golfer_ids: List[int]) -> List[TeamGolfer
         year=flight.year
     ) for team_golfer_link, team, golfer, division, flight in query_data]
 
-def get_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
+def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
     """
     Retrieves team golfer data for the given teams.
 
@@ -421,6 +422,37 @@ def get_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[Te
         role=team_golfer_link.role,
         year=flight.year
     ) for team_golfer_link, team, golfer, division, flight in query_data]
+
+def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
+    """
+    Retrieves team golfer data for the given teams.
+
+    TODO: Conslidate with `get_flight_team_golfers_for_teams()`
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    team_ids : list of integers
+        team identifiers
+
+    Returns
+    -------
+    team_golfer_data : list of TeamGolferData
+        team golfer data for golfers on the given teams
+    
+    """
+    query_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Tournament).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(Tournament, onclause=TournamentDivisionLink.tournament_id == Tournament.id).where(TeamGolferLink.team_id.in_(team_ids)))
+    return [TeamGolferData(
+        team_id=team_golfer_link.team_id,
+        golfer_id=golfer.id,
+        golfer_name=golfer.name,
+        tournament_name=tournament.name,
+        division_name=division.name,
+        team_name=team.name,
+        role=team_golfer_link.role,
+        year=tournament.year
+    ) for team_golfer_link, team, golfer, division, tournament in query_data]
 
 def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
     """
