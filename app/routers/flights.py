@@ -17,11 +17,12 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=FlightInfoWithCount)
-async def read_flights(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    # TODO: Process query parameters to further limit flight results returned from database
-    flight_ids = session.exec(select(Flight.id).offset(offset).limit(limit)).all()
+async def read_flights(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000)):
+    if year: # filter to a certain year
+        flight_ids = session.exec(select(Flight.id).where(Flight.year == year)).all()
+    else: # get all
+        flight_ids = session.exec(select(Flight.id)).all()
     flight_info = get_flights(session=session, flight_ids=flight_ids)
-    # Return count of relevant flights from database and flight info list
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
 @router.post("/", response_model=FlightRead)
