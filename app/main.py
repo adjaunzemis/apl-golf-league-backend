@@ -4,7 +4,7 @@ from mangum import Mangum
 import logging
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping, officers
+from .routers import courses, golfers, teams, flights, tournaments, divisions, rounds, matches, handicapping, officers, users
 from .utilities.custom_logger import CustomizeLogger
 
 description = """
@@ -63,6 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(users.router, dependencies=[Depends(log_request_data)])
 app.include_router(courses.router, dependencies=[Depends(log_request_data)])
 app.include_router(golfers.router, dependencies=[Depends(log_request_data)])
 app.include_router(teams.router, dependencies=[Depends(log_request_data)])

@@ -1,0 +1,25 @@
+from typing import Optional
+from sqlmodel import SQLModel, Field
+
+class UserBase(SQLModel):
+    username: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    disabled: Optional[bool] = None
+
+class User(UserBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    hashed_password: str = None
+
+class UserCreate(UserBase):
+    pass
+
+class UserUpdate(SQLModel):
+    username: Optional[str] = None
+    hashed_password: Optional[str] = None
+    email: Optional[int] = None
+    name: Optional[str] = None
+    disabled: Optional[bool] = None
+
+class UserRead(UserBase):
+    id: int

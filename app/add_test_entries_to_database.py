@@ -1,7 +1,9 @@
 import os
 from datetime import date
 from dotenv import load_dotenv
+from typing import List
 from sqlmodel import Session, SQLModel, create_engine, select
+from passlib.context import CryptContext
 
 from models.course import Course
 from models.track import Track
@@ -23,8 +25,25 @@ from models.tournament import Tournament
 from models.tournament_division_link import TournamentDivisionLink
 from models.tournament_team_link import TournamentTeamLink
 from models.tournament_round_link import TournamentRoundLink
+from models.user import User
 
-def add_diamond_ridge_course(session: Session) -> Course:
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def add_user(*, session: Session, username: str, name: str, email: str, password: str, disabled: bool) -> User:
+    user_db = session.exec(select(User).where(User.username == username)).one_or_none()
+    if not user_db:
+        print(f"Adding user: {username}")
+        user_db = User(
+            username=username,
+            name=name,
+            email=email,
+            hashed_password=pwd_context.hash(password),
+            disabled=disabled
+        )
+        session.add(user_db)
+        session.commit()
+
+def add_diamond_ridge_course(*, session: Session) -> Course:
     dr_course_db = session.exec(select(Course).where(Course.name == "Diamond Ridge Golf Course")).one_or_none() # TODO: Add year filter: .where(Course.year == 2022)
     if not dr_course_db:
         print(f"Adding course: Diamond Ridge Golf Course (2022)")
@@ -329,6 +348,10 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)  
 
     with Session(engine) as session:
+        # Add users
+        johndoe_user_db = add_user(session=session, username="johndoe", name="John Doe", email="john.doe@example.com", password="secret", disabled=False)
+        print(STOP)
+
         # Course and Tees
         dr_course_db = add_diamond_ridge_course(session=session)
 
