@@ -26,7 +26,7 @@ class WorldHandicapSystem(HandicapSystem):
 
     def compute_hole_handicap_strokes(self, stroke_index: int, course_handicap: int) -> int:
         if course_handicap < 0: # plus-handicap
-            return -(int(-course_handicap / 18) + int(-course_handicap % 18 >= stroke_index))
+            return -int(-course_handicap > (18 - stroke_index))
         return int(course_handicap / 18) + int(course_handicap % 18 >= stroke_index)
 
     def compute_course_handicap(self, par: int, rating: float, slope: int, handicap_index: float) -> float:

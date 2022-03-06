@@ -30,11 +30,15 @@ def test_compute_hole_maximum_score(par, stroke_index, course_handicap, max_scor
         (5, 3, 0),
         (5, 0, 0),
         (5, -2, 0),
-        (5, -5, -1),
-        (5, -9, -1),
+        (5, -5, 0),
+        (5, -9, 0),
+        (5, -13, 0),
+        (5, -14, -1),
         (5, -18, -1),
-        (5, -23, -2),
-        (5, -25, -2)
+        (17, 17, 1),
+        (17, 16, 0),
+        (17, -1, 0),
+        (17, -2, -1)
     ])
 def test_compute_hole_handicap_strokes(stroke_index, course_handicap, handicap_strokes):
     whs = WorldHandicapSystem()

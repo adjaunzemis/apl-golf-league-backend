@@ -37,9 +37,12 @@ def test_compute_hole_maximum_score(par, stroke_index, course_handicap, max_scor
         (5, 2, 0),
         (5, 0, 0),
         (5, -2, 0),
-        (5, -3, -1),
-        (5, -9, -1),
-        (5, -12, -2)
+        (5, -6, 0),
+        (5, -7, -1),
+        (18, -1, -1),
+        (17, -1, -1),
+        (16, -1, 0),
+        (16, -2, -1)
     ])
 def test_compute_hole_handicap_strokes(stroke_index, course_handicap, handicap_strokes):
     alhs = APLLegacyHandicapSystem()
