@@ -363,9 +363,9 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 course_id=course_db.id,
                 logo_url=logo_url,
                 secretary=row["secretary"],
-                signup_start_date=row["signup_start_date"],
-                signup_stop_date=row["signup_stop_date"],
-                start_date=row["start_date"],
+                signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d"),
+                signup_stop_date=datetime.strptime(row["signup_stop_date"], "%Y-%m-%d"),
+                start_date=datetime.strptime(row["start_date"], "%Y-%m-%d"),
                 weeks=row["weeks"],
                 locked=True
             )
@@ -898,8 +898,8 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 course_id=course_db.id,
                 secretary=row["in_charge"],
                 secretary_email=row["in_charge_email"],
-                signup_start_date=row["signup_start_date"],
-                signup_stop_date=row["signup_stop_date"],
+                signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d"),
+                signup_stop_date=datetime.strptime(row["signup_stop_date"], "%Y-%m-%d"),
                 locked=True
             )
             session.add(tournament_db)
