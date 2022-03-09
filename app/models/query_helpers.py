@@ -82,9 +82,9 @@ class FlightInfo(SQLModel):
     name: str
     course: str
     logo_url: str = None
-    signup_start_date: datetime = None
-    signup_stop_date: datetime = None
-    start_date: datetime = None
+    signup_start_date: str = None
+    signup_stop_date: str = None
+    start_date: str = None
     weeks: int = None
 
 class FlightData(SQLModel):
@@ -96,9 +96,9 @@ class FlightData(SQLModel):
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
-    signup_start_date: datetime = None
-    signup_stop_date: datetime = None
-    start_date: datetime = None
+    signup_start_date: str = None
+    signup_stop_date: str = None
+    start_date: str = None
     weeks: int = None
     locked: bool = False
     divisions: List[DivisionData] = []
@@ -113,24 +113,24 @@ class TournamentInfo(SQLModel):
     id: int
     year: int
     name: str
-    date: datetime = None
+    date: str = None
     course: str = None
     logo_url: str = None
-    signup_start_date: datetime = None
-    signup_stop_date: datetime = None
+    signup_start_date: str = None
+    signup_stop_date: str = None
 
 class TournamentData(SQLModel):
     id: int
     year: int
     name: str
-    date: datetime = None
+    date: str = None
     course: str = None
     logo_url: str = None
     secretary: str = None
     secretary_email: str = None
     secretary_phone: str = None
-    signup_start_date: datetime = None
-    signup_stop_date: datetime = None
+    signup_start_date: str = None
+    signup_stop_date: str = None
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
@@ -165,9 +165,9 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         secretary=flight.secretary,
         secretary_email=flight.secretary_email,
         secretary_phone=flight.secretary_phone,
-        signup_start_date=flight.signup_start_date,
-        signup_stop_date=flight.signup_stop_date,
-        start_date=flight.start_date,
+        signup_start_date=flight.signup_start_date.astimezone().replace(microsecond=0).isoformat(),
+        signup_stop_date=flight.signup_stop_date.astimezone().replace(microsecond=0).isoformat(),
+        start_date=flight.start_date.astimezone().replace(microsecond=0).isoformat(),
         weeks=flight.weeks,
         locked=flight.locked,
         course=course.name
@@ -195,13 +195,13 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         id=tournament.id,
         year=tournament.year,
         name=tournament.name,
-        date=tournament.date,
+        date=tournament.date.astimezone().replace(microsecond=0).isoformat(),
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
         secretary_email=tournament.secretary_email,
         secretary_phone=tournament.secretary_phone,
-        signup_start_date=tournament.signup_start_date,
-        signup_stop_date=tournament.signup_stop_date,
+        signup_start_date=tournament.signup_start_date.astimezone().replace(microsecond=0).isoformat(),
+        signup_stop_date=tournament.signup_stop_date.astimezone().replace(microsecond=0).isoformat(),
         locked=tournament.locked,
         course=course.name,
     ) for tournament, course in tournament_query_data]
