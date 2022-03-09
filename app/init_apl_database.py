@@ -133,7 +133,7 @@ def find_tournament_courses_played(info_file: str):
     # Filter unique abbreviations
     return np.unique(course_abbreviations)
 
-def check_course_data(courses_file: str, custom_courses_file: str, courses_played: List[str]):
+def check_course_data(courses_file: str, custom_courses_file: str, courses_played: List[str], error_on_mismatch_par: bool = True):
     """
     Checks course data for all required fields and consistency with custom
     courses spreadsheet
@@ -177,11 +177,14 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
                         hole_par = row['par' + str(holeNum)]
                         hole_par_custom = df_custom.loc[mask].iloc[0]['par' + str(holeNum)]
                         if hole_par != hole_par_custom:
-                            checks_pass = False
-                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries do not match")
+                            if error_on_mismatch_par:
+                                checks_pass = False
+                                print(f"ERROR: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries do not match")
+                            else:
+                                print(f"WARN: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries do not match")
                     elif not pd.notna(df_custom.loc[mask].iloc[0]['par' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries missing")
+                        print(f"ERROR: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} par entries missing")
 
                     if pd.notna(row['hcp' + str(holeNum)]):
                         hole_hcp = row['hcp' + str(holeNum)]
@@ -191,17 +194,17 @@ def check_course_data(courses_file: str, custom_courses_file: str, courses_playe
                             print(f"WARN: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries do not match")
                     elif not pd.notna(df_custom.loc[mask].iloc[0]['hcp' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries missing")
+                        print(f"ERROR: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} handicap entries missing")
 
                     if pd.notna(row['yd' + str(holeNum)]):
                         hole_yd = row['yd' + str(holeNum)]
                         hole_yd_custom = df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]
                         if hole_yd != hole_yd_custom:
                             checks_pass = False
-                            print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries do not match")
+                            print(f"ERROR: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries do not match")
                     elif not pd.notna(df_custom.loc[mask].iloc[0]['yd' + str(holeNum)]):
                         checks_pass = False
-                        print(f"Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries missing")
+                        print(f"ERROR: Course: {course_name} {course_track} ({course_abbreviation}) {course_tee}: hole {holeNum} yardage entries missing")
 
     # Return consolidated result of all checks
     return checks_pass
@@ -879,78 +882,95 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
             print(f"Adjusted tournament course  name: {row['course']} -> {course_name}")
 
         # Find tournament course
-        course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
-        if not course_db:
-            raise ValueError(f"Cannot match tournament course in database: {course_name}")
+        course_id = None
+        if pd.notna(row['course']):
+            course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
+            if not course_db:
+                raise ValueError(f"Cannot match tournament course in database: {course_name}")
+            course_id = course_db.id
 
         # Find course logo
-        logo_url = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower())].iloc[0]['logoUrl']
+        logo_url = None
+        if pd.notna(row['front_track']):
+            logo_url = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower())].iloc[0]['logoUrl']
 
         # Add tournament to database
         tournament_db = session.exec(select(Tournament).where(Tournament.year == year).where(Tournament.name == row["name"])).one_or_none()
         if not (tournament_db):
             print(f"Adding tournament: {row['name']}-{year}")
+
+            tourn_date = None
+            tourn_signup_start_date = None
+            tourn_signup_stop_date = None
+            if pd.notna(row["date"]) and pd.notna(row["start_time"]):
+                tourn_date = datetime.strptime(row["date"] + " " + row["start_time"], "%Y-%m-%d %H:%M:%S")
+            if pd.notna(row["signup_start_date"]):
+                tourn_signup_start_date = datetime.strptime(row["signup_start_date"], "%Y-%m-%d")
+            if pd.notna(row["signup_stop_date"]):
+                tourn_signup_stop_date = datetime.strptime(row["signup_stop_date"], "%Y-%m-%d")
+
             tournament_db = Tournament(
                 name=row["name"],
                 year=year,
-                date=datetime.strptime(row["date"] + " " + row["start_time"], "%Y-%m-%d %H:%M:%S"),
+                date=tourn_date,
                 logo_url=logo_url,
-                course_id=course_db.id,
+                course_id=course_id,
                 secretary=row["in_charge"],
                 secretary_email=row["in_charge_email"],
-                signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d"),
-                signup_stop_date=datetime.strptime(row["signup_stop_date"], "%Y-%m-%d"),
+                signup_start_date=tourn_signup_start_date,
+                signup_stop_date=tourn_signup_stop_date,
                 locked=True
             )
             session.add(tournament_db)
             session.commit()
-            
-        # Find tracks
-        front_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['front_track'].lower()].iloc[0]['track']
-        front_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == front_track_name)).one_or_none()
-        if not front_track_db:
-            raise ValueError(f"Cannot match front track in database: {front_track_name}")
-            
-        back_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['back_track'].lower()].iloc[0]['track']
-        back_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == back_track_name)).one_or_none()
-        if not back_track_db:
-            raise ValueError(f"Cannot match front track in database: {back_track_name}")
+        
+        if pd.notna(row['front_track']):
+            # Find tracks
+            front_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['front_track'].lower()].iloc[0]['track']
+            front_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == front_track_name)).one_or_none()
+            if not front_track_db:
+                raise ValueError(f"Cannot match front track in database: {front_track_name}")
+                
+            back_track_name = df_custom.loc[df_custom['abbreviation'].str.lower() == row['back_track'].lower()].iloc[0]['track']
+            back_track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == back_track_name)).one_or_none()
+            if not back_track_db:
+                raise ValueError(f"Cannot match front track in database: {back_track_name}")
 
-        # For each division in this tournament:
-        for division_name in ['Middle', 'Senior', 'Super-Senior', 'Forward']:
-            print(f"Processing division: {division_name}")
-            
-            # Get correct division tee name/color and gender
-            division_tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
-            tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
+            # For each division in this tournament:
+            for division_name in ['Middle', 'Senior', 'Super-Senior', 'Forward']:
+                print(f"Processing division: {division_name}")
+                
+                # Get correct division tee name/color and gender
+                division_tee_name = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['front_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
+                tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
 
-            # Find front tees
-            front_tee_db = session.exec(select(Tee).where(Tee.track_id == front_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
-            if not front_tee_db:
-                raise ValueError(f"Cannot match front tee in database: {division_tee_name}")
+                # Find front tees
+                front_tee_db = session.exec(select(Tee).where(Tee.track_id == front_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
+                if not front_tee_db:
+                    raise ValueError(f"Cannot match front tee in database: {division_tee_name}")
 
-            back_tee_db = session.exec(select(Tee).where(Tee.track_id == back_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
-            if not back_tee_db:
-                raise ValueError(f"Cannot match back tee in database: {division_tee_name}")
-            
-            # Add front division to database if needed
-            division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
-            if not division_db:
-                print(f"Adding division: {division_name}")
-                division_db = Division(
-                    name=division_name,
-                    gender=tee_gender,
-                    primary_tee_id=front_tee_db.id,
-                    secondary_tee_id=back_tee_db.id
-                )
-                session.add(division_db)
-                session.commit()
-                    
-                # Add tournament-division link to database
-                print(f"Adding tournament-division link for division: {division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
-                tournament_front_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=division_db.id)
-                session.add(tournament_front_division_link_db)
-                session.commit()
+                back_tee_db = session.exec(select(Tee).where(Tee.track_id == back_track_db.id).where(Tee.name == division_tee_name).where(Tee.gender == tee_gender)).one_or_none()
+                if not back_tee_db:
+                    raise ValueError(f"Cannot match back tee in database: {division_tee_name}")
+                
+                # Add front division to database if needed
+                division_db = session.exec(select(Division).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).where(TournamentDivisionLink.tournament_id == tournament_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
+                if not division_db:
+                    print(f"Adding division: {division_name}")
+                    division_db = Division(
+                        name=division_name,
+                        gender=tee_gender,
+                        primary_tee_id=front_tee_db.id,
+                        secondary_tee_id=back_tee_db.id
+                    )
+                    session.add(division_db)
+                    session.commit()
+                        
+                    # Add tournament-division link to database
+                    print(f"Adding tournament-division link for division: {division_db.name}, tournament: {tournament_db.name}-{tournament_db.year}")
+                    tournament_front_division_link_db = TournamentDivisionLink(tournament_id=tournament_db.id, division_id=division_db.id)
+                    session.add(tournament_front_division_link_db)
+                    session.commit()
 
 def add_tournament_teams(session: Session, roster_file: str, tournaments_file: str):
     """
@@ -1210,7 +1230,7 @@ def add_officers(session: Session, officers_file: str):
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
-    DATA_YEARS = [2021, 2020, 2019, 2018]
+    DATA_YEARS = [2021, 2020, 2019, 2018, 2022]
 
     load_dotenv()
 
@@ -1253,7 +1273,8 @@ if __name__ == "__main__":
 
             print(f"Courses played: {courses_played}")
             
-            checks_pass = check_course_data(courses_file, custom_courses_file, courses_played)
+            flag_error_par = False if data_year == 2022 else True
+            checks_pass = check_course_data(courses_file, custom_courses_file, courses_played, error_on_mismatch_par=flag_error_par)
             if not checks_pass:
                 raise RuntimeError("Missing or inconsistent course data, halting database initialization")
             print(f"Validated course entry data")
