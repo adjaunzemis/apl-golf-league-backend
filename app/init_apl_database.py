@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from typing import List
-from datetime import datetime, time
+from datetime import datetime
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from models.course import Course
@@ -765,7 +765,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                     tee_db = session.exec(select(Tee).where(Tee.track_id == track_db.id).where(Tee.name == tee_name).where(Tee.gender == division_db.gender)).one()
 
                 # Parse round date played and entered
-                date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d').date()
+                date_played = datetime.strptime(row[f'p{pNum}_date_played'], '%Y-%m-%d')
                 date_entered = datetime.strptime(row[f'date_entered'], '%Y-%m-%d %H:%M:%S')
 
                 # Add round
@@ -893,8 +893,7 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
             tournament_db = Tournament(
                 name=row["name"],
                 year=year,
-                date=row["date"],
-                start_time=row["start_time"],
+                date=datetime.strptime(row["date"] + " " + row["start_time"], "%Y-%m-%d %H:%M:%S"),
                 logo_url=logo_url,
                 course_id=course_db.id,
                 secretary=row["in_charge"],
@@ -1108,7 +1107,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     tee_id=tee_db.id,
                     type=RoundType.TOURNAMENT,
                     date_played=tournament_db.date,
-                    date_updated=datetime.combine(tournament_db.date, time(21, 0, 0)) # TODO: Add date-entered from website, if available
+                    date_updated=tournament_db.date # TODO: Add date-entered from website, if available
                 )
                 session.add(round_db)
                 session.commit()

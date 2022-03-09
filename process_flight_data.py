@@ -12,7 +12,7 @@ Andris Jaunzemis
 """
 
 import os
-from datetime import datetime, date
+from datetime import datetime
 
 def parse_flight_data_from_file(file: str):
     flights = []
@@ -45,11 +45,11 @@ def parse_season_parameters(file: str):
             if (len(line) > 0) and (line[0].lower() != '#'): # skip empty and comment lines
                 line_parts = line.split()
                 if line_parts[0].lower() == 'league_signup_date':
-                    flight_dates['signup_start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                    flight_dates['signup_start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y")
                 elif line_parts[0].lower() == 'end_league_signup_date':
-                    flight_dates['signup_stop_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                    flight_dates['signup_stop_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y")
                 elif line_parts[0].lower() == 'league_start_date':
-                    flight_dates['start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y").date()
+                    flight_dates['start_date'] = datetime.strptime(" ".join(line_parts[1:]), "%B %d %Y")
     return flight_dates
 
 def parse_flight_schedule(abbreviation: str, data_dir: str):    
@@ -68,7 +68,7 @@ def parse_flight_schedule(abbreviation: str, data_dir: str):
                 # TODO: Parse weekly schedule data
     return flight_schedule
 
-def parse_flight_info(abbreviation: str, data_dir: str, signup_start_date: date, signup_stop_date: date, start_date: date, weeks: int):
+def parse_flight_info(abbreviation: str, data_dir: str, signup_start_date: datetime, signup_stop_date: datetime, start_date: datetime, weeks: int):
     flight_info = {"course": None, "street": None, "citystzip": None, "clubpro": None, "director": None, "super": None, "phone": None, "link": None, "signup_start_date": signup_start_date, "signup_stop_date": signup_stop_date, "start_date": start_date, "weeks": weeks}
     
     flight_info_file = f"{data_dir}/{abbreviation}.info"

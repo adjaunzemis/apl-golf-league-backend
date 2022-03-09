@@ -1,7 +1,6 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
-from datetime import date as datetime_date
-from datetime import time as datetime_time
+from datetime import datetime
 
 from .course import Course
 from .division import Division
@@ -12,15 +11,14 @@ from .tournament_team_link import TournamentTeamLink
 class TournamentBase(SQLModel):
     name: str
     year: int
-    date: Optional[datetime_date] = None
-    start_time: Optional[datetime_time] = None
+    date: Optional[datetime] = None
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
-    signup_start_date: Optional[datetime_date] = None
-    signup_stop_date: Optional[datetime_date] = None
+    signup_start_date: Optional[datetime] = None
+    signup_stop_date: Optional[datetime] = None
     locked: Optional[bool] = False
 
 class Tournament(TournamentBase, table=True):
@@ -35,15 +33,14 @@ class TournamentCreate(TournamentBase):
 class TournamentUpdate(SQLModel):
     name: Optional[str] = None
     year: Optional[int] = None
-    date: Optional[datetime_date] = None
-    start_time: Optional[datetime_time] = None
+    date: Optional[datetime] = None
     course_id: Optional[int] = None
     logo_url: Optional[str] = None
     secretary: Optional[str] = None
     secretary_email: Optional[str] = None
     secretary_phone: Optional[str] = None
-    signup_start_date: Optional[datetime_date] = None
-    signup_stop_date: Optional[datetime_date] = None
+    signup_start_date: Optional[datetime] = None
+    signup_stop_date: Optional[datetime] = None
     locked: Optional[bool] = None
 
 class TournamentRead(TournamentBase):

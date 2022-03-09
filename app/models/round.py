@@ -1,7 +1,7 @@
 from typing import List, Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
-from datetime import datetime, date
+from datetime import datetime
 
 from .tee import Tee, TeeGender, TeeRead
 from .golfer import Golfer, GolferRead
@@ -17,7 +17,7 @@ class RoundType(str, Enum):
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
     type: RoundType
-    date_played: date
+    date_played: datetime
     date_updated: datetime
 
 class Round(RoundBase, table=True):
@@ -32,7 +32,7 @@ class RoundCreate(RoundBase):
 class RoundUpdate(SQLModel):
     tee_id: Optional[int] = None
     type: Optional[RoundType] = None
-    date_played: Optional[date] = None
+    date_played: Optional[datetime] = None
     date_updated: Optional[datetime] = None
 
 class RoundRead(RoundBase):
@@ -45,7 +45,7 @@ class RoundReadWithData(RoundRead):
 
 class RoundSummary(SQLModel):
     round_id: int
-    date_played: date
+    date_played: datetime
     round_type: RoundType
     golfer_name: str
     golfer_playing_handicap: float
@@ -66,7 +66,7 @@ class RoundData(SQLModel):
     match_id: Optional[int] = None
     team_id: Optional[int] = None
     round_type: RoundType
-    date_played: date
+    date_played: datetime
     date_updated: datetime
     golfer_id: int
     golfer_name: str

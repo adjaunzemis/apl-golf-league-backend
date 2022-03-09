@@ -1,7 +1,6 @@
 import os
-from datetime import date
+from datetime import datetime
 from dotenv import load_dotenv
-from typing import List
 from sqlmodel import Session, SQLModel, create_engine, select
 from passlib.context import CryptContext
 
@@ -228,7 +227,7 @@ def add_golfer(*, session: Session, name: str, affiliation: GolferAffiliation) -
         session.commit()
     return golfer_db
 
-def add_flight(*, session: Session, name: str, year: int, course_id: int, logo_url: str, secretary: str, secretary_email: str, signup_start_date: date, signup_stop_date: date, start_date: date, weeks: int) -> Flight:
+def add_flight(*, session: Session, name: str, year: int, course_id: int, logo_url: str, secretary: str, secretary_email: str, signup_start_date: datetime, signup_stop_date: datetime, start_date: datetime, weeks: int) -> Flight:
     flight_db = session.exec(select(Flight).where(Flight.name == name).where(Flight.year == year)).one_or_none()
     if not flight_db:
         print(f"Adding flight: {name} ({year})")
@@ -350,7 +349,6 @@ if __name__ == "__main__":
     with Session(engine) as session:
         # Add users
         johndoe_user_db = add_user(session=session, username="johndoe", name="John Doe", email="john.doe@example.com", password="secret", disabled=False)
-        print(STOP)
 
         # Course and Tees
         dr_course_db = add_diamond_ridge_course(session=session)
@@ -400,7 +398,7 @@ if __name__ == "__main__":
         he_golfer_db = add_golfer(session=session, name="Hawkeye", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
         # Flight and Divisions
-        dr_flight_db = add_flight(session=session, name="Diamond Ridge", year=2022, course_id=dr_course_db.id, logo_url="courses/DiamondRidge/logo.png", secretary="Buck Showalter", secretary_email="adjaunzemis@gmail.com", signup_start_date=date(2022, 2, 14), signup_stop_date=date(2022, 3, 31), start_date=date(2022, 4, 4), weeks=19)
+        dr_flight_db = add_flight(session=session, name="Diamond Ridge", year=2022, course_id=dr_course_db.id, logo_url="courses/DiamondRidge/logo.png", secretary="Buck Showalter", secretary_email="adjaunzemis@gmail.com", signup_start_date=datetime(2022, 2, 14, 0, 0, 0), signup_stop_date=datetime(2022, 3, 31, 0, 0, 0), start_date=datetime(2022, 4, 4, 0, 0, 0), weeks=19)
 
         dr_middle_mens_division_db = add_division(session=session, name="Middle", gender=TeeGender.MENS, primary_tee_id=dr_front_white_mens_tee_db.id, secondary_tee_id=dr_back_white_mens_tee_db.id, flight_id=dr_flight_db.id)
         dr_senior_mens_division_db = add_division(session=session, name="Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_gold_mens_tee_db.id, secondary_tee_id=dr_back_gold_mens_tee_db.id, flight_id=dr_flight_db.id)
