@@ -11,6 +11,8 @@ class GolferAffiliation(str, Enum):
 class GolferBase(SQLModel):
     name: str
     affiliation: Optional[GolferAffiliation] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
 class Golfer(GolferBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -21,6 +23,8 @@ class GolferCreate(GolferBase):
 class GolferUpdate(SQLModel):
     name: Optional[str] = None
     affiliation: Optional[GolferAffiliation] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
 class GolferRead(GolferBase):
     id: int
