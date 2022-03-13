@@ -1,13 +1,16 @@
+from http import HTTPStatus
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import SQLModel, Session, select
 
 
 from ..dependencies import get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink
+from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
+from ..models.tournament import Tournament
 from ..models.tournament_team_link import TournamentTeamLink
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
 
@@ -15,6 +18,17 @@ router = APIRouter(
     prefix="/teams",
     tags=["Teams"]
 )
+
+
+class TeamGolferSignupData(SQLModel):
+    golfer_id: int
+    role: str
+    division_id: int
+
+class FlightTeamSignupData(SQLModel):
+    flight_id: int
+    name: str
+    golfer_data: List[TeamGolferSignupData]
 
 @router.get("/", response_model=List[TeamRead])
 async def read_teams(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
@@ -114,3 +128,28 @@ async def delete_team_golfer_link(*, session: Session = Depends(get_session), te
     session.delete(link_db)
     session.commit()
     return {"ok": True}
+
+@router.post("/flight-signup", response_model=TeamRead)
+async def signup_team_for_flight(*, session: Session = Depends(get_session), team_data: FlightTeamSignupData):
+    team_db = session.exec(select(Team).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id == team_data.flight_id).where(Team.name == team_data.name)).one_or_none()
+    if team_db:
+        raise HTTPException(status_code=HTTPStatus.PRECONDITION_FAILED, detail=f"Team '{team_data.name}' already exists for flight id={team_data.flight_id}")
+    # TODO: Perform other checks first (golfers on other teams, sufficient golfer data, ...)
+
+    # Add team to database
+    team_db = Team(name=team_data.name)
+    session.add(team_db)
+    session.commit()
+
+    # Add flight-team link
+    flight_team_link_db = FlightTeamLink(flight_id=team_data.flight_id, team_id=team_db.id)
+    session.add(flight_team_link_db)
+    session.commit()
+
+    # Add team-golfer links
+    for team_golfer in team_data.golfer_data:
+        team_golfer_link_db = TeamGolferLink(team_id=team_db.id, golfer_id=team_golfer.golfer_id, division_id=team_golfer.division_id, role=team_golfer.role)
+        session.add(team_golfer_link_db)
+        session.commit()
+
+    return team_db

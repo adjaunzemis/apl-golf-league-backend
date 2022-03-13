@@ -24,6 +24,7 @@ from models.tournament import Tournament
 from models.tournament_division_link import TournamentDivisionLink
 from models.tournament_team_link import TournamentTeamLink
 from models.tournament_round_link import TournamentRoundLink
+from models.officer import Officer
 from models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
