@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_session
+from ..dependencies import get_current_active_user, get_session
 from ..models.course import Course, CourseCreate, CourseUpdate, CourseRead, CourseReadWithTracks
-from ..models.track import Track, TrackCreate, TrackUpdate, TrackRead, TrackReadWithTees
-from ..models.tee import Tee, TeeCreate, TeeUpdate, TeeRead, TeeReadWithHoles
-from ..models.hole import Hole, HoleCreate, HoleUpdate, HoleRead
+from ..models.track import Track, TrackRead, TrackReadWithTees
+from ..models.tee import Tee, TeeRead, TeeReadWithHoles
+from ..models.hole import Hole, HoleRead
+from ..models.user import User
 
 router = APIRouter(
     prefix="/courses",
@@ -20,7 +21,7 @@ async def read_courses(*, session: Session = Depends(get_session), offset: int =
     return session.exec(select(Course).offset(offset).limit(limit)).all()
 
 @router.post("/", response_model=CourseRead)
-async def create_course(*, session: Session = Depends(get_session), course: CourseCreate):
+async def create_course(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), course: CourseCreate):
     course_db = Course.from_orm(course)
     session.add(course_db)
     session.commit()
@@ -35,7 +36,7 @@ async def read_course(*, session: Session = Depends(get_session), course_id: int
     return course_db
 
 @router.patch("/{course_id}", response_model=CourseRead)
-async def update_course(*, session: Session = Depends(get_session), course_id: int, course: CourseUpdate):
+async def update_course(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), course_id: int, course: CourseUpdate):
     course_db = session.get(Course, course_id)
     if not course_db:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -48,7 +49,7 @@ async def update_course(*, session: Session = Depends(get_session), course_id: i
     return course_db
 
 @router.delete("/{course_id}")
-async def delete_course(*, session: Session = Depends(get_session), course_id: int):
+async def delete_course(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), course_id: int):
     course_db = session.get(Course, course_id)
     if not course_db:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -83,7 +84,7 @@ async def read_tee(*, session: Session = Depends(get_session), tee_id: int):
 async def read_holes(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     return session.exec(select(Hole).offset(offset).limit(limit)).all()
 
-@router.get("/holes/{hole_id}", response_model=HoleRead) # TODO: HoleReadWithTee
+@router.get("/holes/{hole_id}", response_model=HoleRead)
 async def read_hole(*, session: Session = Depends(get_session), hole_id: int):
     hole_db = session.get(Hole, hole_id)
     if not hole_db:

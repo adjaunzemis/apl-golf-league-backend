@@ -3,12 +3,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-
-from ..dependencies import get_session
+from ..dependencies import get_current_active_user, get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.match import MatchSummary
-from ..models.flight_division_link import FlightDivisionLink
-from ..models.flight_team_link import FlightTeamLink
+from ..models.user import User
 from ..models.query_helpers import FlightData, FlightInfoWithCount, get_divisions_in_flights, get_flights, get_matches_for_teams, get_teams_in_flights
 
 router = APIRouter(
@@ -26,7 +24,7 @@ async def read_flights(*, session: Session = Depends(get_session), year: int = Q
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
 @router.post("/", response_model=FlightRead)
-async def create_flight(*, session: Session = Depends(get_session), flight: FlightCreate):
+async def create_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight: FlightCreate):
     flight_db = Flight.from_orm(flight)
     session.add(flight_db)
     session.commit()
@@ -59,7 +57,7 @@ async def read_flight(*, session: Session = Depends(get_session), flight_id: int
     return flight_data
 
 @router.patch("/{flight_id}", response_model=FlightRead)
-async def update_flight(*, session: Session = Depends(get_session), flight_id: int, flight: FlightUpdate):
+async def update_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight_id: int, flight: FlightUpdate):
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
@@ -72,7 +70,7 @@ async def update_flight(*, session: Session = Depends(get_session), flight_id: i
     return flight_db
 
 @router.delete("/{flight_id}")
-async def delete_flight(*, session: Session = Depends(get_session), flight_id: int):
+async def delete_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight_id: int):
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")

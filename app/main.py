@@ -74,10 +74,6 @@ app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicapping.router, dependencies=[Depends(log_request_data)])
 
-@app.get('/')
-def hello_world(log = Depends(log_request_data)):
-    return {"message": "Hello from APLGolfLeagueAPI!"}
-
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()

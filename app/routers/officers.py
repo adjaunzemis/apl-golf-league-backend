@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_session
+from ..dependencies import get_current_active_user, get_session
 from ..models.officer import Officer, OfficerCreate, OfficerRead, OfficerUpdate
+from ..models.user import User
 
 router = APIRouter(
     prefix="/officers",
@@ -20,7 +21,7 @@ async def read_officers(*, session: Session = Depends(get_session), year: int = 
     return session.exec(select(Officer).where(Officer.id.in_(officer_ids))).all()
 
 @router.post("/", response_model=OfficerRead)
-async def create_officer(*, session: Session = Depends(get_session), officer: OfficerCreate):
+async def create_officer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), officer: OfficerCreate):
     officer_db = Officer.from_orm(officer)
     session.add(officer_db)
     session.commit()
@@ -35,7 +36,7 @@ async def read_officer(*, session: Session = Depends(get_session), officer_id: i
     return officer_db
 
 @router.patch("/{officer_id}", response_model=OfficerRead)
-async def update_golfer(*, session: Session = Depends(get_session), officer_id: int, officer: OfficerUpdate):
+async def update_golfer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), officer_id: int, officer: OfficerUpdate):
     officer_db = session.get(Officer, officer_id)
     if not officer_db:
         raise HTTPException(status_code=404, detail="Officer not found")
@@ -48,7 +49,7 @@ async def update_golfer(*, session: Session = Depends(get_session), officer_id: 
     return officer_db
 
 @router.delete("/{officer_id}")
-async def delete_golfer(*, session: Session = Depends(get_session), officer_id: int):
+async def delete_officer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), officer_id: int):
     officer_db = session.get(Officer, officer_id)
     if not officer_db:
         raise HTTPException(status_code=404, detail="Officer not found")

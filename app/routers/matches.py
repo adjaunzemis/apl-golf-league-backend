@@ -3,9 +3,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_session
+
+from ..dependencies import get_current_active_user, get_session
 from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchData, MatchDataWithCount
 from ..models.match_round_link import MatchRoundLink
+from ..models.user import User
 from ..models.query_helpers import get_matches
 
 router = APIRouter(
@@ -25,7 +27,7 @@ async def read_matches(*, session: Session = Depends(get_session), team_id: int 
     return MatchDataWithCount(num_matches=len(match_ids), matches=get_matches(session=session, match_ids=match_ids))
 
 @router.post("/", response_model=MatchRead)
-async def create_match(*, session: Session = Depends(get_session), match: MatchCreate):
+async def create_match(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), match: MatchCreate):
     match_db = Match.from_orm(match)
     session.add(match_db)
     session.commit()
@@ -40,7 +42,7 @@ async def read_match(*, session: Session = Depends(get_session), match_id: int):
     return match_db[0]
 
 @router.patch("/{match_id}", response_model=MatchRead)
-async def update_match(*, session: Session = Depends(get_session), match_id: int, match: MatchUpdate):
+async def update_match(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), match_id: int, match: MatchUpdate):
     match_db = session.get(Match, match_id)
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
@@ -53,35 +55,11 @@ async def update_match(*, session: Session = Depends(get_session), match_id: int
     return match_db
 
 @router.delete("/{match_id}")
-async def delete_match(*, session: Session = Depends(get_session), match_id: int):
+async def delete_match(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), match_id: int):
     match_db = session.get(Match, match_id)
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
     session.delete(match_db)
     session.commit()
-    return {"ok": True}
-
-@router.get("/rounds/", response_model=List[MatchRoundLink])
-async def read_match_round_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(MatchRoundLink).offset(offset).limit(limit)).all()
-
-@router.get("/{match_id}/rounds/", response_model=List[MatchRoundLink])
-async def read_match_round_links_for_match(*, session: Session = Depends(get_session), match_id: int):
-    return session.exec(select(MatchRoundLink).where(MatchRoundLink.match_id == match_id)).all()
-
-@router.post("/{match_id}/rounds/{round_id}", response_model=MatchRoundLink)
-async def create_match_round_link(*, session: Session = Depends(get_session), match_id: int, round_id: int):
-    link_db = MatchRoundLink(match_id=match_id, round_id=round_id)
-    session.add(link_db)
-    session.commit()
-    session.refresh(link_db)
-    return link_db
-
-@router.delete("/{match_id}/rounds/{round_id}")
-async def delete_match_round_link(*, session: Session = Depends(get_session), match_id: int, round_id: int):
-    link_db = session.get(MatchRoundLink, [match_id, round_id])
-    if not link_db:
-        raise HTTPException(status_code=404, detail="Match-Round link not found")
-    session.delete(link_db)
-    session.commit()
+    # TODO: Delete related resources (match-round-links)
     return {"ok": True}

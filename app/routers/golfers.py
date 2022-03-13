@@ -3,8 +3,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_session
+
+from ..dependencies import get_current_active_user, get_session
 from ..models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
+from ..models.user import User
 from ..models.query_helpers import GolferData, GolferDataWithCount, get_golfers
 
 router = APIRouter(
@@ -41,7 +43,7 @@ async def read_golfer(*, session: Session = Depends(get_session), golfer_id: int
     return golfer_db[0]
 
 @router.patch("/{golfer_id}", response_model=GolferRead)
-async def update_golfer(*, session: Session = Depends(get_session), golfer_id: int, golfer: GolferUpdate):
+async def update_golfer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), golfer_id: int, golfer: GolferUpdate):
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
         raise HTTPException(status_code=404, detail="Golfer not found")
@@ -54,7 +56,7 @@ async def update_golfer(*, session: Session = Depends(get_session), golfer_id: i
     return golfer_db
 
 @router.delete("/{golfer_id}")
-async def delete_golfer(*, session: Session = Depends(get_session), golfer_id: int):
+async def delete_golfer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), golfer_id: int):
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
         raise HTTPException(status_code=404, detail="Golfer not found")

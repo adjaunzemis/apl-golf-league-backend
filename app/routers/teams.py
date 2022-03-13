@@ -5,14 +5,14 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 
 
-from ..dependencies import get_session
+from ..dependencies import get_current_active_user, get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink, TeamRole
 from ..models.golfer import Golfer
 from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
-from ..models.tournament import Tournament
 from ..models.tournament_team_link import TournamentTeamLink
+from ..models.user import User
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
 
 router = APIRouter(
@@ -36,7 +36,7 @@ async def read_teams(*, session: Session = Depends(get_session), offset: int = Q
     return session.exec(select(Team).offset(offset).limit(limit)).all()
 
 @router.post("/", response_model=TeamRead)
-async def create_team(*, session: Session = Depends(get_session), team: TeamCreate):
+async def create_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team: TeamCreate):
     team_db = Team.from_orm(team)
     session.add(team_db)
     session.commit()
@@ -61,7 +61,7 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
     )
 
 @router.patch("/{team_id}", response_model=TeamRead)
-async def update_team(*, session: Session = Depends(get_session), team_id: int, team: TeamUpdate):
+async def update_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team_id: int, team: TeamUpdate):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -74,7 +74,7 @@ async def update_team(*, session: Session = Depends(get_session), team_id: int, 
     return team_db
 
 @router.delete("/{team_id}")
-async def delete_team(*, session: Session = Depends(get_session), team_id: int):
+async def delete_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team_id: int):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
