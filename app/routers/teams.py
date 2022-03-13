@@ -7,7 +7,8 @@ from sqlmodel import SQLModel, Session, select
 
 from ..dependencies import get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
-from ..models.team_golfer_link import TeamGolferLink
+from ..models.team_golfer_link import TeamGolferLink, TeamRole
+from ..models.golfer import Golfer
 from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
 from ..models.tournament import Tournament
@@ -19,9 +20,9 @@ router = APIRouter(
     tags=["Teams"]
 )
 
-
 class TeamGolferSignupData(SQLModel):
     golfer_id: int
+    golfer_name: str
     role: str
     division_id: int
 
@@ -131,10 +132,28 @@ async def delete_team_golfer_link(*, session: Session = Depends(get_session), te
 
 @router.post("/flight-signup", response_model=TeamRead)
 async def signup_team_for_flight(*, session: Session = Depends(get_session), team_data: FlightTeamSignupData):
+    # Check if the team name if valid for this flight
     team_db = session.exec(select(Team).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id == team_data.flight_id).where(Team.name == team_data.name)).one_or_none()
     if team_db:
-        raise HTTPException(status_code=HTTPStatus.PRECONDITION_FAILED, detail=f"Team '{team_data.name}' already exists for flight id={team_data.flight_id}")
-    # TODO: Perform other checks first (golfers on other teams, sufficient golfer data, ...)
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' already exists in flight (id={team_data.flight_id})")
+
+    # Check for duplicate golfers in sign-up
+    golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
+    if len(golfer_id_list) != len(set(golfer_id_list)):
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups")
+
+    # Check if the given golfers already exist on other teams in this flight and if one captain was designated
+    team_has_captain = False
+    flight_golfer_ids = session.exec(select(Golfer.id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).where(FlightTeamLink.flight_id == team_data.flight_id)).all()
+    for team_golfer in team_data.golfer_data:
+        if team_golfer.golfer_id in flight_golfer_ids:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in flight (id={team_data.flight_id})")
+        if team_golfer.role == TeamRole.CAPTAIN:
+            if team_has_captain:
+                raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' cannot have more than one captain")
+            team_has_captain = True
+    if not team_has_captain:
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' must have a captain")
 
     # Add team to database
     team_db = Team(name=team_data.name)
