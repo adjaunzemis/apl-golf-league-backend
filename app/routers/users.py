@@ -36,5 +36,5 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
     )
 
 @router.get("/me", response_model=UserRead)
-async def get_current_user(current_user: User = Depends(get_current_active_user)):
+async def get_current_user(*, current_user: User = Depends(get_current_active_user)):
     return current_user

@@ -78,54 +78,5 @@ async def delete_flight(*, session: Session = Depends(get_session), flight_id: i
         raise HTTPException(status_code=404, detail="Flight not found")
     session.delete(flight_db)
     session.commit()
-    return {"ok": True}
-
-@router.get("/division-links/", response_model=List[FlightDivisionLink])
-async def read_flight_division_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(FlightDivisionLink).offset(offset).limit(limit)).all()
-
-@router.get("/{flight_id}/division-links/", response_model=List[FlightDivisionLink])
-async def read_flight_division_links_for_flight(*, session: Session = Depends(get_session), flight_id: int):
-    return session.exec(select(FlightDivisionLink).where(FlightDivisionLink.flight_id == flight_id)).all()
-
-@router.post("/{flight_id}/division-links/{division_id}", response_model=FlightDivisionLink)
-async def create_flight_division_link(*, session: Session = Depends(get_session), flight_id: int, division_id: int):
-    link_db = FlightDivisionLink(flight_id=flight_id, division_id=division_id)
-    session.add(link_db)
-    session.commit()
-    session.refresh(link_db)
-    return link_db
-
-@router.delete("/{flight_id}/division-links/{division_id}")
-async def delete_flight_division_link(*, session: Session = Depends(get_session), flight_id: int, division_id: int):
-    link_db = session.get(FlightDivisionLink, [flight_id, division_id])
-    if not link_db:
-        raise HTTPException(status_code=404, detail="Flight-division link not found")
-    session.delete(link_db)
-    session.commit()
-    return {"ok": True}
-
-@router.get("/team-links/", response_model=List[FlightTeamLink])
-async def read_flight_team_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(FlightTeamLink).offset(offset).limit(limit)).all()
-
-@router.get("/{flight_id}/team-links/", response_model=List[FlightTeamLink])
-async def read_flight_team_links_for_flight(*, session: Session = Depends(get_session), flight_id: int):
-    return session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_id)).all()
-
-@router.post("/{flight_id}/team-links/{team_id}", response_model=FlightTeamLink)
-async def create_flight_team_link(*, session: Session = Depends(get_session), flight_id: int, team_id: int):
-    link_db = FlightTeamLink(flight_id=flight_id, team_id=team_id)
-    session.add(link_db)
-    session.commit()
-    session.refresh(link_db)
-    return link_db
-
-@router.delete("/{flight_id}/team-links/{team_id}")
-async def delete_flight_team_link(*, session: Session = Depends(get_session), flight_id: int, team_id: int):
-    link_db = session.get(FlightTeamLink, [flight_id, team_id])
-    if not link_db:
-        raise HTTPException(status_code=404, detail="Flight-team link not found")
-    session.delete(link_db)
-    session.commit()
+    # TODO: Delete linked resources (divisions, teams, etc.)
     return {"ok": True}

@@ -105,31 +105,6 @@ async def delete_team(*, session: Session = Depends(get_session), team_id: int):
     session.commit()
     return {"ok": True}
 
-@router.get("/golfer-links/", response_model=List[TeamGolferLink])
-async def read_team_golfer_links(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
-    return session.exec(select(TeamGolferLink).offset(offset).limit(limit)).all()
-
-@router.get("/{team_id}/golfer-links/", response_model=List[TeamGolferLink])
-async def read_team_golfer_links_for_team(*, session: Session = Depends(get_session), team_id: int):
-    return session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)).all()
-
-@router.post("/{team_id}/golfer-links/{golfer_id}", response_model=TeamGolferLink)
-async def create_team_golfer_link(*, session: Session = Depends(get_session), team_id: int, golfer_id: int, division_id: int = Query(default=None), role: str = Query(default="Player")):
-    link_db = TeamGolferLink(team_id=team_id, golfer_id=golfer_id, division_id=division_id, role=role)
-    session.add(link_db)
-    session.commit()
-    session.refresh(link_db)
-    return link_db
-
-@router.delete("/{team_id}/golfer-links/{golfer_id}")
-async def delete_team_golfer_link(*, session: Session = Depends(get_session), team_id: int, golfer_id: int):
-    link_db = session.get(TeamGolferLink, [team_id, golfer_id])
-    if not link_db:
-        raise HTTPException(status_code=404, detail="Team-golfer link not found")
-    session.delete(link_db)
-    session.commit()
-    return {"ok": True}
-
 @router.post("/flight-signup", response_model=TeamRead)
 async def signup_team_for_flight(*, session: Session = Depends(get_session), team_data: FlightTeamSignupData):
     # Check if the team name if valid for this flight
