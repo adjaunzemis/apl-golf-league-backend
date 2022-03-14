@@ -118,6 +118,8 @@ class TournamentInfo(SQLModel):
     logo_url: str = None
     signup_start_date: str = None
     signup_stop_date: str = None
+    members_entry_fee: float = None
+    non_members_entry_fee: float = None
 
 class TournamentData(SQLModel):
     id: int
@@ -131,6 +133,8 @@ class TournamentData(SQLModel):
     secretary_phone: str = None
     signup_start_date: str = None
     signup_stop_date: str = None
+    members_entry_fee: float = None
+    non_members_entry_fee: float = None
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
@@ -202,6 +206,8 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         secretary_phone=tournament.secretary_phone,
         signup_start_date=tournament.signup_start_date.astimezone().replace(microsecond=0).isoformat() if tournament.signup_start_date else None,
         signup_stop_date=tournament.signup_stop_date.astimezone().replace(microsecond=0).isoformat() if tournament.signup_stop_date else None,
+        members_entry_fee=tournament.members_entry_fee,
+        non_members_entry_fee=tournament.non_members_entry_fee,
         locked=tournament.locked,
         course=course.name,
     ) for tournament, course in tournament_query_data]

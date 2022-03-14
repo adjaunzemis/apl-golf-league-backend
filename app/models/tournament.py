@@ -19,6 +19,8 @@ class TournamentBase(SQLModel):
     secretary_phone: Optional[str] = None
     signup_start_date: Optional[datetime] = None
     signup_stop_date: Optional[datetime] = None
+    members_entry_fee: Optional[float] = None
+    non_members_entry_fee: Optional[float] = None
     locked: Optional[bool] = False
 
 class Tournament(TournamentBase, table=True):
@@ -41,6 +43,8 @@ class TournamentUpdate(SQLModel):
     secretary_phone: Optional[str] = None
     signup_start_date: Optional[datetime] = None
     signup_stop_date: Optional[datetime] = None
+    members_entry_fee: Optional[float] = None
+    non_members_entry_fee: Optional[float] = None
     locked: Optional[bool] = None
 
 class TournamentRead(TournamentBase):
