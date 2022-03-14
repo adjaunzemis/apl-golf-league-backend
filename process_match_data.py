@@ -35,6 +35,8 @@ def parse_match_data_from_file(file):
                     matches.append(matchLines.copy())
                     matchFound = False
                     matchLines = []
+    if len(matchLines) > 0:
+        matches.append(matchLines.copy())
     return matches
 
 def match_data_to_dict(match_data):
