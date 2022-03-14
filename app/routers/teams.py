@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 
-
 from ..dependencies import get_current_active_user, get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink, TeamRole
@@ -12,6 +11,7 @@ from ..models.golfer import Golfer
 from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
 from ..models.tournament_team_link import TournamentTeamLink
+from ..models.payment import LeagueDues, LeagueDuesPayment, LeagueDuesType
 from ..models.user import User
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
 
@@ -145,5 +145,15 @@ async def signup_team_for_flight(*, session: Session = Depends(get_session), tea
         team_golfer_link_db = TeamGolferLink(team_id=team_db.id, golfer_id=team_golfer.golfer_id, division_id=team_golfer.division_id, role=team_golfer.role)
         session.add(team_golfer_link_db)
         session.commit()
+
+    # Add golfer registrations/payments (as needed)
+    flight_db = session.exec(select(Flight).where(Flight.id == team_data.flight_id)).one()
+    flight_dues_amount = session.exec(select(LeagueDues.amount).where(LeagueDues.year == flight_db.year).where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)).one()
+    for team_golfer in team_data.golfer_data:
+        golfer_dues_payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id).where(LeagueDuesPayment.year == flight_db.year).where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)).one_or_none()
+        if not golfer_dues_payment_db:
+            golfer_dues_payment_db = LeagueDuesPayment(golfer_id=team_golfer.golfer_id, year=flight_db.year, type=LeagueDuesType.FLIGHT_DUES, amount_due=flight_dues_amount)
+            session.add(golfer_dues_payment_db)
+            session.commit()
 
     return team_db
