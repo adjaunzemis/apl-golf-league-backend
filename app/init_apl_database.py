@@ -366,9 +366,9 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 course_id=course_db.id,
                 logo_url=logo_url,
                 secretary=row["secretary"],
-                signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d"),
-                signup_stop_date=datetime.strptime(row["signup_stop_date"], "%Y-%m-%d"),
-                start_date=datetime.strptime(row["start_date"], "%Y-%m-%d"),
+                signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d %H:%M:%S"),
+                signup_stop_date=datetime.strptime(row["signup_stop_date"], "%Y-%m-%d %H:%M:%S"),
+                start_date=datetime.strptime(row["start_date"], "%Y-%m-%d %H:%M:%S"),
                 weeks=row["weeks"],
                 locked=True
             )
@@ -1230,7 +1230,8 @@ def add_officers(session: Session, officers_file: str):
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
-    DATA_YEARS = [2021, 2020, 2019, 2018, 2022]
+    DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
+    # DATA_YEARS = [2022,] # setup for 2022
 
     load_dotenv()
 
