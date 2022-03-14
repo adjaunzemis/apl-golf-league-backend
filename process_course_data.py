@@ -14,6 +14,7 @@ Andris Jaunzemis
 """
 
 import os
+import numpy as np
 import pandas as pd
 
 def parse_course_data_from_file(file):
@@ -49,23 +50,27 @@ def parse_course_data_from_file(file):
                             raise ValueError("Found {:d} course matches for back id={:s}".format(len(back_course_matches), back_name))
                         back_course = back_course_matches[0]
                         
+                        front_par = np.sum(front_course['pars'])
+                        back_par = np.sum(back_course['pars'])
+                        total_par = front_par + back_par
+                        
                         if len(line_elements) == 9:
                             # Slopes (mid, snr, fwd), Ratings (mid, snr, fwd)
                             front_course['tee_names'] = ['Middle', 'Senior', 'Forward']
-                            front_course['ratings'] = [float(rating) / 2 for rating in line_elements[6:9]] # TODO: Check that half-rating should be used
+                            front_course['ratings'] = [np.around(float(rating) * front_par / total_par, 2) for rating in line_elements[6:9]]
                             front_course['slopes'] = [int(slope) for slope in line_elements[3:6]]
                             
                             back_course['tee_names'] = ['Middle', 'Senior', 'Forward']
-                            back_course['ratings'] = [float(rating) / 2 for rating in line_elements[6:9]] # TODO: Check that half-rating should be used
+                            back_course['ratings'] = [np.around(float(rating) * back_par / total_par, 2) for rating in line_elements[6:9]]
                             back_course['slopes'] = [int(slope) for slope in line_elements[3:6]]
                         elif len(line_elements) == 11:
                             # Mid (slope, rating), Snr (slope, rating), Fwd (slope, rating), SupSnr (slope, rating)
                             front_course['tee_names'] = ['Middle', 'Senior', 'Forward', 'Super-Senior']
-                            front_course['ratings'] = [float(rating) / 2 for rating in line_elements[4:11:2]] # TODO: Check that half-rating should be used
+                            front_course['ratings'] = [np.around(float(rating) * front_par / total_par, 2) for rating in line_elements[4:11:2]]
                             front_course['slopes'] = [int(slope) for slope in line_elements[3:10:2]]
                             
                             back_course['tee_names'] = ['Middle', 'Senior', 'Forward', 'Super-Senior']
-                            back_course['ratings'] = [float(rating) / 2 for rating in line_elements[4:11:2]] # TODO: Check that half-rating should be used
+                            back_course['ratings'] = [np.around(float(rating) * back_par / total_par, 2) for rating in line_elements[4:11:2]]
                             back_course['slopes'] = [int(slope) for slope in line_elements[3:10:2]]
                     else:
                         if curTrackName is not None:
@@ -90,8 +95,7 @@ def parse_course_data_from_file(file):
                         curAbbreviation = None
                         curPars = None
                         curHandicaps = None
-
-                # elif line[:4].lower() == 'name': #TODO: Is this version of the name needed?
+                
                 elif line[:4].lower() == 'addr':
                     curAddress = line[5:]
                 elif line[:6].lower() == 'colors':
