@@ -25,10 +25,19 @@ from models.tournament_division_link import TournamentDivisionLink
 from models.tournament_team_link import TournamentTeamLink
 from models.tournament_round_link import TournamentRoundLink
 from models.officer import Officer
-from models.payment import LeagueDues, TournamentEntryFee, LeagueDuesType, TournamentEntryFeeType
+from models.payment import LeagueDues, LeagueDuesType, LeagueDuesPayment, TournamentEntryFeeType, TournamentEntryFeePayment
 from models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def add_league_dues_fee(*, session: Session, year: int, type: LeagueDuesType, amount: float) -> LeagueDues:
+    dues_fee_db = session.exec(select(LeagueDues).where(LeagueDues.year == year).where(LeagueDues.type == type)).one_or_none()
+    if not dues_fee_db:
+        print(f"Adding league dues fee: {type} ({year}) ${amount:.2f}")
+        dues_fee_db = LeagueDues(year=year, type=type, amount=amount)
+        session.add(dues_fee_db)
+        session.commit()
+    return dues_fee_db
 
 def add_user(*, session: Session, username: str, name: str, email: str, password: str, disabled: bool) -> User:
     user_db = session.exec(select(User).where(User.username == username)).one_or_none()
@@ -275,23 +284,23 @@ def add_golfer_to_team(*, session: Session, golfer_id: int, team_id: int, role: 
         session.commit()
     return team_golfer_link_db
 
-def add_league_dues_for_golfer(*, session: Session, golfer_id: int, year: int, type: LeagueDuesType, amount: float) -> LeagueDues:
-    golfer_dues_db = session.exec(select(LeagueDues).where(LeagueDues.golfer_id == golfer_id).where(LeagueDues.year == year)).one_or_none()
-    if not golfer_dues_db:
-        print(f"Adding league dues for golfer id={golfer_id}")
-        golfer_dues_db = LeagueDues(golfer_id=golfer_id, year=year, type=type, amount=amount)
-        session.add(golfer_dues_db)
+def add_league_dues_payment_for_golfer(*, session: Session, golfer_id: int, year: int, type: LeagueDuesType, amount_due: float) -> LeagueDuesPayment:
+    golfer_dues_payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == golfer_id).where(LeagueDuesPayment.year == year)).one_or_none()
+    if not golfer_dues_payment_db:
+        print(f"Adding league dues payment entry for golfer id={golfer_id}")
+        golfer_dues_payment_db = LeagueDuesPayment(golfer_id=golfer_id, year=year, type=type, amount_due=amount_due)
+        session.add(golfer_dues_payment_db)
         session.commit()
-    return golfer_dues_db
+    return golfer_dues_payment_db
 
-def add_tournament_entry_fee_for_golfer(*, session: Session, golfer_id = int, year: int, tournament_id: int, type: TournamentEntryFeeType, amount: float) -> TournamentEntryFee:
-    golfer_entry_fee_db = session.exec(select(TournamentEntryFee).where(TournamentEntryFee.golfer_id == golfer_id).where(TournamentEntryFee.year == year).where(TournamentEntryFee.tournament_id == tournament_id)).one_or_none()
-    if not golfer_entry_fee_db:
-        print(f"Adding tournament entry fee for golfer id={golfer_id}")
-        golfer_entry_fee_db = TournamentEntryFee(golfer_id=golfer_id, year=year, tournament_id=tournament_id, type=type, amount=amount)
-        session.add(golfer_entry_fee_db)
+def add_tournament_entry_fee_payment_for_golfer(*, session: Session, golfer_id = int, year: int, tournament_id: int, type: TournamentEntryFeeType, amount_due: float) -> TournamentEntryFeePayment:
+    golfer_entry_fee_payment_db = session.exec(select(TournamentEntryFeePayment).where(TournamentEntryFeePayment.golfer_id == golfer_id).where(TournamentEntryFeePayment.year == year).where(TournamentEntryFeePayment.tournament_id == tournament_id)).one_or_none()
+    if not golfer_entry_fee_payment_db:
+        print(f"Adding tournament entry fee payment entry for golfer id={golfer_id}")
+        golfer_entry_fee_payment_db = TournamentEntryFeePayment(golfer_id=golfer_id, year=year, tournament_id=tournament_id, type=type, amount_due=amount_due)
+        session.add(golfer_entry_fee_payment_db)
         session.commit()
-    return golfer_entry_fee_db
+    return golfer_entry_fee_payment_db
 
 def add_scheduled_matches(*, session: Session, flight: Flight):
     flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.flight_id == flight.id)).all()
@@ -367,6 +376,10 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)  
 
     with Session(engine) as session:
+        # Add league dues
+        add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount=40)
+        add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount=30)
+
         # Add users
         johndoe_user_db = add_user(session=session, username="johndoe", name="John Doe", email="john.doe@example.com", password="secret", disabled=False)
 
@@ -387,12 +400,12 @@ if __name__ == "__main__":
 
         # Golfers
         adj_golfer_db = add_golfer(session=session, name="Andris Jaunzemis", affiliation=GolferAffiliation.APL_EMPLOYEE)
-        add_league_dues_for_golfer(session=session, golfer_id=adj_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount=40.00)
+        add_league_dues_payment_for_golfer(session=session, golfer_id=adj_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=40.00)
         sej_golfer_db = add_golfer(session=session, name="Samantha Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
-        add_league_dues_for_golfer(session=session, golfer_id=sej_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount=35.00)
+        add_league_dues_payment_for_golfer(session=session, golfer_id=sej_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=35.00)
         lgj_golfer_db = add_golfer(session=session, name="Lily Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
-        add_league_dues_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount=30.00)
-        add_tournament_entry_fee_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, tournament_id=1, type=TournamentEntryFeeType.MEMBER_FEE, amount=60.00)
+        add_league_dues_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount_due=30.00)
+        add_tournament_entry_fee_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, tournament_id=1, type=TournamentEntryFeeType.MEMBER_FEE, amount_due=60.00)
         
         gpb_golfer_db = add_golfer(session=session, name="George P. Burdell", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
         mt_golfer_db = add_golfer(session=session, name="Merel Tuve", affiliation=GolferAffiliation.APL_RETIREE)

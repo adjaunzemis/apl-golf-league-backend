@@ -14,15 +14,12 @@ class PaymentMethod(str, Enum):
     CASH_OR_CHECK = "Cash or Check"
     PAYPAL = "PayPal"
     EXEMPT = "Exempt"
+    LINKED = "Linked"
 
 class LeagueDuesBase(SQLModel):
-    golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     type: LeagueDuesType
     amount: float
-    paid: Optional[bool] = False
-    method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
 
 class LeagueDues(LeagueDuesBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -31,42 +28,73 @@ class LeagueDuesCreate(LeagueDuesBase):
     pass
 
 class LeagueDuesUpdate(SQLModel):
-    golfer_id: Optional[int] = None
     year: Optional[int] = None
     type: Optional[LeagueDuesType] = None
     amount: Optional[float] = None
-    paid: Optional[bool] = None
-    method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
 
 class LeagueDuesRead(LeagueDuesBase):
     id: int
 
-class TournamentEntryFeeBase(SQLModel):
+class LeagueDuesPaymentBase(SQLModel):
+    golfer_id: int = Field(default=None, foreign_key="golfer.id")
+    year: int
+    type: LeagueDuesType
+    amount_due: float
+    amount_paid: Optional[float] = 0
+    is_paid: Optional[bool] = False
+    linked_payment_id: Optional[int] = None
+    method: Optional[PaymentMethod] = None
+    confirmation: Optional[str] = None
+
+class LeagueDuesPayment(LeagueDuesPaymentBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+class LeagueDuesPaymentCreate(LeagueDuesPaymentBase):
+    pass
+
+class LeagueDuesPaymentUpdate(SQLModel):
+    golfer_id: Optional[int] = None
+    year: Optional[int] = None
+    type: Optional[LeagueDuesType] = None
+    amount_due: Optional[float] = None
+    amount_paid: Optional[float] = None
+    is_paid: Optional[bool] = None
+    linked_payment_id: Optional[int] = None
+    method: Optional[PaymentMethod] = None
+    confirmation: Optional[str] = None
+
+class LeagueDuesPaymentRead(LeagueDuesPaymentBase):
+    id: int
+
+class TournamentEntryFeePaymentBase(SQLModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     tournament_id: int = Field(default=None, foreign_key="tournament.id")
     type: TournamentEntryFeeType
-    amount: float
-    paid: Optional[bool] = False
+    amount_due: float
+    amount_paid: Optional[float] = 0
+    is_paid: Optional[bool] = False
+    linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
     confirmation: Optional[str] = None
 
-class TournamentEntryFee(TournamentEntryFeeBase, table=True):
+class TournamentEntryFeePayment(TournamentEntryFeePaymentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-class TournamentEntryFeeCreate(TournamentEntryFeeBase):
+class TournamentEntryFeePaymentCreate(TournamentEntryFeePaymentBase):
     pass
 
-class TournamentEntryFeeUpdate(TournamentEntryFeeBase):
+class TournamentEntryFeePaymentUpdate(TournamentEntryFeePaymentBase):
     golfer_id: Optional[int] = None
     year: Optional[int] = None
     tournament_id: Optional[int] = None
     type: Optional[TournamentEntryFeeType] = None
-    amount: Optional[float] = None
-    paid: Optional[bool] = None
+    amount_due: Optional[float] = None
+    amount_paid: Optional[float] = None
+    is_paid: Optional[bool] = None
+    linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
     confirmation: Optional[str] = None
 
-class TournamentEntryFeeRead(TournamentEntryFeeBase):
+class TournamentEntryFeePaymentRead(TournamentEntryFeePaymentBase):
     id: int
