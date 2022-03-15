@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-
 from ..dependencies import get_current_active_user, get_session
 from ..models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
 from ..models.user import User

@@ -1,5 +1,6 @@
 from typing import List, Optional
 from enum import Enum
+from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
 class GolferAffiliation(str, Enum):
@@ -13,6 +14,8 @@ class GolferBase(SQLModel):
     affiliation: Optional[GolferAffiliation] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    handicap_index: Optional[float] = None
+    handicap_index_updated: Optional[datetime] = None
 
 class Golfer(GolferBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -25,6 +28,8 @@ class GolferUpdate(SQLModel):
     affiliation: Optional[GolferAffiliation] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    handicap_index: Optional[float] = None
+    handicap_index_updated: Optional[datetime] = None
 
 class GolferRead(GolferBase):
     id: int

@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from typing import List
 from datetime import datetime
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, create_engine, select, desc
 
 from models.course import Course
 from models.track import Track
@@ -1281,6 +1281,42 @@ def add_officers(session: Session, officers_file: str):
             session.add(officer_db)
             session.commit()
 
+def update_golfer_handicaps(*, session: Session, golfer_ids: List[int] = None, limit: int = 10):
+    """
+    Updates handicap index for each golfer.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    golfer_ids : list of integers, optional
+        golfer identifiers to update handicap data
+        Default: None (updates all golfers)
+    limit : integer
+        maximum number of rounds allowed for handicap consideration
+    
+    """
+    print(f"Updating golfer handicap index data")
+    alhs = APLLegacyHandicapSystem()
+    update_epoch = datetime.now()
+    if golfer_ids:
+        golfers_db = session.exec(select(Golfer).where(Golfer.id.in_(golfer_ids))).all()
+    else:
+        golfers_db = session.exec(select(Golfer)).all()
+    for golfer_db in golfers_db:
+        round_data = session.exec(select(Round, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Tee, onclause=Tee.id == Round.tee_id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.scoring_type == ScoringType.INDIVIDUAL).where(Round.date_played <= update_epoch).order_by(desc(Round.date_played)).limit(limit)).all()
+        if len(round_data) > 0:
+            round_hole_data = session.exec(select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_([round_db.id for round_db, tee_db in round_data]))).all()
+            scoring_record = [alhs.compute_score_differential(tee_db.rating, tee_db.slope, np.sum([hole_result_db.adjusted_gross_score for hole_result_db, hole_db in round_hole_data if hole_result_db.round_id == round_db.id])) for round_db, tee_db in round_data]
+            handicap_index = alhs.compute_handicap_index(record=scoring_record)
+            if handicap_index and (golfer_db.handicap_index != handicap_index):
+                print(f"Updating handicap index for golfer '{golfer_db.name}' to {handicap_index:.1f}")
+                golfer_db.handicap_index = handicap_index
+                golfer_db.handicap_index_updated = update_epoch
+                session.add(golfer_db)
+    session.commit() # update all handicaps at once to save time
+    print(f"Handicap index updates complete")
+
 if __name__ == "__main__":
     DATA_DIR = "data/"
     # DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
@@ -1364,7 +1400,10 @@ if __name__ == "__main__":
 
             # Add tournament score data to database
             tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{data_year}_"]
-            # for scores_file in tournament_scores_files:
-            #     add_tournament_rounds(session, scores_file, tournaments_file)
+            for scores_file in tournament_scores_files:
+                add_tournament_rounds(session, scores_file, tournaments_file)
+        
+        # Update handicap index for all golfers
+        update_golfer_handicaps(session=session)
 
     print("Database initialized!")
