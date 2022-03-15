@@ -842,7 +842,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: datetim
         round data for rounds in golfer's scoring record
     
     """
-    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.scoring_type == ScoringType.Individual).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
+    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.scoring_type == ScoringType.INDIVIDUAL).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
     return sorted(get_round_summaries(session=session, round_ids=round_ids), key=lambda round_summary: round_summary.date_played, reverse=True)
 
 def get_handicap_index_data(session: Session, golfer_id: int, date: datetime, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
