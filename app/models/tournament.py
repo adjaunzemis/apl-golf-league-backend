@@ -52,13 +52,13 @@ class TournamentUpdate(SQLModel):
     signup_stop_date: Optional[datetime] = None
     members_entry_fee: Optional[float] = None
     non_members_entry_fee: Optional[float] = None
-    shotgun: Optional[bool] = False
-    strokeplay: Optional[bool] = False
-    bestball: Optional[bool] = False
-    scramble: Optional[bool] = False
-    ryder_cup: Optional[bool] = False
-    individual: Optional[bool] = False
-    chachacha: Optional[bool] = False
+    shotgun: Optional[bool] = None
+    strokeplay: Optional[bool] = None
+    bestball: Optional[bool] = None
+    scramble: Optional[bool] = None
+    ryder_cup: Optional[bool] = None
+    individual: Optional[bool] = None
+    chachacha: Optional[bool] = None
     locked: Optional[bool] = None
 
 class TournamentRead(TournamentBase):
