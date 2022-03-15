@@ -36,7 +36,7 @@ from models.tournament import Tournament
 from models.tournament_division_link import TournamentDivisionLink
 from models.tournament_team_link import TournamentTeamLink
 from models.tournament_round_link import TournamentRoundLink
-from models.round import Round, RoundType
+from models.round import Round, RoundType, ScoringType
 from models.hole_result import HoleResult
 from models.round_golfer_link import RoundGolferLink
 from models.match import Match
@@ -778,6 +778,7 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                     round_db = Round(
                         tee_id=tee_db.id,
                         type=RoundType.FLIGHT,
+                        scoring_type=ScoringType.INDIVIDUAL,
                         date_played=date_played,
                         date_updated=date_entered
                     )
@@ -1133,6 +1134,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                 round_db = Round(
                     tee_id=tee_db.id,
                     type=RoundType.TOURNAMENT,
+                    scoring_type=ScoringType.INDIVIDUAL,
                     date_played=tournament_db.date,
                     date_updated=tournament_db.date # TODO: Add date-entered from website, if available
                 )
@@ -1236,6 +1238,8 @@ def add_officers(session: Session, officers_file: str):
             session.commit()
 
 if __name__ == "__main__":
+    # TODO: Remove testing comments/code
+    
     DATA_DIR = "data/"
     # DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
     # DATA_YEARS = [2022,] # setup for 2022

@@ -14,9 +14,14 @@ class RoundType(str, Enum):
     PLAYOFF = "Playoff"
     TOURNAMENT = "Tournament"
 
+class ScoringType(str, Enum):
+    INDIVIDUAL = "Individual"
+    GROUP = "Group"
+
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
     type: RoundType
+    scoring_type: Optional[ScoringType] = None
     date_played: datetime
     date_updated: datetime
 
@@ -32,6 +37,7 @@ class RoundCreate(RoundBase):
 class RoundUpdate(SQLModel):
     tee_id: Optional[int] = None
     type: Optional[RoundType] = None
+    scoring_type: Optional[ScoringType] = None
     date_played: Optional[datetime] = None
     date_updated: Optional[datetime] = None
 
