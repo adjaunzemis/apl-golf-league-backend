@@ -19,7 +19,7 @@ from .team_golfer_link import TeamGolferLink
 from .golfer import Golfer, GolferStatistics
 from .division import Division, DivisionData
 from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData, RoundSummary
+from .round import Round, RoundData, RoundSummary, ScoringType
 from .hole_result import HoleResult, HoleResultData
 from .match_round_link import MatchRoundLink
 from .round_golfer_link import RoundGolferLink
@@ -842,7 +842,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, date: datetim
         round data for rounds in golfer's scoring record
     
     """
-    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
+    round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.scoring_type == ScoringType.Individual).where(Round.date_played <= date).order_by(desc(Round.date_played)).limit(limit)).all()
     return sorted(get_round_summaries(session=session, round_ids=round_ids), key=lambda round_summary: round_summary.date_played, reverse=True)
 
 def get_handicap_index_data(session: Session, golfer_id: int, date: datetime, limit: int = 20, include_record: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
