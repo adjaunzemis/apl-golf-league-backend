@@ -56,9 +56,9 @@ def initialize_golfers(session: Session):
 
     """
     golfers = [
-        {'name': "George P. Burdell", "affiliation": GolferAffiliation.NON_APL_EMPLOYEE},
-        {'name': "Merle Tuve", "affiliation": GolferAffiliation.APL_RETIREE},
-        {'name': "Andris Jaunzemis", "affiliation": GolferAffiliation.APL_EMPLOYEE}
+        {'name': "George P. Burdell", "affiliation": GolferAffiliation.NON_APL_EMPLOYEE, "email": "Unk", "phone": "Unk"},
+        {'name': "Merle Tuve", "affiliation": GolferAffiliation.APL_RETIREE, "email": "Unk", "phone": "Unk"},
+        {'name': "Andris Jaunzemis", "affiliation": GolferAffiliation.APL_EMPLOYEE, "email": "Andris.Jaunzemis@jhuapl.edu", "phone": "Unk"}
     ]
 
     for golfer in golfers:
@@ -68,10 +68,11 @@ def initialize_golfers(session: Session):
             print(f"Adding golfer: {golfer['name']}")
 
             # Add golfer to database
-            # TODO: Add contact info
             golfer_db = Golfer(
                 name=golfer['name'],
-                affiliation=golfer['affiliation']
+                affiliation=golfer['affiliation'],
+                email=golfer['email'].lower() if golfer['email'] != "Unk" else None,
+                phone=golfer['phone'].lower() if golfer['phone'] != "Unk" else None
             )
             session.add(golfer_db)
             session.commit()
@@ -504,10 +505,11 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
                     affiliation = None
 
                 # Add golfer to database
-                # TODO: Add contact info
                 golfer_db = Golfer(
                     name=row['name'],
-                    affiliation=affiliation
+                    affiliation=affiliation,
+                    email=row['email'].lower() if row['email'] != "Unk" else None,
+                    phone=row['phone'].lower() if row['phone'] != "Unk" else None
                 )
                 session.add(golfer_db)
                 session.commit()
@@ -544,10 +546,11 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
                 affiliation = None
 
             # Add golfer to database
-            # TODO: Add contact info
             golfer_db = Golfer(
                 name=row['name'],
-                affiliation=affiliation
+                affiliation=affiliation,
+                email=row['email'].lower() if row['email'] != "Unk" else None,
+                phone=row['phone'].lower() if row['phone'] != "Unk" else None
             )
             session.add(golfer_db)
             session.commit()
@@ -1021,9 +1024,13 @@ def add_tournament_teams(session: Session, roster_file: str, tournaments_file: s
             print(f"Adding golfer: {row['name']}")
 
             # Add golfer to database
-            # TODO: Add contact info
-            affiliation = None # TODO: Get affiliation from TOG rosters?
-            golfer_db = Golfer(name=row['name'], affiliation=affiliation)
+            # TODO: Get affiliation and contact info from TOG rosters?
+            golfer_db = Golfer(
+                name=row['name'],
+                affiliation=None,
+                email=None,
+                phone=None
+            )
             session.add(golfer_db)
             session.commit()
 
@@ -1122,6 +1129,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
             golfer_db = session.exec(select(Golfer).where(Golfer.name == golfer_name)).one_or_none()
             if not golfer_db:
                 raise ValueError(f"Unable to find tournament golfer: {golfer_name}")
+            golfers_db.append(golfer_db)
         else: # group-score tournament, find team of golfers using last names
             golfer_last_names = golfer_names.split(' ')
             team_data_db = session.exec(select(Golfer, TeamGolferLink).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).where(TeamGolferLink.team_id.in_(session.exec(select(Team.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).where(TournamentTeamLink.tournament_id == tournament_db.id)).all()))).all()
@@ -1262,9 +1270,9 @@ def add_officers(session: Session, officers_file: str):
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
-    DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
+    # DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
     # DATA_YEARS = [2022,] # setup for 2022
-    # DATA_YEARS = [2018,] # testing
+    DATA_YEARS = [2019,] # testing
 
     load_dotenv()
 
