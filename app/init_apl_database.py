@@ -919,6 +919,13 @@ def add_tournaments(session: Session, info_file: str, custom_courses_file: str):
                 secretary_email=row["in_charge_email"],
                 signup_start_date=tourn_signup_start_date,
                 signup_stop_date=tourn_signup_stop_date,
+                shotgun=row['shotgun'] == "True",
+                strokeplay=row['strokeplay'] == "True",
+                bestball=row['bestball'] == "True",
+                scramble=row['scramble'] == "True",
+                ryder_cup=row['ryder_cup'] == "True",
+                individual=row['individual'] == "True",
+                chachacha=row['chachacha'] == "True",
                 locked=True
             )
             session.add(tournament_db)
@@ -1230,8 +1237,9 @@ def add_officers(session: Session, officers_file: str):
 
 if __name__ == "__main__":
     DATA_DIR = "data/"
-    DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
+    # DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
     # DATA_YEARS = [2022,] # setup for 2022
+    DATA_YEARS = [2019,] # testing
 
     load_dotenv()
 
@@ -1281,15 +1289,15 @@ if __name__ == "__main__":
             print(f"Validated course entry data")
 
             # Add relevant course data to database
-            add_courses(session, courses_file, custom_courses_file, courses_played)
+            # add_courses(session, courses_file, custom_courses_file, courses_played)
 
             # Add officer data to database
             officers_file = f"{DATA_DIR}/officers_{data_year}.csv"
-            add_officers(session, officers_file)
+            # add_officers(session, officers_file)
 
             # Add flight data to database
             flights_file = f"{DATA_DIR}/flights_{data_year}.csv"
-            add_flights(session, flights_file, custom_courses_file)
+            # add_flights(session, flights_file, custom_courses_file)
 
             # Add tournament data to database
             add_tournaments(session, tournaments_file, custom_courses_file)
