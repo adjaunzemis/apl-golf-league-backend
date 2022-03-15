@@ -337,11 +337,9 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
 
     # For each flight:
     for idx, row in df_flights.iterrows():
-        if row['abbreviation'].lower() == "playoffs":
-            print(f"Skipping flight: {row['name']}")
-            continue
-
         print(f"Processing flight: {row['name']}-{year}")
+        
+        is_playoff_flight = row['abbreviation'].lower() == "playoffs"
 
         # Handle misnamed home courses in flight info
         course_name = row['course']
@@ -350,21 +348,27 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
             print(f"Adjusted flight course name: {row['course']} -> {course_name}")
         
         # Find course
-        course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
-        if not course_db:
-            raise ValueError(f"Cannot match home course in database: {course_name}")
+        if is_playoff_flight:
+            course_db = None
+        else:
+            course_db = session.exec(select(Course).where(Course.name == course_name)).one_or_none()
+            if not course_db:
+                raise ValueError(f"Cannot match home course in database: {course_name}")
 
         # Find course logo URL
-        logo_url = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower())].iloc[0]['logoUrl']
+        if is_playoff_flight:
+            logo_url = "trophy.png"
+        else:
+            logo_url = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower())].iloc[0]['logoUrl']
 
         # Add flight to database
         flight_db = session.exec(select(Flight).where(Flight.year == year).where(Flight.name == row["name"])).one_or_none()
         if not (flight_db):
-            print(f"Adding flight: {row['name']}-{year}")
+            print(f"Adding flight: {row['name'].title()}-{year}")
             flight_db = Flight(
-                name=row["name"],
+                name=row["name"].title(),
                 year=year,
-                course_id=course_db.id,
+                course_id=course_db.id if course_db else None,
                 logo_url=logo_url,
                 secretary=row["secretary"],
                 signup_start_date=datetime.strptime(row["signup_start_date"], "%Y-%m-%d %H:%M:%S"),
@@ -377,28 +381,36 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
             session.commit()
 
         # Find home track
-        track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).one_or_none()
-        if not track_db:
-            raise ValueError(f"Cannot match home flight in database: Front")
+        if is_playoff_flight:
+            track_db = None
+        else:
+            track_db = session.exec(select(Track).where(Track.course_id == course_db.id).where(Track.name == "Front")).one_or_none()
+            if not track_db:
+                raise ValueError(f"Cannot match home flight in database: Front")
 
         # For each division in this flight:
         for div_num in [1, 2, 3]:
             division_name = row[f"division_{div_num}_name"].title()
             print(f"Processing division: {division_name}")
             
-            # Get correct division tee name/color
-            division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
-
-            # Find home tees
             tee_gender = TeeGender.LADIES if division_name.lower() == "forward" else TeeGender.MENS
-            primary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender)).one_or_none()
-            if not primary_tee_db:
-                raise ValueError(f"Cannot match primary tee in database: {division_tee}")
             
-            # Note: hardcoding search for track named "Back" <-- might need to revisit for historical data
-            secondary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender).where(Track.name == "Back")).one_or_none()
-            if not secondary_tee_db:
-                raise ValueError(f"Cannot match secondary tee in database: {division_tee}")
+            if is_playoff_flight:
+                primary_tee_db = None
+                secondary_tee_db = None
+            else:
+                # Get correct division tee name/color
+                division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == division_name.lower())].iloc[0]['color']
+
+                # Find home tees
+                primary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender)).one_or_none()
+                if not primary_tee_db:
+                    raise ValueError(f"Cannot match primary tee in database: {division_tee}")
+                
+                # Note: hardcoding search for track named "Back" <-- TODO: Might need to revisit for historical data
+                secondary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == tee_gender).where(Track.name == "Back")).one_or_none()
+                if not secondary_tee_db:
+                    raise ValueError(f"Cannot match secondary tee in database: {division_tee}")
 
             # Add division to database
             division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == tee_gender)).one_or_none()
@@ -408,8 +420,8 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                     flight_id=flight_db.id,
                     name=division_name,
                     gender=tee_gender,
-                    primary_tee_id=primary_tee_db.id,
-                    secondary_tee_id=secondary_tee_db.id
+                    primary_tee_id=primary_tee_db.id if primary_tee_db else None,
+                    secondary_tee_id=secondary_tee_db.id if secondary_tee_db else None
                 )
                 session.add(division_db)
                 session.commit()
@@ -425,14 +437,18 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                 print(f"Processing division: SuperSenior")
                 division_name = "Super-Senior"
 
-                division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == "super-senior")].iloc[0]['color']
-                primary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS)).one_or_none()
-                if not primary_tee_db:
-                    raise ValueError(f"Cannot match primary tee in database: {division_tee}")
-                
-                secondary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS).where(Track.name == "Back")).one_or_none()
-                if not secondary_tee_db:
-                    raise ValueError(f"Cannot match secondary tee in database: {division_tee}")
+                if is_playoff_flight:
+                    primary_tee_db = None
+                    secondary_tee_db = None
+                else:
+                    division_tee = df_custom.loc[(df_custom['abbreviation'].str.lower() == row['home_track'].lower()) & (df_custom['tee'].str.lower() == "super-senior")].iloc[0]['color']
+                    primary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id == track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS)).one_or_none()
+                    if not primary_tee_db:
+                        raise ValueError(f"Cannot match primary tee in database: {division_tee}")
+                    
+                    secondary_tee_db = session.exec(select(Tee).join(Track, onclause=Track.id == Tee.track_id).join(Course, onclause=Course.id == Track.course_id).where(Course.id == course_db.id).where(Tee.track_id != track_db.id).where(Tee.name == division_tee).where(Tee.gender == TeeGender.MENS).where(Track.name == "Back")).one_or_none()
+                    if not secondary_tee_db:
+                        raise ValueError(f"Cannot match secondary tee in database: {division_tee}")
 
                 # Add division to database
                 division_db = session.exec(select(Division).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).where(FlightDivisionLink.flight_id == flight_db.id).where(Division.name == division_name).where(Division.gender == TeeGender.MENS)).one_or_none()
@@ -442,8 +458,8 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                         flight_id=flight_db.id,
                         name=division_name,
                         gender=TeeGender.MENS,
-                        primary_tee_id=primary_tee_db.id,
-                        secondary_tee_id=secondary_tee_db.id
+                        primary_tee_id=primary_tee_db.id if primary_tee_db else None,
+                        secondary_tee_id=secondary_tee_db.id if secondary_tee_db else None
                     )
                     session.add(division_db)
                     session.commit()
@@ -475,11 +491,6 @@ def add_flight_teams(session: Session, roster_file: str, flights_file: str):
 
     # Read roster data spreadsheet
     df_roster = pd.read_csv(roster_file)
-
-    # Skip playoffs roster
-    if flight_abbreviation.lower() == "playoffs":
-        print("Skipping playoffs roster")
-        return
 
     # Only process golfer data for subs roster
     if flight_abbreviation.lower() == "subs":
@@ -621,10 +632,6 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
     year = int(scores_file.split("_")[-2])
     flight_abbreviation = scores_file.split("_")[-1][0:-4].upper()
 
-    if flight_abbreviation.lower() == "playoffs":
-        print("Skipping playoffs score data")
-        return
-
     # Initialize handicap system
     alhs = APLLegacyHandicapSystem()
 
@@ -742,13 +749,19 @@ def add_flight_matches(session: Session, scores_file: str, flights_file: str, co
                 division_db = session.exec(select(Division).where(Division.id == team_golfer_link_db.division_id)).one()
 
                 # Find division home tee
-                home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.primary_tee_id)).one()
+                if not division_db.primary_tee_id:
+                    home_tee_db = None
+                else:
+                    home_tee_db = session.exec(select(Tee).where(Tee.id == division_db.primary_tee_id)).one()
 
                 # Find division home track
-                home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
+                if not home_tee_db:
+                    home_track_db = None
+                else:
+                    home_track_db = session.exec(select(Track).where(Track.id == home_tee_db.track_id)).one()
 
                 # Find round tee
-                if (flight_db.course_id == course_db.id) and (home_track_db.name[0].upper() == row['course_abbreviation'][-1].upper()):
+                if (home_track_db) and (flight_db.course_id == course_db.id) and (home_track_db.name[0].upper() == row['course_abbreviation'][-1].upper()):
                     tee_db = home_tee_db # round played at home course
                 else:
                     print(f"Match played at non-home course: {row['course_abbreviation']}")
@@ -1272,7 +1285,7 @@ if __name__ == "__main__":
     DATA_DIR = "data/"
     # DATA_YEARS = [2021, 2020, 2019, 2018] # historical data
     # DATA_YEARS = [2022,] # setup for 2022
-    DATA_YEARS = [2019,] # testing
+    DATA_YEARS = [2021,] # testing
 
     load_dotenv()
 
@@ -1351,7 +1364,7 @@ if __name__ == "__main__":
 
             # Add tournament score data to database
             tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{data_year}_"]
-            for scores_file in tournament_scores_files:
-                add_tournament_rounds(session, scores_file, tournaments_file)
+            # for scores_file in tournament_scores_files:
+            #     add_tournament_rounds(session, scores_file, tournaments_file)
 
     print("Database initialized!")
