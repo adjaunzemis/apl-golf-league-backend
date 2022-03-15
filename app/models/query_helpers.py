@@ -80,7 +80,7 @@ class FlightInfo(SQLModel):
     id: int
     year: int
     name: str
-    course: str
+    course: str = None
     logo_url: str = None
     signup_start_date: str = None
     signup_stop_date: str = None
@@ -91,7 +91,7 @@ class FlightData(SQLModel):
     id: int
     year: int
     name: str
-    course: str
+    course: str = None
     logo_url: str = None
     secretary: str = None
     secretary_email: str = None
@@ -160,7 +160,12 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         flight data from database
     
     """
-    flight_query_data = session.exec(select(Flight, Course).join(Course).where(Flight.id.in_(flight_ids)).order_by(Flight.year))
+    # flight_query_data = session.exec(select(Flight, Course).join(Course).where(Flight.id.in_(flight_ids)).order_by(Flight.year))
+    flights_db = session.exec(select(Flight).where(Flight.id.in_(flight_ids)).order_by(Flight.year)).all()
+    courses_db = session.exec(select(Course).where(Course.id.in_([flight_db.course_id for flight_db in flights_db]))).all()
+    flight_courses_db: List[Course] = []
+    for flight_db in flights_db:
+        flight_courses_db.append([course_db for course_db in courses_db if course_db.id == flight_db.course_id][0] if flight_db.course_id else None)
     return [FlightData(
         id=flight.id,
         year=flight.year,
@@ -174,8 +179,8 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
         start_date=flight.start_date.astimezone().replace(microsecond=0).isoformat() if flight.start_date else None,
         weeks=flight.weeks,
         locked=flight.locked,
-        course=course.name
-    ) for flight, course in flight_query_data]
+        course=flight_courses_db[idx].name if flight_courses_db[idx] else None
+    ) for idx, flight in enumerate(flights_db)]
 
 def get_tournaments(session: Session, tournament_ids: List[int]) -> List[TournamentData]:
     """
