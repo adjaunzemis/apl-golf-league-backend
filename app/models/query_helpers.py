@@ -43,7 +43,9 @@ class TeamGolferData(SQLModel):
     team_name: str
     role: str
     year: int
-    statistics: GolferStatistics = None
+    statistics: Optional[GolferStatistics] = None
+    handicap_index: Optional[float] = None
+    handicap_index_updated: Optional[datetime] = None
 
 class GolferData(SQLModel):
     golfer_id: int
@@ -406,7 +408,9 @@ def get_team_golfers(session: Session, golfer_ids: List[int]) -> List[TeamGolfer
         division_name=division.name,
         team_name=team.name,
         role=team_golfer_link.role,
-        year=flight.year
+        year=flight.year,
+        handicap_index=golfer.handicap_index,
+        handicap_index_updated=golfer.handicap_index_updated
     ) for team_golfer_link, team, golfer, division, flight in query_data]
 
 def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
@@ -435,7 +439,9 @@ def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> 
         division_name=division.name,
         team_name=team.name,
         role=team_golfer_link.role,
-        year=flight.year
+        year=flight.year,
+        handicap_index=golfer.handicap_index,
+        handicap_index_updated=golfer.handicap_index_updated
     ) for team_golfer_link, team, golfer, division, flight in query_data]
 
 def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
@@ -466,7 +472,9 @@ def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int])
         division_name=division.name,
         team_name=team.name,
         role=team_golfer_link.role,
-        year=tournament.year
+        year=tournament.year,
+        handicap_index=golfer.handicap_index,
+        handicap_index_updated=golfer.handicap_index_updated
     ) for team_golfer_link, team, golfer, division, tournament in query_data]
 
 def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
