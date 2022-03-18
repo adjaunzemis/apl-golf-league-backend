@@ -1,5 +1,6 @@
 from typing import List, Optional
 from datetime import datetime, timedelta
+from datetime import date as dt_date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
@@ -30,7 +31,7 @@ from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 # TODO: Move custom route data models elsewhere
 class HandicapIndexData(SQLModel):
     active_date: str
-    active_handicap_index: float
+    active_handicap_index: float = None
     active_rounds: Optional[List[RoundSummary]] = None
     pending_handicap_index: Optional[float] = None
     pending_rounds: Optional[List[RoundSummary]] = None
@@ -360,7 +361,7 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
     golfer_ids : list of integers
         golfer identifiers
     include_scoring_record: boolean, optional
-        if true, includes scoring record with handicap index data
+        if true, includes scoring record rounds with handicap index data
         Default: False
         
     Returns
@@ -375,7 +376,7 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
         name=golfer.name,
         affiliation=golfer.affiliation,
         member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
-        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, date=datetime.today().astimezone().replace(microsecond=0).isoformat(), limit=10, include_record=include_scoring_record, use_legacy_handicapping=True)
+        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, min_date=datetime(datetime.today().year - 2, 1, 1).date(), max_date=datetime.today().date(), limit=10, include_rounds=include_scoring_record, use_legacy_handicapping=True)
     ) for golfer in golfer_query_data]
 
     # Add team-golfer data to golfer data and return
@@ -412,7 +413,7 @@ def get_team_golfers(session: Session, golfer_ids: List[int]) -> List[TeamGolfer
         role=team_golfer_link.role,
         year=flight.year,
         handicap_index=golfer.handicap_index,
-        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat()
+        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat() if golfer.handicap_index_updated else None
     ) for team_golfer_link, team, golfer, division, flight in query_data]
 
 def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
@@ -443,7 +444,7 @@ def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> 
         role=team_golfer_link.role,
         year=flight.year,
         handicap_index=golfer.handicap_index,
-        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat()
+        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat() if golfer.handicap_index_updated else None
     ) for team_golfer_link, team, golfer, division, flight in query_data]
 
 def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
@@ -832,7 +833,7 @@ def get_round_summaries(session: Session, round_ids: List[int]) -> List[RoundSum
         r.score_differential = ahs.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score)
     return round_summaries
 
-def get_rounds_in_scoring_record(session: Session, golfer_id: int, min_date: datetime, max_date: datetime, limit: int = 20) -> List[RoundSummary]:
+def get_rounds_in_scoring_record(session: Session, golfer_id: int, min_date: dt_date, max_date: dt_date, limit: int = 20) -> List[RoundSummary]:
     """
     Extracts round data for rounds in golfer's scoring record.
 
@@ -862,7 +863,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, min_date: dat
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.scoring_type == ScoringType.INDIVIDUAL).where(Round.date_played >= min_date).where(Round.date_played <= max_date).order_by(desc(Round.date_played)).limit(limit)).all()
     return sorted(get_round_summaries(session=session, round_ids=round_ids), key=lambda round_summary: round_summary.date_played, reverse=True)
 
-def get_handicap_index_data(session: Session, golfer_id: int, min_date: datetime, max_date: datetime, limit: int = 20, include_rounds: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
+def get_handicap_index_data(session: Session, golfer_id: int, min_date: dt_date, max_date: dt_date, limit: int = 20, include_rounds: bool = False, use_legacy_handicapping: bool = False) -> HandicapIndexData:
     """
     Extracts round data for golfer's scoring record and computes handicap index.
 
@@ -900,8 +901,8 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: datetime
     # Process active scoring record (between min_date and max_date)
     active_index = None
     active_rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=min_date, max_date=max_date, limit=limit)
-    if len(active_rounds) > 0:
-        active_record = [handicap_system.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score) for r in active_rounds]
+    active_record = [handicap_system.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score) for r in active_rounds]
+    if len(active_record) > 0:
         active_index = handicap_system.compute_handicap_index(record=active_record)
     # Process pending scoring record (between max_date and now)
     pending_rounds = []
@@ -912,7 +913,8 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: datetime
         pending_record = [handicap_system.compute_score_differential(r.tee_rating, r.tee_slope, r.adjusted_gross_score) for r in pending_rounds]
         if len(pending_record) < limit:
             pending_record = pending_record + active_record[:-len(pending_rounds)]
-        pending_index = handicap_system.compute_handicap_index(record=pending_record)
+        if len(pending_record) > 0:
+            pending_index = handicap_system.compute_handicap_index(record=pending_record)
     # Return results
     data = HandicapIndexData(
         active_date=datetime.combine(max_date, datetime.min.time()).astimezone().replace(microsecond=0).isoformat(),
