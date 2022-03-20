@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from ..dependencies import get_current_active_user, get_session
 from ..models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
 from ..models.user import User
-from ..models.query_helpers import GolferData, GolferDataWithCount, TeamGolferData, get_golfers, get_golfer_team_data
+from ..models.query_helpers import GolferData, GolferDataWithCount, GolferTeamData, get_golfers, get_golfer_team_data
 
 router = APIRouter(
     prefix="/golfers",
@@ -63,6 +63,6 @@ async def delete_golfer(*, session: Session = Depends(get_session), current_user
     session.commit()
     return {"ok": True}
 
-@router.get("/{golfer_id}/teams", response_model=List[TeamGolferData])
+@router.get("/{golfer_id}/teams", response_model=List[GolferTeamData])
 async def read_golfer_team_data(*, session: Session = Depends(get_session), golfer_id: int, year: int = Query(default=None)):
     return get_golfer_team_data(session=session, golfer_ids=(golfer_id,), year=year)
