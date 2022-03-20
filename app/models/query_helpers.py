@@ -380,12 +380,12 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
     ) for golfer in golfer_query_data]
 
     # Add team-golfer data to golfer data and return
-    player_data = get_team_golfers(session=session, golfer_ids=golfer_ids)
+    player_data = get_golfer_team_data(session=session, golfer_ids=golfer_ids)
     for g in golfer_data:
         g.team_golfer_data = [p for p in player_data if p.golfer_id == g.golfer_id]
     return golfer_data
 
-def get_team_golfers(session: Session, golfer_ids: List[int], year: int = None) -> List[TeamGolferData]:
+def get_golfer_team_data(session: Session, golfer_ids: List[int], year: int = None) -> List[TeamGolferData]:
     """
     Retrieves team golfer data for the given golfers.
     
@@ -401,15 +401,17 @@ def get_team_golfers(session: Session, golfer_ids: List[int], year: int = None) 
 
     Returns
     -------
-    team_golfer_data : list of TeamGolferData
-        team golfer data for the given golfers
+    golfer_team_data : list of TeamGolferData
+        team data for the given golfers
 
     """
     if year: # filter results by year
         flight_team_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Flight).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id).where(Flight.year == year).where(TeamGolferLink.golfer_id.in_(golfer_ids))).all()
+        tournament_team_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Tournament).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(Tournament, onclause=TournamentDivisionLink.tournament_id == Tournament.id).where(Tournament.year == year).where(TeamGolferLink.golfer_id.in_(golfer_ids))).all()
     else: # no filtering
         flight_team_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Flight).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id).join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id).where(TeamGolferLink.golfer_id.in_(golfer_ids))).all()
-    return [TeamGolferData(
+        tournament_team_data = session.exec(select(TeamGolferLink, Team, Golfer, Division, Tournament).join(Team, onclause=TeamGolferLink.team_id == Team.id).join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Division, onclause=TeamGolferLink.division_id == Division.id).join(TournamentDivisionLink, onclause=TournamentDivisionLink.division_id == Division.id).join(Tournament, onclause=TournamentDivisionLink.tournament_id == Tournament.id).where(TeamGolferLink.golfer_id.in_(golfer_ids))).all()
+    golfer_team_data = [TeamGolferData(
         team_id=team_golfer_link.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
@@ -421,6 +423,19 @@ def get_team_golfers(session: Session, golfer_ids: List[int], year: int = None) 
         handicap_index=golfer.handicap_index,
         handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat() if golfer.handicap_index_updated else None
     ) for team_golfer_link, team, golfer, division, flight in flight_team_data]
+    golfer_team_data.extend([TeamGolferData(
+        team_id=team_golfer_link.team_id,
+        golfer_id=golfer.id,
+        golfer_name=golfer.name,
+        tournament_name=tournament.name,
+        division_name=division.name,
+        team_name=team.name,
+        role=team_golfer_link.role,
+        year=tournament.year,
+        handicap_index=golfer.handicap_index,
+        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat() if golfer.handicap_index_updated else None
+    ) for team_golfer_link, team, golfer, division, tournament in tournament_team_data])
+    return golfer_team_data
 
 def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> List[TeamGolferData]:
     """
