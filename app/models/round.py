@@ -54,7 +54,7 @@ class RoundSummary(SQLModel):
     date_played: datetime
     round_type: RoundType
     golfer_name: str
-    golfer_playing_handicap: float
+    golfer_playing_handicap: Optional[int] = None
     course_name: str
     track_name: str
     tee_name: str
@@ -76,7 +76,7 @@ class RoundData(SQLModel):
     date_updated: datetime
     golfer_id: int
     golfer_name: str
-    golfer_playing_handicap: int
+    golfer_playing_handicap: Optional[int] = None
     team_name: Optional[str] = None
     course_id: int
     course_name: str
