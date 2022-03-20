@@ -679,7 +679,7 @@ def get_tournament_rounds(session: Session, tournament_id: int, round_ids: List[
         round data for the given rounds
     
     """
-    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Team, onclause=Team.id == TeamGolferLink.team_id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids)).where(TournamentTeamLink.tournament_id == tournament_id)).all()
+    round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(Team, onclause=Team.id == TeamGolferLink.team_id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids)).where(TournamentTeamLink.tournament_id == tournament_id)).all()
     round_data = [RoundData(
         round_id=round.id,
         match_id=None, # TODO: remove match_id from RoundData

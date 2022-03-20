@@ -4,33 +4,39 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-
 from ..dependencies import get_current_active_user, get_session
-from ..models.round import Round, RoundCreate, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
+from ..models.round import Round, RoundCreate, RoundData, RoundType, RoundUpdate, RoundRead, RoundReadWithData, RoundDataWithCount
 from ..models.hole_result import HoleResult, HoleResultCreate, HoleResultUpdate, HoleResultRead, HoleResultReadWithHole
 from ..models.round_golfer_link import RoundGolferLink
+from ..models.tournament import Tournament
+from ..models.tournament_round_link import TournamentRoundLink
 from ..models.user import User
-from ..models.query_helpers import get_flight_rounds
+from ..models.query_helpers import get_flight_rounds, get_tournament_rounds
 
 router = APIRouter(
     prefix="/rounds",
     tags=["Rounds"]
 )
     
-@router.get("/", response_model=RoundDataWithCount)
-async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None, ge=0), year: int = Query(default=None, ge=2000), offset: int = Query(default=0, ge=0), limit: int = Query(default=25, ge=0, le=100)):
+@router.get("/", response_model=List[RoundData])
+async def read_rounds(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None, ge=0), year: int = Query(default=None, ge=2000)):
     # Process query parameters to limit results
     if golfer_id: # limit by golfer
         if year: # limit by year
-            round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played >= date(year, 1, 1)).where(Round.date_played < date(year + 1, 1, 1)).offset(offset).limit(limit)).all()
+            round_query_data = session.exec(select(Round.id, Round.type).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.date_played >= date(year, 1, 1)).where(Round.date_played < date(year + 1, 1, 1))).all()
         else: # all rounds for golfer
-            round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).offset(offset).limit(limit)).all()
+            round_query_data = session.exec(select(Round.id, Round.type).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id)).all()
     elif year: # limit by year
-        round_ids = session.exec(select(Round.id).where(Round.date_played >= date(year, 1, 1)).where(Round.date_played < date(year + 1, 1, 1)).offset(offset).limit(limit)).all()
+        round_query_data = session.exec(select(Round.id, Round.type).where(Round.date_played >= date(year, 1, 1)).where(Round.date_played < date(year + 1, 1, 1))).all()
     else: # no extra limitations
-        round_ids = session.exec(select(Round.id).offset(offset).limit(limit)).all()
-    # Return count of relevant rounds from database and round data list
-    return RoundDataWithCount(num_rounds=len(round_ids), rounds=get_flight_rounds(session=session, round_ids=round_ids)) # TODO: add tournament rounds
+        round_query_data = session.exec(select(Round.id, Round.type)).all()
+    # Return round data list
+    round_data = get_flight_rounds(session=session, round_ids=(round_id for round_id, round_type in round_query_data if round_type == RoundType.FLIGHT))
+    for round_id, round_type in round_query_data:
+        if round_type == RoundType.TOURNAMENT:
+            tournament_id = session.exec(select(Tournament.id).join(TournamentRoundLink, onclause=TournamentRoundLink.tournament_id == Tournament.id).where(TournamentRoundLink.round_id == round_id)).one()
+            round_data += get_tournament_rounds(session=session, tournament_id=tournament_id, round_ids=(round_id,))
+    return round_data
 
 @router.post("/", response_model=RoundRead)
 async def create_round(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), round: RoundCreate):
