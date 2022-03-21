@@ -9,6 +9,9 @@ services:
       - APLGL_DATABASE_PORT
       - APLGL_DATABASE_NAME
       - APLGL_DATABASE_ECHO
+      - APLGL_ACCESS_TOKEN_SECRET_KEY
+      - APLGL_ACCESS_TOKEN_ALGORITHM
+      - APLGL_ACCESS_TOKEN_EXPIRE_MINUTES
     build: ./
     restart: always
     labels:
