@@ -1123,8 +1123,8 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
     year = int(scores_file.split("_")[-2])
     tournament_abbreviation = scores_file.split("_")[-1][0:-4].upper()
 
-    # Initialize handicap system, use WHS for tournaments (18-hole)
-    whs = WorldHandicapSystem()
+    # Initialize handicap system
+    alhs = APLLegacyHandicapSystem()
 
     # Read tournament data spreadsheet
     df_flights = pd.read_csv(tournaments_file)
@@ -1188,6 +1188,15 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
 
             # Add rounds
             for tee_db in [primary_tee_db, secondary_tee_db]:
+                # Determine 9-hole playing handicap for this tee
+                if row["course_handicap"] % 2 == 0: # even 18-hole playing handicaps
+                    golfer_playing_handicap = int(row["course_handicap"] / 2)
+                else: # odd 18-hole playing handicaps
+                    if tee_db.holes[0].stroke_index % 2 == 0: # even stroke indices, easier 9, use higher playing handicap
+                        golfer_playing_handicap = int(row["course_handicap"] / 2) + 1
+                    else: # odd stroke indices, harder 9, use lower playing handicap
+                        golfer_playing_handicap = int(row["course_handicap"] / 2)
+
                 round_data_db = session.exec(select(Round, RoundGolferLink).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.type == RoundType.TOURNAMENT).where(Round.date_played == tournament_db.date).where(Round.tee_id == tee_db.id)).one_or_none()
                 if not round_data_db:
                     print(f"Adding tournament round for {golfer_db.name} on tee_id={tee_db.id}")
@@ -1205,7 +1214,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     round_golfer_link_db = RoundGolferLink(
                         round_id=round_db.id,
                         golfer_id=golfer_db.id,
-                        playing_handicap=row['course_handicap']
+                        playing_handicap=golfer_playing_handicap
                     )
                     session.add(round_golfer_link_db)
                     session.commit()
@@ -1221,7 +1230,7 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                     round_db = round_data_db[0]
                     round_golfer_link_db = round_data_db[1]
 
-                # Add primary round hole results
+                # Add round hole results
                 hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
 
                 for hole_db in tee_db.holes:
@@ -1229,13 +1238,13 @@ def add_tournament_rounds(session: Session, scores_file: str, tournaments_file: 
                         print(f"Adding hole #{hole_db.number} result")
                         hNum = hole_db.number
                         gross_score = row[f"hole_{hNum}"]
-                        handicap_strokes = whs.compute_hole_handicap_strokes(hole_db.stroke_index, round_golfer_link_db.playing_handicap)
+                        handicap_strokes = alhs.compute_hole_handicap_strokes(hole_db.stroke_index, golfer_playing_handicap)
                         hole_result_db = HoleResult(
                             round_id=round_db.id,
                             hole_id=hole_db.id,
                             handicap_strokes=handicap_strokes,
                             gross_score=gross_score,
-                            adjusted_gross_score=whs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=round_golfer_link_db.playing_handicap),
+                            adjusted_gross_score=alhs.compute_hole_adjusted_gross_score(hole_db.par, hole_db.stroke_index, gross_score, course_handicap=golfer_playing_handicap),
                             net_score=(gross_score - handicap_strokes)
                         )
                         session.add(hole_result_db)
@@ -1255,7 +1264,7 @@ def add_officers(session: Session, officers_file: str):
     """
     print(f"Adding officer data from file: {officers_file}")
 
-    year = int(courses_file.split(".")[0][-4:])
+    year = int(officers_file.split(".")[0][-4:])
 
     # Read officers data spreadsheet
     df_officers = pd.read_csv(officers_file)
@@ -1370,9 +1379,9 @@ def update_golfer_handicaps(*, session: Session, golfer_ids: List[int] = None, l
             if handicap_index and (golfer_db.handicap_index != handicap_index):
                 print(f"Updating handicap index for golfer '{golfer_db.name}' to {handicap_index:.1f}")
                 golfer_db.handicap_index = handicap_index
-                golfer_db.handicap_index_updated = update_epoch
+                golfer_db.handicap_index_updated = round_data[0][0].date_played
                 session.add(golfer_db)
-    session.commit() # update all handicaps at once to save time
+    session.commit() # update all handicaps at once
     print(f"Handicap index updates complete")
 
 if __name__ == "__main__":
@@ -1396,75 +1405,75 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        # # Initialize golfers table
-        # initialize_golfers(session)
+        # Initialize golfers table
+        initialize_golfers(session)
 
-        # for data_year in DATA_YEARS:
-        #     print(f"Processing data for year: {data_year}")
+        for data_year in DATA_YEARS:
+            print(f"Processing data for year: {data_year}")
 
-        #     # Find all courses played in flight rounds
-        #     flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{data_year}_"]
-        #     courses_played = []
-        #     for scores_file in flight_scores_files:
-        #         for course_played in find_flight_courses_played(scores_file):
-        #             if course_played not in courses_played:
-        #                 courses_played.append(course_played)
+            # Find all courses played in flight rounds
+            flight_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"scores_{data_year}_"]
+            courses_played = []
+            for scores_file in flight_scores_files:
+                for course_played in find_flight_courses_played(scores_file):
+                    if course_played not in courses_played:
+                        courses_played.append(course_played)
 
-        #     # Find all courses played in tournament rounds
-        #     tournaments_file = f"{DATA_DIR}/tournaments_{data_year}.csv"
-        #     for course_played in find_tournament_courses_played(tournaments_file):
-        #         if course_played not in courses_played:
-        #             courses_played.append(course_played)
+            # Find all courses played in tournament rounds
+            tournaments_file = f"{DATA_DIR}/tournaments_{data_year}.csv"
+            for course_played in find_tournament_courses_played(tournaments_file):
+                if course_played not in courses_played:
+                    courses_played.append(course_played)
 
-        #     # Check course data before continuing
-        #     courses_file = f"{DATA_DIR}/courses_{data_year}.csv"
-        #     custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
+            # Check course data before continuing
+            courses_file = f"{DATA_DIR}/courses_{data_year}.csv"
+            custom_courses_file = f"{DATA_DIR}/courses_custom.csv"
 
-        #     print(f"Courses played: {courses_played}")
+            print(f"Courses played: {courses_played}")
             
-        #     flag_error_par = False if data_year == 2022 else True
-        #     checks_pass = check_course_data(courses_file, custom_courses_file, courses_played, error_on_mismatch_par=flag_error_par)
-        #     if not checks_pass:
-        #         raise RuntimeError("Missing or inconsistent course data, halting database initialization")
-        #     print(f"Validated course entry data")
+            flag_error_par = False if data_year == 2022 else True
+            checks_pass = check_course_data(courses_file, custom_courses_file, courses_played, error_on_mismatch_par=flag_error_par)
+            if not checks_pass:
+                raise RuntimeError("Missing or inconsistent course data, halting database initialization")
+            print(f"Validated course entry data")
 
-        #     # Add relevant course data to database
-        #     add_courses(session, courses_file, custom_courses_file, courses_played)
+            # Add relevant course data to database
+            add_courses(session, courses_file, custom_courses_file, courses_played)
 
-        #     # Add officer data to database
-        #     officers_file = f"{DATA_DIR}/officers_{data_year}.csv"
-        #     add_officers(session, officers_file)
+            # Add officer data to database
+            officers_file = f"{DATA_DIR}/officers_{data_year}.csv"
+            add_officers(session, officers_file)
 
-        #     # Add flight data to database
-        #     flights_file = f"{DATA_DIR}/flights_{data_year}.csv"
-        #     add_flights(session, flights_file, custom_courses_file)
+            # Add flight data to database
+            flights_file = f"{DATA_DIR}/flights_{data_year}.csv"
+            add_flights(session, flights_file, custom_courses_file)
 
-        #     # Add tournament data to database
-        #     add_tournaments(session, tournaments_file, custom_courses_file)
+            # Add tournament data to database
+            add_tournaments(session, tournaments_file, custom_courses_file)
 
-        #     # Add flight roster data into database
-        #     flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{data_year}_"]
-        #     for roster_file in flight_roster_files:
-        #         add_flight_teams(session, roster_file, flights_file)
+            # Add flight roster data into database
+            flight_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:12] == f"roster_{data_year}_"]
+            for roster_file in flight_roster_files:
+                add_flight_teams(session, roster_file, flights_file)
 
-        #     # Add tournament roster data into database
-        #     tournament_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_roster_{data_year}_"]
-        #     for roster_file in tournament_roster_files:
-        #         add_tournament_teams(session, roster_file, tournaments_file)
+            # Add tournament roster data into database
+            tournament_roster_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_roster_{data_year}_"]
+            for roster_file in tournament_roster_files:
+                add_tournament_teams(session, roster_file, tournaments_file)
 
-        #     # Add flight score data to database
-        #     for scores_file in flight_scores_files:
-        #         add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{data_year}_subs.csv")
+            # Add flight score data to database
+            for scores_file in flight_scores_files:
+                add_flight_matches(session, scores_file, flights_file, courses_file, custom_courses_file, f"{DATA_DIR}/roster_{data_year}_subs.csv")
 
-        #     # Add tournament score data to database
-        #     tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{data_year}_"]
-        #     for scores_file in tournament_scores_files:
-        #         add_tournament_rounds(session, scores_file, tournaments_file)
+            # Add tournament score data to database
+            tournament_scores_files = [f"{DATA_DIR}/{f}" for f in os.listdir(DATA_DIR) if f[0:23] == f"tournament_scores_{data_year}_"]
+            for scores_file in tournament_scores_files:
+                add_tournament_rounds(session, scores_file, tournaments_file)
         
         # Fix rounds with "scratch" playing handicaps for non-scratch golfers
         fix_scratch_golfer_handicaps(session=session)
 
-        # # Update handicap index for all golfers
-        # update_golfer_handicaps(session=session)
+        # Update handicap index for all golfers
+        update_golfer_handicaps(session=session)
 
     print("Database initialized!")
