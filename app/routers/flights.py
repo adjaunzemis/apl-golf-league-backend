@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
@@ -7,7 +6,6 @@ from ..dependencies import get_current_active_user, get_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.match import MatchSummary
 from ..models.user import User
-from ..models.payment import LeagueDuesPayment, LeagueDuesPaymentRead, LeagueDuesType
 from ..models.query_helpers import FlightData, FlightInfoWithCount, get_divisions_in_flights, get_flights, get_matches_for_teams, get_teams_in_flights
 
 router = APIRouter(
@@ -79,10 +77,3 @@ async def delete_flight(*, session: Session = Depends(get_session), current_user
     session.commit()
     # TODO: Delete linked resources (divisions, teams, etc.)
     return {"ok": True}
-
-@router.get("/payments", response_model=List[LeagueDuesPaymentRead])
-async def read_flight_payments(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), year: int):
-    flight_payments_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES).where(LeagueDuesPayment.year == year)).all()
-    if not flight_payments_db:
-        raise HTTPException(status_code=404, detail=f"No flight dues payment information found for year: {year}")
-    return flight_payments_db

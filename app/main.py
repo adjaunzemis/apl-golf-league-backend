@@ -4,7 +4,7 @@ from mangum import Mangum
 import logging
 
 from .dependencies import create_db_and_tables
-from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users
+from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users, payments
 from .utilities.custom_logger import CustomizeLogger
 
 description = """
@@ -14,7 +14,7 @@ APL Golf League API
 app = FastAPI(
     title="APL Golf League",
     description=description,
-    version="0.1.0",
+    version="0.2.0",
     contact={
         "name": "Andris Jaunzemis",
         "email": "adjaunzemis@gmail.com",
@@ -73,6 +73,7 @@ app.include_router(rounds.router, dependencies=[Depends(log_request_data)])
 app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
+app.include_router(payments.router, dependencies=[Depends(log_request_data)])
 
 @app.on_event("startup")
 def on_startup():
