@@ -15,7 +15,7 @@ router = APIRouter(
 class LeagueDuesPaymentInfo(LeagueDuesPaymentRead):
     golfer_name: str
 
-@router.get("/", response_model=List[LeagueDuesPaymentRead])
+@router.get("/", response_model=List[LeagueDuesPaymentInfo])
 async def read_league_dues_payments_for_year(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), year: int):
     # TODO: Validate current user privileges
     payment_query_data = session.exec(select(LeagueDuesPayment, Golfer).join(Golfer, onclause=Golfer.id == LeagueDuesPayment.golfer_id).where(LeagueDuesPayment.year == year)).all()
