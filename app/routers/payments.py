@@ -1,9 +1,9 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_session
-from ..models.payment import LeagueDuesPayment, LeagueDuesPaymentRead
+from ..models.payment import LeagueDuesPayment, LeagueDuesPaymentRead, LeagueDuesPaymentUpdate
 from ..models.user import User
 from ..models.golfer import Golfer
 
@@ -32,3 +32,17 @@ async def read_league_dues_payments_for_year(*, session: Session = Depends(get_s
         method=payment_db.method,
         confirmation=payment_db.confirmation
     ) for payment_db, golfer_db in payment_query_data]
+
+@router.patch("/{payment_id}", response_model=LeagueDuesPaymentRead)
+async def update_league_dues_payment(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), payment_id: int, payment: LeagueDuesPaymentUpdate):
+    # TODO: Validate current user privileges
+    payment_db = session.get(LeagueDuesPayment, payment_id)
+    if not payment_db:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    payment_data = payment.dict(exclude_unset=True)
+    for key, value in payment_data.items():
+        setattr(payment_db, key, value)
+    session.add(payment_db)
+    session.commit()
+    session.refresh(payment_db)
+    return payment_db
