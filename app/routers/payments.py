@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
@@ -35,7 +36,8 @@ async def read_league_dues_payments_for_year(*, session: Session = Depends(get_s
 
 @router.patch("/{payment_id}", response_model=LeagueDuesPaymentRead)
 async def update_league_dues_payment(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), payment_id: int, payment: LeagueDuesPaymentUpdate):
-    # TODO: Validate current user privileges
+    if not current_user.edit_payments:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not authorized to update payments")
     payment_db = session.get(LeagueDuesPayment, payment_id)
     if not payment_db:
         raise HTTPException(status_code=404, detail="Payment not found")
