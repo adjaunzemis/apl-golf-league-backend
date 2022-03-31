@@ -30,7 +30,7 @@ async def read_league_dues_payments_for_year(*, session: Session = Depends(get_s
         is_paid=payment_db.is_paid,
         linked_payment_id=payment_db.linked_payment_id,
         method=payment_db.method,
-        confirmation=payment_db.confirmation
+        comment=payment_db.comment
     ) for payment_db, golfer_db in payment_query_data]
 
 @router.patch("/{payment_id}", response_model=LeagueDuesPaymentRead)

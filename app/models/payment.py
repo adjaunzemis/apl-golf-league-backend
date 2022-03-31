@@ -44,7 +44,7 @@ class LeagueDuesPaymentBase(SQLModel):
     is_paid: Optional[bool] = False
     linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
+    comment: Optional[str] = None
 
 class LeagueDuesPayment(LeagueDuesPaymentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -61,7 +61,7 @@ class LeagueDuesPaymentUpdate(SQLModel):
     is_paid: Optional[bool] = None
     linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
+    comment: Optional[str] = None
 
 class LeagueDuesPaymentRead(LeagueDuesPaymentBase):
     id: int
@@ -76,7 +76,7 @@ class TournamentEntryFeePaymentBase(SQLModel):
     is_paid: Optional[bool] = False
     linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
+    comment: Optional[str] = None
 
 class TournamentEntryFeePayment(TournamentEntryFeePaymentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -94,7 +94,7 @@ class TournamentEntryFeePaymentUpdate(TournamentEntryFeePaymentBase):
     is_paid: Optional[bool] = None
     linked_payment_id: Optional[int] = None
     method: Optional[PaymentMethod] = None
-    confirmation: Optional[str] = None
+    comment: Optional[str] = None
 
 class TournamentEntryFeePaymentRead(TournamentEntryFeePaymentBase):
     id: int
