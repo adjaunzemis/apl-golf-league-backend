@@ -375,118 +375,115 @@ if __name__ == "__main__":
 
     SQLModel.metadata.create_all(engine)  
 
-    with Session(engine) as session:
-        # Add league dues
-        add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount=40)
-        add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount=35)
+    # with Session(engine) as session:
+    #     # Add league dues
+    #     add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount=40)
+    #     add_league_dues_fee(session=session, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount=35)
 
-        # Add users
-        flightdr_user_db = add_user(session=session, username="flightDR", name="DR Flight Secretary", email=None, password="APLgolf-dr2022", disabled=False)
+    #     # Course and Tees
+    #     dr_course_db = add_diamond_ridge_course(session=session)
 
-        # Course and Tees
-        # dr_course_db = add_diamond_ridge_course(session=session)
+    #     dr_front_track_db = session.exec(select(Track).where(Track.course_id == dr_course_db.id).where(Track.name == "Front")).one()
+    #     dr_front_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_front_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_front_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_front_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one()
 
-        # dr_front_track_db = session.exec(select(Track).where(Track.course_id == dr_course_db.id).where(Track.name == "Front")).one()
-        # dr_front_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_front_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_front_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_front_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one()
+    #     dr_back_track_db = session.exec(select(Track).where(Track.course_id == dr_course_db.id).where(Track.name == "Back")).one()
+    #     dr_back_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_back_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_back_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one()
+    #     dr_back_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one()
 
-        # dr_back_track_db = session.exec(select(Track).where(Track.course_id == dr_course_db.id).where(Track.name == "Back")).one()
-        # dr_back_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_back_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_back_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one()
-        # dr_back_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one()
-
-        # # Golfers
-        # adj_golfer_db = add_golfer(session=session, name="Andris Jaunzemis", affiliation=GolferAffiliation.APL_EMPLOYEE)
-        # add_league_dues_payment_for_golfer(session=session, golfer_id=adj_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=40.00)
-        # sej_golfer_db = add_golfer(session=session, name="Samantha Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
-        # add_league_dues_payment_for_golfer(session=session, golfer_id=sej_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=35.00)
-        # lgj_golfer_db = add_golfer(session=session, name="Lily Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
-        # add_league_dues_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount_due=30.00)
-        # add_tournament_entry_fee_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, tournament_id=1, type=TournamentEntryFeeType.MEMBER_FEE, amount_due=60.00)
+    #     # Golfers
+    #     adj_golfer_db = add_golfer(session=session, name="Andris Jaunzemis", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    #     add_league_dues_payment_for_golfer(session=session, golfer_id=adj_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=40.00)
+    #     sej_golfer_db = add_golfer(session=session, name="Samantha Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
+    #     add_league_dues_payment_for_golfer(session=session, golfer_id=sej_golfer_db.id, year=2022, type=LeagueDuesType.FLIGHT_DUES, amount_due=35.00)
+    #     lgj_golfer_db = add_golfer(session=session, name="Lily Jaunzemis", affiliation=GolferAffiliation.APL_FAMILY)
+    #     add_league_dues_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, type=LeagueDuesType.TOURNAMENT_ONLY_DUES, amount_due=30.00)
+    #     add_tournament_entry_fee_payment_for_golfer(session=session, golfer_id=lgj_golfer_db.id, year=2022, tournament_id=1, type=TournamentEntryFeeType.MEMBER_FEE, amount_due=60.00)
         
-        # gpb_golfer_db = add_golfer(session=session, name="George P. Burdell", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # mt_golfer_db = add_golfer(session=session, name="Merel Tuve", affiliation=GolferAffiliation.APL_RETIREE)
-        # na_golfer_db = add_golfer(session=session, name="Neil Armstrong", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     gpb_golfer_db = add_golfer(session=session, name="George P. Burdell", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     mt_golfer_db = add_golfer(session=session, name="Merel Tuve", affiliation=GolferAffiliation.APL_RETIREE)
+    #     na_golfer_db = add_golfer(session=session, name="Neil Armstrong", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
-        # tw_golfer_db = add_golfer(session=session, name="Tiger Woods", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # pm_golfer_db = add_golfer(session=session, name="Phil Mickelson", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # rm_golfer_db = add_golfer(session=session, name="Rory McIlroy", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # js_golfer_db = add_golfer(session=session, name="Jordan Spieth", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # jt_golfer_db = add_golfer(session=session, name="Justin Thomas", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # nk_golfer_db = add_golfer(session=session, name="Nelly Korda", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     tw_golfer_db = add_golfer(session=session, name="Tiger Woods", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     pm_golfer_db = add_golfer(session=session, name="Phil Mickelson", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     rm_golfer_db = add_golfer(session=session, name="Rory McIlroy", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     js_golfer_db = add_golfer(session=session, name="Jordan Spieth", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     jt_golfer_db = add_golfer(session=session, name="Justin Thomas", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     nk_golfer_db = add_golfer(session=session, name="Nelly Korda", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
-        # jl_golfer_db = add_golfer(session=session, name="John Landshof", affiliation=GolferAffiliation.APL_EMPLOYEE)
-        # be_golfer_db = add_golfer(session=session, name="Bob Erlandson", affiliation=GolferAffiliation.APL_EMPLOYEE)
-        # rs_golfer_db = add_golfer(session=session, name="Richie Steinwand", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    #     jl_golfer_db = add_golfer(session=session, name="John Landshof", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    #     be_golfer_db = add_golfer(session=session, name="Bob Erlandson", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    #     rs_golfer_db = add_golfer(session=session, name="Richie Steinwand", affiliation=GolferAffiliation.APL_EMPLOYEE)
 
-        # ms_golfer_db = add_golfer(session=session, name="Michael Scott", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # jh_golfer_db = add_golfer(session=session, name="Jim Halpert", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # ph_golfer_db = add_golfer(session=session, name="Pam Halpert", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # ds_golfer_db = add_golfer(session=session, name="Dwight Schrute", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # cb_golfer_db = add_golfer(session=session, name="Creed Bratton", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     ms_golfer_db = add_golfer(session=session, name="Michael Scott", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     jh_golfer_db = add_golfer(session=session, name="Jim Halpert", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     ph_golfer_db = add_golfer(session=session, name="Pam Halpert", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     ds_golfer_db = add_golfer(session=session, name="Dwight Schrute", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     cb_golfer_db = add_golfer(session=session, name="Creed Bratton", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
-        # ca_golfer_db = add_golfer(session=session, name="Captain America", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # im_golfer_db = add_golfer(session=session, name="Iron Man", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # bw_golfer_db = add_golfer(session=session, name="Black Widow", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # sm_golfer_db = add_golfer(session=session, name="Spiderman", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
-        # he_golfer_db = add_golfer(session=session, name="Hawkeye", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     ca_golfer_db = add_golfer(session=session, name="Captain America", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     im_golfer_db = add_golfer(session=session, name="Iron Man", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     bw_golfer_db = add_golfer(session=session, name="Black Widow", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     sm_golfer_db = add_golfer(session=session, name="Spiderman", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    #     he_golfer_db = add_golfer(session=session, name="Hawkeye", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
-        # # Flight and Divisions
-        # tf_flight_db = add_flight(session=session, name="Test Flight", year=2022, course_id=dr_course_db.id, logo_url="apl_golf_logo.png", secretary="Andris Jaunzemis", secretary_email="adjaunzemis@gmail.com", signup_start_date=datetime(2022, 3, 1, 0, 0, 0), signup_stop_date=datetime(2022, 4, 1, 0, 0, 0), start_date=datetime(2022, 4, 18, 0, 0, 0), weeks=19)
+    #     # Flight and Divisions
+    #     tf_flight_db = add_flight(session=session, name="Test Flight", year=2022, course_id=dr_course_db.id, logo_url="apl_golf_logo.png", secretary="Andris Jaunzemis", secretary_email="adjaunzemis@gmail.com", signup_start_date=datetime(2022, 3, 1, 0, 0, 0), signup_stop_date=datetime(2022, 4, 1, 0, 0, 0), start_date=datetime(2022, 4, 18, 0, 0, 0), weeks=19)
 
-        # tf_middle_mens_division_db = add_division(session=session, name="Middle", gender=TeeGender.MENS, primary_tee_id=dr_front_white_mens_tee_db.id, secondary_tee_id=dr_back_white_mens_tee_db.id, flight_id=tf_flight_db.id)
-        # tf_senior_mens_division_db = add_division(session=session, name="Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_gold_mens_tee_db.id, secondary_tee_id=dr_back_gold_mens_tee_db.id, flight_id=tf_flight_db.id)
-        # tf_supersenior_mens_division_db = add_division(session=session, name="Super-Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_red_mens_tee_db.id, secondary_tee_id=dr_back_red_mens_tee_db.id, flight_id=tf_flight_db.id)
-        # tf_forward_ladies_division_db = add_division(session=session, name="Forward", gender=TeeGender.LADIES, primary_tee_id=dr_front_red_ladies_tee_db.id, secondary_tee_id=dr_back_red_ladies_tee_db.id, flight_id=tf_flight_db.id)
+    #     tf_middle_mens_division_db = add_division(session=session, name="Middle", gender=TeeGender.MENS, primary_tee_id=dr_front_white_mens_tee_db.id, secondary_tee_id=dr_back_white_mens_tee_db.id, flight_id=tf_flight_db.id)
+    #     tf_senior_mens_division_db = add_division(session=session, name="Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_gold_mens_tee_db.id, secondary_tee_id=dr_back_gold_mens_tee_db.id, flight_id=tf_flight_db.id)
+    #     tf_supersenior_mens_division_db = add_division(session=session, name="Super-Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_red_mens_tee_db.id, secondary_tee_id=dr_back_red_mens_tee_db.id, flight_id=tf_flight_db.id)
+    #     tf_forward_ladies_division_db = add_division(session=session, name="Forward", gender=TeeGender.LADIES, primary_tee_id=dr_front_red_ladies_tee_db.id, secondary_tee_id=dr_back_red_ladies_tee_db.id, flight_id=tf_flight_db.id)
 
-        # # Teams
-        # jaunzemax_team_db = add_team(session=session, name="JaunzeMAX", flight_id=tf_flight_db.id)
+    #     # Teams
+    #     jaunzemax_team_db = add_team(session=session, name="JaunzeMAX", flight_id=tf_flight_db.id)
 
-        # add_golfer_to_team(session=session, golfer_id=lgj_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_forward_ladies_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=adj_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=sej_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=lgj_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_forward_ladies_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=adj_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=sej_golfer_db.id, team_id=jaunzemax_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
 
-        # legends_team_db = add_team(session=session, name="Legends", flight_id=tf_flight_db.id)
+    #     legends_team_db = add_team(session=session, name="Legends", flight_id=tf_flight_db.id)
 
-        # add_golfer_to_team(session=session, golfer_id=gpb_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=mt_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.PLAYER, division_id=tf_supersenior_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=na_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.PLAYER, division_id=tf_senior_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=gpb_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=mt_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.PLAYER, division_id=tf_supersenior_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=na_golfer_db.id, team_id=legends_team_db.id, role=TeamRole.PLAYER, division_id=tf_senior_mens_division_db.id)
 
-        # pros_team_db = add_team(session=session, name="Pros", flight_id=tf_flight_db.id)
+    #     pros_team_db = add_team(session=session, name="Pros", flight_id=tf_flight_db.id)
 
-        # add_golfer_to_team(session=session, golfer_id=tw_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=pm_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=rm_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=js_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=jt_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=nk_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=tw_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=pm_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=rm_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=js_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=jt_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=nk_golfer_db.id, team_id=pros_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
 
-        # committee_team_db = add_team(session=session, name="The Committee", flight_id=tf_flight_db.id)
+    #     committee_team_db = add_team(session=session, name="The Committee", flight_id=tf_flight_db.id)
         
-        # add_golfer_to_team(session=session, golfer_id=jl_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=be_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.PLAYER, division_id=tf_senior_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=rs_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=jl_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=be_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.PLAYER, division_id=tf_senior_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=rs_golfer_db.id, team_id=committee_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
 
-        # dunder_team_db = add_team(session=session, name="Dunder Mifflin", flight_id=tf_flight_db.id)
+    #     dunder_team_db = add_team(session=session, name="Dunder Mifflin", flight_id=tf_flight_db.id)
         
-        # add_golfer_to_team(session=session, golfer_id=ms_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=jh_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=ph_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=ds_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=cb_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_supersenior_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=ms_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=jh_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=ph_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=ds_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=cb_golfer_db.id, team_id=dunder_team_db.id, role=TeamRole.PLAYER, division_id=tf_supersenior_mens_division_db.id)
 
-        # avengers_team_db = add_team(session=session, name="Avengers", flight_id=tf_flight_db.id)
+    #     avengers_team_db = add_team(session=session, name="Avengers", flight_id=tf_flight_db.id)
 
-        # add_golfer_to_team(session=session, golfer_id=ca_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=im_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=bw_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=sm_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
-        # add_golfer_to_team(session=session, golfer_id=he_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=ca_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.CAPTAIN, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=im_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=bw_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_forward_ladies_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=sm_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
+    #     add_golfer_to_team(session=session, golfer_id=he_golfer_db.id, team_id=avengers_team_db.id, role=TeamRole.PLAYER, division_id=tf_middle_mens_division_db.id)
         
-        # # Add matches to set flight schedule
-        # add_scheduled_matches(session=session, flight=tf_flight_db)
+    #     # Add matches to set flight schedule
+    #     add_scheduled_matches(session=session, flight=tf_flight_db)
 
-    print("Database updates complete!")
+    # print("Database updates complete!")

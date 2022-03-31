@@ -6,6 +6,9 @@ class UserBase(SQLModel):
     email: Optional[str] = None
     name: Optional[str] = None
     disabled: Optional[bool] = None
+    edit_flights: Optional[bool] = False
+    edit_tournaments: Optional[bool] = False
+    edit_payments: Optional[bool] = False
 
 class User(UserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -20,6 +23,9 @@ class UserUpdate(SQLModel):
     email: Optional[int] = None
     name: Optional[str] = None
     disabled: Optional[bool] = None
+    edit_flights: Optional[bool] = None
+    edit_tournaments: Optional[bool] = None
+    edit_payments: Optional[bool] = None
 
 class UserRead(UserBase):
     id: int
