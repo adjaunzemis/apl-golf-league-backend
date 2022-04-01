@@ -21,7 +21,7 @@ app = FastAPI(
     }
 )
 
-CONFIG_PATH = "logs/logging.config"
+CONFIG_PATH = "logging.config"
 logger = logging.getLogger(__name__)
 logger = CustomizeLogger.make_logger(CONFIG_PATH)
 app.logger = logger
