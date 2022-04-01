@@ -12,8 +12,5 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 # copy the local app folder to the app folder in the container
 COPY ./app /app/
 
-# copy the logging configuration folder to the container
-COPY ./logs /logs/
-
 # execute command to start server
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
