@@ -1,6 +1,6 @@
-from http import HTTPStatus
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from http import HTTPStatus
 from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_session
@@ -15,15 +15,18 @@ router = APIRouter(
 
 class LeagueDuesPaymentInfo(LeagueDuesPaymentRead):
     golfer_name: str
+    golfer_email: Optional[str]
 
 @router.get("/", response_model=List[LeagueDuesPaymentInfo])
 async def read_league_dues_payments_for_year(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), year: int):
-    # TODO: Validate current user privileges
+    if not current_user.edit_payments:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not authorized to view payments")
     payment_query_data = session.exec(select(LeagueDuesPayment, Golfer).join(Golfer, onclause=Golfer.id == LeagueDuesPayment.golfer_id).where(LeagueDuesPayment.year == year)).all()
     return [LeagueDuesPaymentInfo(
         id=payment_db.id,
         golfer_id=payment_db.golfer_id,
         golfer_name=golfer_db.name,
+        golfer_email=golfer_db.email,
         year=payment_db.year,
         type=payment_db.type,
         amount_due=payment_db.amount_due,
