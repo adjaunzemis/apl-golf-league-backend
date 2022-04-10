@@ -88,6 +88,8 @@ class FlightInfo(SQLModel):
     name: str
     course: str = None
     logo_url: str = None
+    secretary: str = None
+    secretary_email: str = None
     signup_start_date: str = None
     signup_stop_date: str = None
     start_date: str = None
@@ -122,6 +124,8 @@ class TournamentInfo(SQLModel):
     date: str = None
     course: str = None
     logo_url: str = None
+    secretary: str = None
+    secretary_email: str = None
     signup_start_date: str = None
     signup_stop_date: str = None
     members_entry_fee: float = None
