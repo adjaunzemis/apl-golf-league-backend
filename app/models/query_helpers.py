@@ -40,6 +40,7 @@ class GolferTeamData(SQLModel):
     team_id: int
     golfer_id: int
     golfer_name: str
+    golfer_email: Optional[str] = None
     division_name: str
     flight_id: Optional[int] = None
     flight_name: Optional[str] = None
@@ -415,6 +416,7 @@ def get_golfer_team_data(session: Session, golfer_ids: List[int], year: int = No
         team_id=team_golfer_link.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
+        golfer_email=golfer.email,
         flight_id=flight.id,
         flight_name=flight.name,
         division_name=division.name,
@@ -428,6 +430,7 @@ def get_golfer_team_data(session: Session, golfer_ids: List[int], year: int = No
         team_id=team_golfer_link.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
+        golfer_email=golfer.email,
         tournament_id=tournament.id,
         tournament_name=tournament.name,
         division_name=division.name,
@@ -461,6 +464,7 @@ def get_flight_team_golfers_for_teams(session: Session, team_ids: List[int]) -> 
         team_id=team_golfer_link.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
+        golfer_email=golfer.email,
         flight_id=flight.id,
         flight_name=flight.name,
         division_name=division.name,
@@ -495,6 +499,7 @@ def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int])
         team_id=team_golfer_link.team_id,
         golfer_id=golfer.id,
         golfer_name=golfer.name,
+        golfer_email=golfer.email,
         tournament_id=tournament.id,
         tournament_name=tournament.name,
         division_name=division.name,
