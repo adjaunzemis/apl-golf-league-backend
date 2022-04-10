@@ -56,7 +56,9 @@ class GolferTeamData(SQLModel):
 class GolferData(SQLModel):
     golfer_id: int
     name: str
-    affiliation: str = None
+    affiliation: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
     member_since: int = None
     handicap_index_data: HandicapIndexData = None
 
@@ -380,6 +382,8 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
     golfer_data = [GolferData(
         golfer_id=golfer.id,
         name=golfer.name,
+        email=golfer.email,
+        phone=golfer.phone,
         affiliation=golfer.affiliation,
         member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
         handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, min_date=datetime(datetime.today().year - 2, 1, 1).date(), max_date=datetime.today().date(), limit=10, include_rounds=include_scoring_record, use_legacy_handicapping=True)
