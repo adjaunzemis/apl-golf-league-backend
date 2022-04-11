@@ -35,6 +35,7 @@ def check_flight_dues_payment_entry(*, session: Session, flight_db: Flight, golf
     payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == golfer_db.id).where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES).where(LeagueDuesPayment.year == flight_db.year)).one_or_none()
     if not payment_db:
         print(f"Missing flight dues payment entry for golfer '{golfer_db.name}'")
+        print(f"\tINSERT INTO leagueduespayment (golfer_id, year, type, amount_due, amount_paid, is_paid) VALUES ({golfer_db.id}, {flight_db.year}, 'Flight Dues', 40, 0, 0);")
         return
     if check_status:
         if not ((payment_db.amount_due <= payment_db.amount_paid) or (payment_db.method == PaymentMethod.EXEMPT) or (payment_db.method == PaymentMethod.LINKED)):
@@ -89,3 +90,5 @@ if __name__ == "__main__":
                 for golfer_db in golfers_db:
                     check_flight_dues_payment_entry(session=session, flight_db=flight_db, golfer_db=golfer_db)
                     check_division_assignment(session=session, flight_db=flight_db, team_db=team_db, golfer_db=golfer_db)
+    
+    print("Done!")
