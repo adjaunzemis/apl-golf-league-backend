@@ -56,6 +56,8 @@ def check_division_assignment(*, session: Session, flight_db: Flight, team_db: T
             print(f"\tUnable to find probable correct division!")
             return
         print(f"\tProbable correct division: '{other_division_db.name}' (id={other_division_db.id})")
+        # Print SQL update statement
+        print(f"\t\tSET division_id = {other_division_db.id} WHERE golfer_id = {golfer_db.id} AND team_id = {team_db.id};")
 
 if __name__ == "__main__":
     YEAR = 2022
@@ -79,17 +81,11 @@ if __name__ == "__main__":
         # For each flight:
         flights_db = session.exec(select(Flight).where(Flight.year == YEAR)).all()
         for flight_db in flights_db:
-            # print(f"Flight: {flight_db.name} ({flight_db.year})")
-
             # For each team:
             teams_db = session.exec(select(Team).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).where(FlightTeamLink.flight_id == flight_db.id)).all()
             for team_db in teams_db:
-                # print(f"Team: {team_db.name}")
-
                 # For each golfer:
                 golfers_db = session.exec(select(Golfer).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).where(TeamGolferLink.team_id == team_db.id)).all()
                 for golfer_db in golfers_db:
-                    # print(f"Golfer: {golfer_db.name}")
-        
                     check_flight_dues_payment_entry(session=session, flight_db=flight_db, golfer_db=golfer_db)
                     check_division_assignment(session=session, flight_db=flight_db, team_db=team_db, golfer_db=golfer_db)
