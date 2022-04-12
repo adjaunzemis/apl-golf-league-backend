@@ -36,7 +36,7 @@ async def read_officer(*, session: Session = Depends(get_session), officer_id: i
     return officer_db
 
 @router.patch("/{officer_id}", response_model=OfficerRead)
-async def update_golfer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), officer_id: int, officer: OfficerUpdate):
+async def update_officer(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), officer_id: int, officer: OfficerUpdate):
     officer_db = session.get(Officer, officer_id)
     if not officer_db:
         raise HTTPException(status_code=404, detail="Officer not found")
