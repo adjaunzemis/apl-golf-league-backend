@@ -26,6 +26,7 @@ class QualifyingScoreBase(SQLModel):
     tee_slope: Optional[float] = None
     gross_score: Optional[int] = None
     adjusted_gross_score: Optional[int] = None
+    comment: Optional[str] = None
 
 class QualifyingScore(QualifyingScoreBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -50,6 +51,7 @@ class QualifyingScoreUpdate(SQLModel):
     tee_slope: Optional[float] = None
     gross_score: Optional[int] = None
     adjusted_gross_score: Optional[int] = None
+    comment: Optional[str] = None
 
 class QualifyingScoreRead(QualifyingScoreBase):
     id: int
