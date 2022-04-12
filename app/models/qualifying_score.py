@@ -7,11 +7,11 @@ from .golfer import Golfer
 from .tee import TeeGender
 
 class QualifyingScoreType(str, Enum):
-    QUALIFYING_SCORES = "Qualifying Scores"
+    QUALIFYING_ROUND = "Qualifying Round"
     OFFICIAL_HANDICAP_INDEX = "Official Handicap Index"
 
 class QualifyingScoreBase(SQLModel):
-    golfer_id: int
+    golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     type: QualifyingScoreType
     score_differential: float
