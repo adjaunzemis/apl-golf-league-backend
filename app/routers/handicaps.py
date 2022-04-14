@@ -48,7 +48,7 @@ async def read_qualifying_scores(*, session: Session = Depends(get_session), yea
         adjusted_gross_score=qualifying_score_db.adjusted_gross_score
     ) for qualifying_score_db, golfer_db in qualifying_score_data]
 
-@router.put("/", response_model=QualifyingScoreRead)
+@router.post("/qualifying-score/", response_model=QualifyingScoreRead)
 async def create_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score: QualifyingScoreCreate):
     # TODO: Validate current user credentials
     qualifying_score_db = QualifyingScore.from_orm(qualifying_score)
@@ -57,14 +57,14 @@ async def create_qualifying_score(*, session: Session = Depends(get_session), cu
     session.refresh(qualifying_score_db)
     return qualifying_score_db
 
-@router.get("/{qualifying_score_id}", response_model=QualifyingScoreRead)
+@router.get("/qualifying-score/{qualifying_score_id}", response_model=QualifyingScoreRead)
 async def read_qualifying_score(*, session: Session = Depends(get_session), qualifying_score_id: int):
     qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)
     if not qualifying_score_db:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Qualifying score not found")
     return qualifying_score_db
 
-@router.patch("/{qualifying_score_id}", response_model=QualifyingScoreRead)
+@router.patch("/qualifying-score/{qualifying_score_id}", response_model=QualifyingScoreRead)
 async def update_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score_id: int, qualifying_score: QualifyingScoreUpdate):
     # TODO: Validate current user credentials
     qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)
@@ -78,7 +78,7 @@ async def update_qualifying_score(*, session: Session = Depends(get_session), cu
     session.refresh(qualifying_score_db)
     return qualifying_score_db
 
-@router.delete("/{qualifying_score_id}")
+@router.delete("/qualifying-score/{qualifying_score_id}")
 async def delete_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score_id: int):
     # TODO: Validate current user credentials
     qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)
