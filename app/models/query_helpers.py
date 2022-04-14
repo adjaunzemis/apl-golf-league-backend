@@ -908,7 +908,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, min_date: dt_
     round_ids = session.exec(select(Round.id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(RoundGolferLink.golfer_id == golfer_id).where(Round.scoring_type == ScoringType.INDIVIDUAL).where(Round.date_played >= min_date).where(Round.date_played <= max_date).order_by(desc(Round.date_played)).limit(limit)).all()
     round_summaries = get_round_summaries(session=session, round_ids=round_ids, use_legacy_handicapping=use_legacy_handicapping)
     if len(round_summaries) < 2: # include qualifying scores
-        qualifying_scores_db = session.exec(select(QualifyingScore).where(QualifyingScore.date_played >= min_date).where(QualifyingScore.date_played <= max_date)).all()
+        qualifying_scores_db = session.exec(select(QualifyingScore).where(QualifyingScore.golfer_id == golfer_id).where(QualifyingScore.date_played >= min_date).where(QualifyingScore.date_played <= max_date)).all()
         for qualifying_score_db in qualifying_scores_db:
             round_summaries.append(RoundSummary(
                 date_played=qualifying_score_db.date_played,
