@@ -17,7 +17,6 @@ router = APIRouter(
 async def read_golfers(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     # TODO: Process query parameters to further limit golfer results returned from database
     golfer_ids = session.exec(select(Golfer.id).offset(offset).limit(limit)).all()
-
     # Return count of relevant golfers from database and golfer data list
     return GolferDataWithCount(num_golfers=len(golfer_ids), golfers=get_golfers(session=session, golfer_ids=golfer_ids)
 )

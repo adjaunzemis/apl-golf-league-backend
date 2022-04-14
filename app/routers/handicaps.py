@@ -19,12 +19,12 @@ class QualifyingScoreInfo(QualifyingScoreRead):
     golfer_name: str
 
 @router.get("/scoring-record/id={golfer_id}", response_model=List[RoundSummary])
-async def get_scoring_record(*, session: Session = Depends(get_session), golfer_id: int, max_date: date = Query(default=date.today()), limit: int = Query(default=10)):
-    return get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, max_date=max_date, limit=limit)
+async def get_scoring_record(*, session: Session = Depends(get_session), golfer_id: int, min_date: date = Query(default=date(date.today().year - 2, 1, 1)), max_date: date = Query(default=date.today()), limit: int = Query(default=10), use_legacy_handicapping: bool = Query(default=False)):
+    return get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=min_date, max_date=max_date, limit=limit, use_legacy_handicapping=use_legacy_handicapping)
 
 @router.get("/handicap-index/id={golfer_id}", response_model=HandicapIndexData)
-async def get_handicap_index(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None), min_date: date = Query(default=date(date.today().year - 2, 1, 1)), max_date: date = Query(default=date.today()), limit: int = Query(default=10), include_rounds: bool = Query(default=False)):
-    return get_handicap_index_data(session=session, golfer_id=golfer_id, min_date=min_date, max_date=max_date, limit=limit, include_rounds=include_rounds, use_legacy_handicapping=True)
+async def get_handicap_index(*, session: Session = Depends(get_session), golfer_id: int = Query(default=None), min_date: date = Query(default=date(date.today().year - 2, 1, 1)), max_date: date = Query(default=date.today()), limit: int = Query(default=10), include_rounds: bool = Query(default=False), use_legacy_handicapping: bool = Query(default=False)):
+    return get_handicap_index_data(session=session, golfer_id=golfer_id, min_date=min_date, max_date=max_date, limit=limit, include_rounds=include_rounds, use_legacy_handicapping=use_legacy_handicapping)
 
 @router.get("/", response_model=List[QualifyingScoreInfo])
 async def read_qualifying_scores(*, session: Session = Depends(get_session), year: int):
