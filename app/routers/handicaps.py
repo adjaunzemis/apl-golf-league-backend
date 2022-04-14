@@ -3,10 +3,13 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, HTTPException
 from http import HTTPStatus
 from sqlmodel import Session, select
+from datetime import datetime
+
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 from ..dependencies import get_current_active_user, get_session
 from ..models.query_helpers import RoundSummary, HandicapIndexData, get_handicap_index_data, get_rounds_in_scoring_record
-from ..models.qualifying_score import QualifyingScore, QualifyingScoreCreate, QualifyingScoreRead, QualifyingScoreUpdate
+from ..models.qualifying_score import QualifyingScore, QualifyingScoreCreate, QualifyingScoreRead
 from ..models.golfer import Golfer
 from ..models.user import User
 
@@ -49,12 +52,29 @@ async def read_qualifying_scores(*, session: Session = Depends(get_session), yea
     ) for qualifying_score_db, golfer_db in qualifying_score_data]
 
 @router.post("/qualifying-score/", response_model=QualifyingScoreRead)
-async def create_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score: QualifyingScoreCreate):
+async def create_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score: QualifyingScoreCreate, use_legacy_handicapping: bool = False):
     # TODO: Validate current user credentials
+    # Validate and submit qualifying score data
+    golfer_db = session.exec(select(Golfer).where(Golfer.id == qualifying_score.golfer_id)).one_or_none()
+    if not golfer_db:
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Qualifying score data invalid, no such golfer")
     qualifying_score_db = QualifyingScore.from_orm(qualifying_score)
     session.add(qualifying_score_db)
     session.commit()
     session.refresh(qualifying_score_db)
+    # Update golfer handicap index (if possible)
+    qualifying_scores_db = session.exec(select(QualifyingScore).where(QualifyingScore.golfer_id == golfer_db.id)).all()
+    if len(qualifying_scores_db) > 1:
+        if use_legacy_handicapping:
+            handicap_system = APLLegacyHandicapSystem()
+        else:
+            raise ValueError("Non-legacy handicapping not implemented yet!")
+        golfer_db.handicap_index = handicap_system.compute_handicap_index(record=[qualifying_score.score_differential for qualifying_score in qualifying_scores_db])
+        golfer_db.handicap_index_updated = datetime.now()
+        session.add(golfer_db)
+        session.commit()
+        session.refresh(golfer_db)
+    # Return new qualifying score database entry
     return qualifying_score_db
 
 @router.get("/qualifying-score/{qualifying_score_id}", response_model=QualifyingScoreRead)
@@ -62,20 +82,6 @@ async def read_qualifying_score(*, session: Session = Depends(get_session), qual
     qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)
     if not qualifying_score_db:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Qualifying score not found")
-    return qualifying_score_db
-
-@router.patch("/qualifying-score/{qualifying_score_id}", response_model=QualifyingScoreRead)
-async def update_qualifying_score(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), qualifying_score_id: int, qualifying_score: QualifyingScoreUpdate):
-    # TODO: Validate current user credentials
-    qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)
-    if not qualifying_score_db:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Qualifying score not found")
-    qualifying_score_data = qualifying_score.dict(exclude_unset=True)
-    for key, value in qualifying_score_data.items():
-        setattr(qualifying_score_db, key, value)
-    session.add(qualifying_score_db)
-    session.commit()
-    session.refresh(qualifying_score_db)
     return qualifying_score_db
 
 @router.delete("/qualifying-score/{qualifying_score_id}")
