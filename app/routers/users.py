@@ -30,6 +30,7 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
         email=user.email,
         name=user.name,
         disabled=user.disabled,
+        is_admin=user.is_admin,
         edit_flights=user.edit_flights,
         edit_tournaments=user.edit_tournaments,
         edit_payments=user.edit_payments,
