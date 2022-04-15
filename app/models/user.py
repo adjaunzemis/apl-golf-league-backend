@@ -6,6 +6,7 @@ class UserBase(SQLModel):
     email: Optional[str] = None
     name: Optional[str] = None
     disabled: Optional[bool] = None
+    is_admin: Optional[bool] = None
     edit_flights: Optional[bool] = False
     edit_tournaments: Optional[bool] = False
     edit_payments: Optional[bool] = False
@@ -23,6 +24,7 @@ class UserUpdate(SQLModel):
     email: Optional[int] = None
     name: Optional[str] = None
     disabled: Optional[bool] = None
+    is_admin: Optional[bool] = None
     edit_flights: Optional[bool] = None
     edit_tournaments: Optional[bool] = None
     edit_payments: Optional[bool] = None
