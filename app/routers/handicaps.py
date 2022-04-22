@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from http import HTTPStatus
 from sqlmodel import Session, select
 from datetime import datetime
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -68,7 +69,7 @@ async def create_qualifying_score(*, session: Session = Depends(get_session), cu
         if use_legacy_handicapping:
             handicap_system = APLLegacyHandicapSystem()
         else:
-            raise ValueError("Non-legacy handicapping not implemented yet!")
+            handicap_system = APLHandicapSystem()
         golfer_db.handicap_index = handicap_system.compute_handicap_index(record=[qualifying_score.score_differential for qualifying_score in qualifying_scores_db])
         golfer_db.handicap_index_updated = datetime.now()
         session.add(golfer_db)
