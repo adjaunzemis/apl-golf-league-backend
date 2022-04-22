@@ -1,4 +1,5 @@
 from typing import List
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
@@ -34,8 +35,8 @@ async def create_golfer(*, session: Session = Depends(get_session), golfer: Golf
     return golfer_db
 
 @router.get("/{golfer_id}", response_model=GolferData)
-async def read_golfer(*, session: Session = Depends(get_session), golfer_id: int):
-    golfer_db = get_golfers(session=session, golfer_ids=[golfer_id,], include_scoring_record=True)
+async def read_golfer(*, session: Session = Depends(get_session), golfer_id: int, min_date: date = Query(default=date(date.today().year - 2, 1, 1)), max_date: date = Query(default=date.today() + timedelta(days=1))):
+    golfer_db = get_golfers(session=session, golfer_ids=[golfer_id,], min_date=min_date, max_date=max_date, include_scoring_record=True, use_legacy_handicapping=False)
     if (not golfer_db) or (len(golfer_db) == 0):
         raise HTTPException(status_code=404, detail="Golfer not found")
     return golfer_db[0]

@@ -28,6 +28,7 @@ from .qualifying_score import QualifyingScore
 
 from ..utilities.world_handicap_system import WorldHandicapSystem
 from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from ..utilities.apl_handicap_system import APLHandicapSystem
 
 # TODO: Move custom route data models elsewhere
 class HandicapIndexData(SQLModel):
@@ -359,7 +360,7 @@ def get_teams_in_tournaments(session: Session, tournament_ids: List[int]) -> Lis
     team_golfers = get_tournament_team_golfers_for_teams(session=session, team_ids=(team_id for team_id, team_name, tournament in team_query_data))
     return [TournamentTeamData(id=team_id, tournament_id=tournament.id, name=team_name, year=tournament.year, golfers=[golfer for golfer in team_golfers if golfer.team_id == team_id]) for team_id, team_name, tournament in team_query_data]
 
-def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record: bool = False, use_legacy_handicapping: bool = False) -> List[GolferData]:
+def get_golfers(session: Session, golfer_ids: List[int], min_date: dt_date = datetime(datetime.today().year - 2, 1, 1).date(), max_date: dt_date = datetime.today().date() + timedelta(days=1), include_scoring_record: bool = False, use_legacy_handicapping: bool = False) -> List[GolferData]:
     """
     Retrieves golfer data for the given golfers.
     
@@ -369,6 +370,11 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
         database session
     golfer_ids : list of integers
         golfer identifiers
+    min_date: date, optional
+        minimum date for handicap index calculation
+    max_date: date, optional
+        maximum date for active handicap index calculation
+        Default: tomorrow's date (includes all rounds through current day in active index)
     include_scoring_record : boolean, optional
         if true, includes scoring record rounds with handicap index data
         Default: False
@@ -390,7 +396,7 @@ def get_golfers(session: Session, golfer_ids: List[int], include_scoring_record:
         phone=golfer.phone,
         affiliation=golfer.affiliation,
         member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
-        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, min_date=datetime(datetime.today().year - 2, 1, 1).date(), max_date=datetime.today().date(), limit=10, include_rounds=include_scoring_record, use_legacy_handicapping=True)
+        handicap_index_data=get_handicap_index_data(session=session, golfer_id=golfer.id, min_date=min_date, max_date=max_date, limit=10, include_rounds=include_scoring_record, use_legacy_handicapping=use_legacy_handicapping)
     ) for golfer in golfer_query_data]
     return golfer_data
 
@@ -843,7 +849,7 @@ def get_round_summaries(session: Session, round_ids: List[int], use_legacy_handi
     if use_legacy_handicapping:
         handicap_system = APLLegacyHandicapSystem()
     else:
-        raise ValueError("Non-legacy handicapping not implemented yet!")
+        handicap_system = APLHandicapSystem()
 
     round_query_data = session.exec(select(Round, RoundGolferLink, Golfer, Course, Track, Tee).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).join(Tee).join(Track).join(Course).where(Round.id.in_(round_ids))).all()
     round_summaries = [RoundSummary(
@@ -960,7 +966,7 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: dt_date,
     if use_legacy_handicapping:
         handicap_system = APLLegacyHandicapSystem()
     else:
-        raise ValueError("Non-legacy handicapping not implemented yet!")
+        handicap_system = APLHandicapSystem()
     # Process active scoring record (between min_date and max_date)
     active_index = None
     active_rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=min_date, max_date=max_date, limit=limit, use_legacy_handicapping=use_legacy_handicapping)
