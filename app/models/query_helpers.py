@@ -978,7 +978,7 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: dt_date,
     pending_index = None
     pending_date_start = max_date + timedelta(days=1)
     if (datetime.today().date() > pending_date_start):
-        pending_rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=pending_date_start, max_date=datetime.today(), limit=limit, use_legacy_handicapping=use_legacy_handicapping)
+        pending_rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=pending_date_start, max_date=datetime.today() + timedelta(days=1), limit=limit, use_legacy_handicapping=use_legacy_handicapping)
         pending_record = [r.score_differential for r in pending_rounds]
         if len(pending_record) < limit:
             pending_record = pending_record + active_record[:-len(pending_rounds)]
