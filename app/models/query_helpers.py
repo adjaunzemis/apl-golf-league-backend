@@ -135,6 +135,13 @@ class TournamentInfo(SQLModel):
     signup_stop_date: str = None
     members_entry_fee: float = None
     non_members_entry_fee: float = None
+    shotgun: bool = False
+    strokeplay: bool = False
+    bestball: bool = False
+    scramble: bool = False
+    ryder_cup: bool = False
+    individual: bool = False
+    chachacha: bool = False
 
 class TournamentData(SQLModel):
     id: int
@@ -153,6 +160,13 @@ class TournamentData(SQLModel):
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[TournamentTeamData] = []
+    shotgun: bool = False
+    strokeplay: bool = False
+    bestball: bool = False
+    scramble: bool = False
+    ryder_cup: bool = False
+    individual: bool = False
+    chachacha: bool = False
 
 class TournamentInfoWithCount(SQLModel):
     num_tournaments: int
@@ -228,8 +242,15 @@ def get_tournaments(session: Session, tournament_ids: List[int]) -> List[Tournam
         signup_stop_date=tournament.signup_stop_date.astimezone().replace(microsecond=0).isoformat() if tournament.signup_stop_date else None,
         members_entry_fee=tournament.members_entry_fee,
         non_members_entry_fee=tournament.non_members_entry_fee,
-        locked=tournament.locked,
         course=course.name,
+        locked=tournament.locked,
+        shotgun=tournament.shotgun,
+        strokeplay=tournament.strokeplay,
+        bestball=tournament.bestball,
+        scramble=tournament.scramble,
+        ryder_cup=tournament.ryder_cup,
+        individual=tournament.individual,
+        chachacha=tournament.chachacha
     ) for tournament, course in tournament_query_data]
 
 def get_divisions_in_flights(session: Session, flight_ids: List[int]) -> List[DivisionData]:
