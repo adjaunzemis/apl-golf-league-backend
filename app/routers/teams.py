@@ -4,14 +4,16 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 
+
 from ..dependencies import get_current_active_user, get_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink, TeamRole
 from ..models.golfer import Golfer
 from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
+from ..models.tournament import Tournament
 from ..models.tournament_team_link import TournamentTeamLink
-from ..models.payment import LeagueDues, LeagueDuesPayment, LeagueDuesType
+from ..models.payment import LeagueDues, LeagueDuesPayment, LeagueDuesType, TournamentEntryFeePayment, TournamentEntryFeeType
 from ..models.user import User
 from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
 
@@ -28,6 +30,11 @@ class TeamGolferSignupData(SQLModel):
 
 class FlightTeamSignupData(SQLModel):
     flight_id: int
+    name: str
+    golfer_data: List[TeamGolferSignupData]
+
+class TournamentTeamSignupData(SQLModel):
+    tournament_id: int
     name: str
     golfer_data: List[TeamGolferSignupData]
 
@@ -155,5 +162,59 @@ async def signup_team_for_flight(*, session: Session = Depends(get_session), tea
             golfer_dues_payment_db = LeagueDuesPayment(golfer_id=team_golfer.golfer_id, year=flight_db.year, type=LeagueDuesType.FLIGHT_DUES, amount_due=flight_dues_amount)
             session.add(golfer_dues_payment_db)
             session.commit()
+
+    return team_db
+
+@router.post("/tournament-signup", response_model=TeamRead)
+async def signup_team_for_tournament(*, session: Session = Depends(get_session), team_data: TournamentTeamSignupData):
+    # Check if the team name if valid for this tournament
+    team_db = session.exec(select(Team).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id == team_data.tournament_id).where(Team.name == team_data.name)).one_or_none()
+    if team_db:
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' already exists in tournament (id={team_data.tournament_id})")
+
+    # Check for duplicate golfers in sign-up
+    golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
+    if len(golfer_id_list) != len(set(golfer_id_list)):
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups")
+
+    # Check if the given golfers already exist on other teams in this tournament and if one captain was designated
+    team_has_captain = False
+    tournament_golfer_ids = session.exec(select(Golfer.id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id == team_data.tournament_id)).all()
+    for team_golfer in team_data.golfer_data:
+        if team_golfer.golfer_id in tournament_golfer_ids:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in tournament (id={team_data.tournament_id})")
+        if team_golfer.role == TeamRole.CAPTAIN:
+            if team_has_captain:
+                raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' cannot have more than one captain")
+            team_has_captain = True
+    if not team_has_captain:
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' must have a captain")
+
+    # Add team to database
+    team_db = Team(name=team_data.name)
+    session.add(team_db)
+    session.commit()
+
+    # Add tournament-team link
+    tournament_team_link_db = TournamentTeamLink(tournament_id=team_data.tournament_id, team_id=team_db.id)
+    session.add(tournament_team_link_db)
+    session.commit()
+
+    # Add team-golfer links
+    for team_golfer in team_data.golfer_data:
+        team_golfer_link_db = TeamGolferLink(team_id=team_db.id, golfer_id=team_golfer.golfer_id, division_id=team_golfer.division_id, role=team_golfer.role)
+        session.add(team_golfer_link_db)
+        session.commit()
+
+    # Add golfer registrations/payments (as needed)
+    tournament_db = session.exec(select(Tournament).where(Tournament.id == team_data.tournament_id)).one()
+    for team_golfer in team_data.golfer_data:
+        golfer_dues_payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id).where(LeagueDuesPayment.year == tournament_db.year)).one_or_none()
+        if not golfer_dues_payment_db: # no dues payment found for golfer, pay non-member fee
+            golfer_dues_payment_db = TournamentEntryFeePayment(golfer_id=team_golfer.golfer_id, year=tournament_db.year, tournament_id=tournament_db.id, type=TournamentEntryFeeType.NON_MEMBER_FEE, amount_due=tournament_db.non_members_entry_fee)
+        else: # dues payment found for golfer, pay member fee
+            golfer_dues_payment_db = TournamentEntryFeePayment(golfer_id=team_golfer.golfer_id, year=tournament_db.year, tournament_id=tournament_db.id, type=TournamentEntryFeeType.MEMBER_FEE, amount_due=tournament_db.members_entry_fee)
+        session.add(golfer_dues_payment_db)
+        session.commit()
 
     return team_db
