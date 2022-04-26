@@ -542,7 +542,7 @@ def get_tournament_team_golfers_for_teams(session: Session, team_ids: List[int])
         role=team_golfer_link.role,
         year=tournament.year,
         handicap_index=golfer.handicap_index,
-        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat()
+        handicap_index_updated=golfer.handicap_index_updated.astimezone().replace(microsecond=0).isoformat() if golfer.handicap_index_updated else None
     ) for team_golfer_link, team, golfer, division, tournament in query_data]
 
 def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
