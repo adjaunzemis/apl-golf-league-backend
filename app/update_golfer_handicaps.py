@@ -224,20 +224,86 @@ def update_golfer_handicaps(*, session: Session, old_max_date: datetime, new_max
     
     """
     print(f"Updating golfer handicap index data")
-    update_epoch = datetime.now()
     golfers_db = session.exec(select(Golfer)).all()
     for golfer_db in golfers_db:
+        update_required = False
+        update_reasons = []
         old_handicap_index_data = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(datetime.today().year - 2, 1, 1).date(), max_date=old_max_date.date(), limit=10, include_rounds=True, use_legacy_handicapping=False)
         new_handicap_index_data = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(datetime.today().year - 2, 1, 1).date(), max_date=new_max_date.date(), limit=10, include_rounds=True, use_legacy_handicapping=False)
+        old_handicap_index = golfer_db.handicap_index
+        new_handicap_index = new_handicap_index_data.active_handicap_index
+        if new_handicap_index != old_handicap_index:
+            update_required = True
+            update_reasons.append("golfer handicap index mismatch")
         for pending_round in old_handicap_index_data.pending_rounds:
-            if pending_round in new_handicap_index_data.active_rounds:
-                old_handicap_index = golfer_db.handicap_index
-                new_handicap_index = new_handicap_index_data.active_handicap_index
-                print(f"Updating handicap index for golfer '{golfer_db.name}' from {old_handicap_index} to {new_handicap_index:.1f}")
-                golfer_db.handicap_index = new_handicap_index
-                golfer_db.handicap_index_updated = update_epoch
-                session.add(golfer_db)
+            if ((old_handicap_index != new_handicap_index) or (pending_round in new_handicap_index_data.active_rounds)):
+                update_required = True
+                update_reasons.append("pending rounds")
+                break
+        if update_required:
+            print(f"Updating handicap index for golfer '{golfer_db.name}' ({old_handicap_index}) from {old_handicap_index_data.active_handicap_index} to {new_handicap_index} : " + ", ".join(update_reasons))
+            golfer_db.handicap_index = new_handicap_index
+            golfer_db.handicap_index_updated = datetime.now()
+            session.add(golfer_db)
     session.commit() # update all handicaps at once
+
+def recalculate_hole_results(*, session: Session, year: int = 2022):
+    """
+    Recalculates hole results for any rounds played in the given year.
+    
+    If a discrepancy is found between the (new) calculated values and the
+    (old) database values, the database is updated.
+
+    Based on error from early 2022 season in adjusted gross calculation.
+
+    Parameters
+    ----------
+    session : Session
+        database session
+    year : int, optional
+        year for rounds played to be analyzed and corrected
+        Default: 2022
+
+    """
+    print(f"Recalculating hole results for {year} season")
+    ahs = APLHandicapSystem()
+    round_data = session.exec(select(Round, RoundGolferLink, Golfer).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id).where(Round.date_played >= datetime(year, 1, 1))).all()
+    print(f"Analyzing {len(round_data)} rounds")
+    round_error_counter = 0
+    for (round_db, round_golfer_link_db, golfer_db) in round_data:
+        hole_results_db = session.exec(select(HoleResult).where(HoleResult.round_id == round_db.id)).all()
+        error_found_in_round = False
+        for hole_result_db in hole_results_db:
+            hole_db = hole_result_db.hole
+            handicap_strokes = ahs.compute_hole_handicap_strokes(
+                stroke_index=hole_db.stroke_index,
+                course_handicap=round_golfer_link_db.playing_handicap
+            )
+            adj_gross_score = ahs.compute_hole_adjusted_gross_score(
+                par=hole_db.par,
+                stroke_index=hole_db.stroke_index,
+                score=hole_result_db.gross_score,
+                course_handicap=round_golfer_link_db.playing_handicap
+            )
+            net_score = hole_result_db.gross_score - handicap_strokes
+            if (handicap_strokes != hole_result_db.handicap_strokes) or (adj_gross_score != hole_result_db.adjusted_gross_score) or (net_score != hole_result_db.net_score):
+                if not error_found_in_round:
+                    print(f"Golfer: {golfer_db.name}, Date: {round_db.date_played}, Course Handicap: {round_golfer_link_db.playing_handicap}")
+                    error_found_in_round = True
+                    round_error_counter += 1
+                print(f"Hole #{hole_db.number}: Par={hole_db.par}, SI={hole_db.stroke_index}, HS={handicap_strokes}, Gross={hole_result_db.gross_score}, Old AG={hole_result_db.adjusted_gross_score}, New AG={adj_gross_score}")
+                hole_result_db.handicap_strokes = handicap_strokes
+                hole_result_db.adjusted_gross_score = adj_gross_score
+                hole_result_db.net_score = net_score
+                session.add(hole_result_db)
+                session.commit()
+                session.refresh(hole_result_db)
+            if error_found_in_round:
+                round_db.date_updated = datetime.now()
+                session.add(round_db)
+                session.commit()
+                session.refresh(round_db)
+    print(f"Corrected errors in {round_error_counter} rounds")
 
 if __name__ == "__main__":
     load_dotenv()
@@ -255,5 +321,6 @@ if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        update_golfer_handicaps(session=session, old_max_date=datetime(2022, 4, 17), new_max_date=datetime(2022, 4, 24)) # TODO: un-hardcode dates
+        # recalculate_hole_results(session=session, year=2022)
+        update_golfer_handicaps(session=session, old_max_date=datetime(2022, 4, 25), new_max_date=datetime(2022, 5, 2)) # TODO: un-hardcode dates
     print('Done!')
