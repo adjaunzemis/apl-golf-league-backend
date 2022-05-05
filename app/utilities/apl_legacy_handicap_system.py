@@ -24,6 +24,8 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
 
     def compute_hole_maximum_score(self, par: int, stroke_index: int, course_handicap: int = None) -> int:
         # Reference: USGA Equitable Stroke Control (prior to 2020)
+        # Note: This has already taken into account 9-hole course handicaps with 18-hole stroke indexes,
+        # do not multiply course handicap by two!
         if course_handicap <= 4:
             return par + 2
         elif course_handicap <= 9:
