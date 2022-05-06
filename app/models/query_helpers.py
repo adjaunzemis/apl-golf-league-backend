@@ -1003,8 +1003,8 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: dt_date,
         if len(pending_record) > 0:
             if len(pending_record) < limit:
                 pending_record = pending_record + active_record
-                if len(pending_record) > limit:
-                    pending_record = pending_record[:limit]
+            if len(pending_record) > limit:
+                pending_record = pending_record[:limit]
             pending_index = handicap_system.compute_handicap_index(record=pending_record)
     # Return results
     data = HandicapIndexData(
