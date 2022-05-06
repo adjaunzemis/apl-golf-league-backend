@@ -1000,9 +1000,11 @@ def get_handicap_index_data(session: Session, golfer_id: int, min_date: dt_date,
     if (datetime.today().date() > max_date):
         pending_rounds = get_rounds_in_scoring_record(session=session, golfer_id=golfer_id, min_date=max_date, max_date=datetime.today() + timedelta(days=1), limit=limit, use_legacy_handicapping=use_legacy_handicapping)
         pending_record = [r.score_differential for r in pending_rounds]
-        if len(pending_record) < limit:
-            pending_record = pending_record + active_record[:-len(pending_rounds)]
         if len(pending_record) > 0:
+            if len(pending_record) < limit:
+                pending_record = pending_record + active_record
+                if len(pending_record) > limit:
+                    pending_record = pending_record[:limit]
             pending_index = handicap_system.compute_handicap_index(record=pending_record)
     # Return results
     data = HandicapIndexData(
