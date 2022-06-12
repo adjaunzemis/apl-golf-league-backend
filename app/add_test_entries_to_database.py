@@ -229,6 +229,183 @@ def add_diamond_ridge_course(*, session: Session) -> Course:
 
     return dr_course_db
 
+def add_waverly_woods_course_2022(*, session: Session) -> Course:
+    # Using scorecard in email from Steve D'Ambrosio and USGA Course Rating Database
+    ww_course_db = session.exec(select(Course).where(Course.name == "Waverly Woods Golf Club").where(Course.year == 2022)).one_or_none()
+    if not ww_course_db:
+        print(f"Adding course: Waverly Woods Golf Club (2022)")
+        ww_course_db = Course(name="Waverly Woods Golf Club", year=2022, location="2100 Warwick Way, Marriottsville, MD 21104", phone="410-313-9182", website="waverlywoods.com")
+        session.add(ww_course_db)
+        session.commit()
+
+    ww_front_track_db = session.exec(select(Track).where(Track.course_id == ww_course_db.id).where(Track.name == "Front")).one_or_none()
+    if not (ww_front_track_db):
+        print(f"Adding track: Front")
+        ww_front_track_db = Track(name="Front", course_id=ww_course_db.id)
+        session.add(ww_front_track_db)
+        session.commit()
+
+    ww_front_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_front_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_front_white_mens_tee_db:
+        print(f"Adding tee: White (Men's, Front)")
+        ww_front_white_mens_tee_db = Tee(name="White", gender=TeeGender.MENS, rating=35.2, slope=125, color="white", track_id=ww_front_track_db.id)
+        session.add(ww_front_white_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: White (Men's, Front)")
+        session.add(Hole(number=1, par=4, yardage=344, stroke_index=11, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=2, par=5, yardage=515, stroke_index=7, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=3, par=4, yardage=380, stroke_index=5, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=4, par=4, yardage=384, stroke_index=1, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=5, par=3, yardage=122, stroke_index=17, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=6, par=4, yardage=334, stroke_index=15, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=7, par=3, yardage=171, stroke_index=13, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=8, par=5, yardage=525, stroke_index=9, tee_id=ww_front_white_mens_tee_db.id))
+        session.add(Hole(number=9, par=4, yardage=411, stroke_index=3, tee_id=ww_front_white_mens_tee_db.id))
+        session.commit()
+    
+    ww_front_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_front_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_front_gold_mens_tee_db:
+        print(f"Adding tee: Gold (Men's, Front)")
+        ww_front_gold_mens_tee_db = Tee(name="Gold", gender=TeeGender.MENS, rating=33.8, slope=114, color="gold", track_id=ww_front_track_db.id)
+        session.add(ww_front_gold_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Gold (Men's, Front)")
+        session.add(Hole(number=1, par=4, yardage=299, stroke_index=11, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=2, par=5, yardage=459, stroke_index=7, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=3, par=4, yardage=352, stroke_index=5, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=4, par=4, yardage=345, stroke_index=1, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=5, par=3, yardage=108, stroke_index=17, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=6, par=4, yardage=314, stroke_index=15, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=7, par=3, yardage=142, stroke_index=13, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=8, par=5, yardage=481, stroke_index=9, tee_id=ww_front_gold_mens_tee_db.id))
+        session.add(Hole(number=9, par=4, yardage=364, stroke_index=3, tee_id=ww_front_gold_mens_tee_db.id))
+        session.commit()
+
+    ww_front_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_front_red_mens_tee_db:
+        print(f"Adding tee: Red (Men's, Front)")
+        ww_front_red_mens_tee_db = Tee(name="Red", gender=TeeGender.MENS, rating=31.9, slope=114, color="red", track_id=ww_front_track_db.id)
+        session.add(ww_front_red_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Red (Men's, Front)")
+        session.add(Hole(number=1, par=4, yardage=260, stroke_index=11, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=2, par=5, yardage=367, stroke_index=7, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=3, par=4, yardage=266, stroke_index=5, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=4, par=4, yardage=278, stroke_index=1, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=5, par=3, yardage=100, stroke_index=17, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=6, par=4, yardage=271, stroke_index=15, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=7, par=3, yardage=132, stroke_index=13, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=8, par=5, yardage=413, stroke_index=9, tee_id=ww_front_red_mens_tee_db.id))
+        session.add(Hole(number=9, par=4, yardage=330, stroke_index=3, tee_id=ww_front_red_mens_tee_db.id))
+        session.commit()
+
+    ww_front_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_front_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one_or_none()
+    if not ww_front_red_ladies_tee_db:
+        print(f"Adding tee: Red (Ladies', Front)")
+        ww_front_red_ladies_tee_db = Tee(name="Red", gender=TeeGender.LADIES, rating=33.8, slope=120, color="red", track_id=ww_front_track_db.id)
+        session.add(ww_front_red_ladies_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Red (Ladies', Front)")
+        session.add(Hole(number=1, par=4, yardage=260, stroke_index=15, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=2, par=5, yardage=367, stroke_index=3, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=3, par=4, yardage=266, stroke_index=9, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=4, par=4, yardage=278, stroke_index=7, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=5, par=3, yardage=100, stroke_index=17, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=6, par=4, yardage=271, stroke_index=11, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=7, par=3, yardage=132, stroke_index=13, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=8, par=5, yardage=413, stroke_index=1, tee_id=ww_front_red_ladies_tee_db.id))
+        session.add(Hole(number=9, par=4, yardage=330, stroke_index=5, tee_id=ww_front_red_ladies_tee_db.id))
+        session.commit()
+        
+    ww_back_track_db = session.exec(select(Track).where(Track.course_id == ww_course_db.id).where(Track.name == "Back")).one_or_none()
+    if not (ww_back_track_db):
+        print(f"Adding track: Back")
+        ww_back_track_db = Track(name="Back", course_id=ww_course_db.id)
+        session.add(ww_back_track_db)
+        session.commit()
+
+    ww_back_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_back_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_back_white_mens_tee_db:
+        print(f"Adding tee: White (Men's, Back)")
+        ww_back_white_mens_tee_db = Tee(name="White", gender=TeeGender.MENS, rating=35.1, slope=123, color="white", track_id=ww_back_track_db.id)
+        session.add(ww_back_white_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: White (Men's, Back)")
+        session.add(Hole(number=10, par=4, yardage=309, stroke_index=18, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=11, par=5, yardage=475, stroke_index=16, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=12, par=4, yardage=330, stroke_index=6, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=13, par=3, yardage=190, stroke_index=10, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=14, par=4, yardage=437, stroke_index=2, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=15, par=3, yardage=155, stroke_index=12, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=16, par=4, yardage=390, stroke_index=4, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=17, par=4, yardage=350, stroke_index=8, tee_id=ww_back_white_mens_tee_db.id))
+        session.add(Hole(number=18, par=5, yardage=482, stroke_index=14, tee_id=ww_back_white_mens_tee_db.id))
+        session.commit()
+    
+    ww_back_gold_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_back_track_db.id).where(Tee.name == "Gold").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_back_gold_mens_tee_db:
+        print(f"Adding tee: Gold (Men's, Back)")
+        ww_back_gold_mens_tee_db = Tee(name="Gold", gender=TeeGender.MENS, rating=33.7, slope=110, color="gold", track_id=ww_back_track_db.id)
+        session.add(ww_back_gold_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Gold (Men's, Back)")
+        session.add(Hole(number=10, par=4, yardage=294, stroke_index=18, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=11, par=5, yardage=420, stroke_index=16, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=12, par=4, yardage=290, stroke_index=6, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=13, par=3, yardage=174, stroke_index=10, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=14, par=4, yardage=350, stroke_index=2, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=15, par=3, yardage=130, stroke_index=12, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=16, par=4, yardage=320, stroke_index=4, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=17, par=4, yardage=319, stroke_index=8, tee_id=ww_back_gold_mens_tee_db.id))
+        session.add(Hole(number=18, par=5, yardage=445, stroke_index=14, tee_id=ww_back_gold_mens_tee_db.id))
+        session.commit()
+    
+    ww_back_red_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.MENS)).one_or_none()
+    if not ww_back_red_mens_tee_db:
+        print(f"Adding tee: Red (Men's, Back)")
+        ww_back_red_mens_tee_db = Tee(name="Red", gender=TeeGender.MENS, rating=32.5, slope=110, color="red", track_id=ww_back_track_db.id)
+        session.add(ww_back_red_mens_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Red (Men's, Back)")
+        session.add(Hole(number=10, par=4, yardage=233, stroke_index=18, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=11, par=5, yardage=420, stroke_index=16, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=12, par=4, yardage=239, stroke_index=6, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=13, par=3, yardage=95, stroke_index=10, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=14, par=4, yardage=325, stroke_index=2, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=15, par=3, yardage=122, stroke_index=12, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=16, par=4, yardage=312, stroke_index=4, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=17, par=4, yardage=297, stroke_index=8, tee_id=ww_back_red_mens_tee_db.id))
+        session.add(Hole(number=18, par=5, yardage=374, stroke_index=14, tee_id=ww_back_red_mens_tee_db.id))
+        session.commit()
+    
+    ww_back_red_ladies_tee_db = session.exec(select(Tee).where(Tee.track_id == ww_back_track_db.id).where(Tee.name == "Red").where(Tee.gender == TeeGender.LADIES)).one_or_none()
+    if not ww_back_red_ladies_tee_db:
+        print(f"Adding tee: Red (Ladies', Back)")
+        ww_back_red_ladies_tee_db = Tee(name="Red", gender=TeeGender.LADIES, rating=34.3, slope=113, color="red", track_id=ww_back_track_db.id)
+        session.add(ww_back_red_ladies_tee_db)
+        session.commit()
+
+        print(f"Adding holes for tee: Red (Ladies', Back)")
+        session.add(Hole(number=10, par=4, yardage=233, stroke_index=16, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=11, par=5, yardage=420, stroke_index=4, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=12, par=4, yardage=239, stroke_index=6, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=13, par=3, yardage=95, stroke_index=18, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=14, par=4, yardage=325, stroke_index=12, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=15, par=3, yardage=122, stroke_index=14, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=16, par=4, yardage=312, stroke_index=10, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=17, par=4, yardage=297, stroke_index=2, tee_id=ww_back_red_ladies_tee_db.id))
+        session.add(Hole(number=18, par=5, yardage=374, stroke_index=8, tee_id=ww_back_red_ladies_tee_db.id))
+        session.commit()
+
+    return ww_course_db
+
 def add_golfer(*, session: Session, name: str, affiliation: GolferAffiliation) -> Golfer:
     golfer_db = session.exec(select(Golfer).where(Golfer.name == name)).one_or_none()
     if not golfer_db:
@@ -382,6 +559,7 @@ if __name__ == "__main__":
 
     #     # Course and Tees
     #     dr_course_db = add_diamond_ridge_course(session=session)
+    #     ww_course_db = add_waverly_woods_course_2022(session=session)
 
     #     dr_front_track_db = session.exec(select(Track).where(Track.course_id == dr_course_db.id).where(Track.name == "Front")).one()
     #     dr_front_white_mens_tee_db = session.exec(select(Tee).where(Tee.track_id == dr_front_track_db.id).where(Tee.name == "White").where(Tee.gender == TeeGender.MENS)).one()
@@ -486,4 +664,4 @@ if __name__ == "__main__":
     #     # Add matches to set flight schedule
     #     add_scheduled_matches(session=session, flight=tf_flight_db)
 
-    # print("Database updates complete!")
+    print("Database updates complete!")
