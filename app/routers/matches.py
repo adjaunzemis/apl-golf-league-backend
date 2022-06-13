@@ -1,10 +1,9 @@
-from http import HTTPStatus
 from typing import List
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select, SQLModel
-
+from http import HTTPStatus
 
 from ..dependencies import get_current_active_user, get_session
 from ..models.match import Match, MatchCreate, MatchUpdate, MatchRead, MatchData, MatchDataWithCount
@@ -112,7 +111,7 @@ async def post_match_rounds(*, session: Session = Depends(get_session), current_
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Flight (id={match_input.flight_id}) not found")
     match_rounds_db = session.exec(select(Round).join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id).where(MatchRoundLink.match_id == match_input.match_id)).all()
     if len(match_rounds_db) > 0:
-        raise HTTPException(status_code=HTTPStatus.NOT_ACCEPTABLE, detail=f"Rounds already submitted for match (id={match_input.match_id}")
+        raise HTTPException(status_code=HTTPStatus.NOT_ACCEPTABLE, detail=f"Rounds already submitted for match (id={match_input.match_id})")
     for round_input in match_input.rounds:
         golfer_db = session.get(Golfer, round_input.golfer_id)
         if not golfer_db:
