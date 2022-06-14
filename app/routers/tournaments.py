@@ -5,7 +5,6 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 from http import HTTPStatus
 
-
 from .matches import RoundInput
 from ..dependencies import get_current_active_user, get_session
 from ..models.tournament import Tournament, TournamentCreate, TournamentUpdate, TournamentRead
@@ -27,7 +26,7 @@ router = APIRouter(
     tags=["Tournaments"]
 )
 
-class TournamentRoundsInput(SQLModel):
+class TournamentInput(SQLModel):
     tournament_id: int
     date_played: datetime
     rounds: List[RoundInput]
@@ -88,17 +87,17 @@ async def delete_tournament(*, session: Session = Depends(get_session), current_
     return {"ok": True}
 
 @router.post("/rounds", response_model=List[RoundSummary])
-async def post_tournament_rounds(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament_rounds_input: TournamentRoundsInput):
+async def post_tournament_rounds(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament_input: TournamentInput):
     # TODO: Check user credentials
     ahs = APLHandicapSystem()
-    tournament_db = session.get(Tournament, tournament_rounds_input.tournament_id)
+    tournament_db = session.get(Tournament, tournament_input.tournament_id)
     if not tournament_db:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Tournament (id={tournament_rounds_input.tournament_id}) not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Tournament (id={tournament_input.tournament_id}) not found")
     if tournament_db.locked:
         raise HTTPException(status_code=HTTPStatus.NOT_ACCEPTABLE, detail=f"Tournament '{tournament_db.name} ({tournament_db.year})' is locked")
     
     round_ids = []
-    for round_input in tournament_rounds_input.rounds:
+    for round_input in tournament_input.rounds:
         golfer_db = session.get(Golfer, round_input.golfer_id)
         if not golfer_db:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Golfer (id={round_input.golfer_id}) not found")
@@ -109,57 +108,55 @@ async def post_tournament_rounds(*, session: Session = Depends(get_session), cur
         if not tee_db:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Tee (id={round_input.tee_id}) not found")
         tournament_rounds_db = session.exec(select(Round).join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id).join(TournamentTeamLink, onclause=TournamentTeamLink.tournament_id == TournamentRoundLink.tournament_id).join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id).where(TournamentRoundLink.tournament_id == tournament_db.id).where(TournamentTeamLink.team_id == team_db.id).where(RoundGolferLink.golfer_id == golfer_db.id).where(Round.tee_id == tee_db.id)).all()
-        if len(tournament_rounds_db) > 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_ACCEPTABLE, detail=f"Round already submitted for golfer '{golfer_db.name}' on track (id={tee_db.track_id}) on team '{team_db.name}' in tournament '{tournament_db.name}' (id={tournament_db.id})")
-        
-        round_db = Round(
-            tee_id=tee_db.id,
-            type=RoundType.TOURNAMENT,
-            scoring_type=ScoringType.INDIVIDUAL if tournament_db.individual else ScoringType.GROUP,
-            date_played=tournament_rounds_input.date_played,
-            date_updated=datetime.today()
-        )
-        session.add(round_db)
-        session.commit()
-        session.refresh(round_db)
-        round_ids.append(round_db.id)
-
-        tournament_round_link_db = TournamentRoundLink(
-            tournament_id=tournament_db.id,
-            round_id=round_db.id
-        )
-        session.add(tournament_round_link_db)
-        session.commit()
-        session.refresh(tournament_round_link_db)
-
-        round_golfer_link_db = RoundGolferLink(
-            round_id=round_db.id,
-            golfer_id=golfer_db.id,
-            playing_handicap=round_input.golfer_playing_handicap
-        )
-        session.add(round_golfer_link_db)
-        session.commit()
-        session.refresh(round_golfer_link_db)
-
-        for hole_result_input in round_input.holes:
-            hole_db = session.get(Hole, hole_result_input.hole_id)
-            if not hole_db:
-                raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Hole (id={hole_result_input.hole_id}) not found")
-            handicap_strokes = ahs.compute_hole_handicap_strokes(hole_db.stroke_index, round_input.golfer_playing_handicap)
-            hole_result_db = HoleResult(
-                round_id=round_db.id,
-                hole_id=hole_result_input.hole_id,
-                handicap_strokes=handicap_strokes,
-                gross_score=hole_result_input.gross_score,
-                adjusted_gross_score=ahs.compute_hole_adjusted_gross_score(
-                    par=hole_db.par,
-                    stroke_index=hole_db.stroke_index,
-                    score=hole_result_input.gross_score,
-                    course_handicap=round_input.golfer_playing_handicap
-                ),
-                net_score=(hole_result_input.gross_score - handicap_strokes)
+        if (not tournament_rounds_db) or (len(tournament_rounds_db) == 0):
+            round_db = Round(
+                tee_id=tee_db.id,
+                type=RoundType.TOURNAMENT,
+                scoring_type=ScoringType.INDIVIDUAL if tournament_db.individual else ScoringType.GROUP,
+                date_played=tournament_input.date_played,
+                date_updated=datetime.today()
             )
-            session.add(hole_result_db)
-        session.commit()
-        
+            session.add(round_db)
+            session.commit()
+            session.refresh(round_db)
+            round_ids.append(round_db.id)
+
+            tournament_round_link_db = TournamentRoundLink(
+                tournament_id=tournament_db.id,
+                round_id=round_db.id
+            )
+            session.add(tournament_round_link_db)
+            session.commit()
+            session.refresh(tournament_round_link_db)
+
+            round_golfer_link_db = RoundGolferLink(
+                round_id=round_db.id,
+                golfer_id=golfer_db.id,
+                playing_handicap=round_input.golfer_playing_handicap
+            )
+            session.add(round_golfer_link_db)
+            session.commit()
+            session.refresh(round_golfer_link_db)
+
+            for hole_result_input in round_input.holes:
+                hole_db = session.get(Hole, hole_result_input.hole_id)
+                if not hole_db:
+                    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Hole (id={hole_result_input.hole_id}) not found")
+                handicap_strokes = ahs.compute_hole_handicap_strokes(hole_db.stroke_index, round_input.golfer_playing_handicap)
+                hole_result_db = HoleResult(
+                    round_id=round_db.id,
+                    hole_id=hole_result_input.hole_id,
+                    handicap_strokes=handicap_strokes,
+                    gross_score=hole_result_input.gross_score,
+                    adjusted_gross_score=ahs.compute_hole_adjusted_gross_score(
+                        par=hole_db.par,
+                        stroke_index=hole_db.stroke_index,
+                        score=hole_result_input.gross_score,
+                        course_handicap=round_input.golfer_playing_handicap
+                    ),
+                    net_score=(hole_result_input.gross_score - handicap_strokes)
+                )
+                session.add(hole_result_db)
+            session.commit()
+
     return get_round_summaries(session=session, round_ids=round_ids) # TODO: clean up implementation of response
