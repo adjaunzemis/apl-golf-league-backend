@@ -23,7 +23,7 @@ class TournamentBase(SQLModel):
     non_members_entry_fee: Optional[float] = None
     shotgun: Optional[bool] = False
     strokeplay: Optional[bool] = False
-    bestball: Optional[bool] = False
+    bestball: Optional[int] = 0
     scramble: Optional[bool] = False
     ryder_cup: Optional[bool] = False
     individual: Optional[bool] = False
@@ -54,7 +54,7 @@ class TournamentUpdate(SQLModel):
     non_members_entry_fee: Optional[float] = None
     shotgun: Optional[bool] = None
     strokeplay: Optional[bool] = None
-    bestball: Optional[bool] = None
+    bestball: Optional[int] = None
     scramble: Optional[bool] = None
     ryder_cup: Optional[bool] = None
     individual: Optional[bool] = None

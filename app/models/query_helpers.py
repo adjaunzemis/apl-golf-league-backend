@@ -138,7 +138,7 @@ class TournamentInfo(SQLModel):
     non_members_entry_fee: float = None
     shotgun: bool = False
     strokeplay: bool = False
-    bestball: bool = False
+    bestball: int = 0
     scramble: bool = False
     ryder_cup: bool = False
     individual: bool = False
@@ -164,7 +164,7 @@ class TournamentData(SQLModel):
     teams: List[TournamentTeamData] = []
     shotgun: bool = False
     strokeplay: bool = False
-    bestball: bool = False
+    bestball: int = 0
     scramble: bool = False
     ryder_cup: bool = False
     individual: bool = False
