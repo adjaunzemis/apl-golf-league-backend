@@ -322,5 +322,5 @@ if __name__ == "__main__":
 
     with Session(engine) as session:
         # recalculate_hole_results(session=session, year=2022)
-        update_golfer_handicaps(session=session, old_max_date=datetime(2022, 8, 15), new_max_date=datetime(2022, 8, 22)) # TODO: un-hardcode dates
+        update_golfer_handicaps(session=session, old_max_date=datetime(2022, 8, 22), new_max_date=datetime(2022, 8, 29)) # TODO: un-hardcode dates
     print('Done!')
