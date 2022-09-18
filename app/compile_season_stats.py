@@ -24,34 +24,27 @@ def filter_rounds(*, rounds_db: List[RoundSummary], include_tournaments: bool = 
     Filters rounds to those to be used for statistics.
     """
     flight_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.FLIGHT and round_db.date_played < playoffs_start_date]
-    print(f"\tFlights: {len(flight_rounds_db)}")
     filtered_rounds_db = flight_rounds_db
 
     tournament_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.TOURNAMENT]
-    print(f"\tTournaments: {len(tournament_rounds_db)}")
     if include_tournaments:
         filtered_rounds_db.extend(tournament_rounds_db)
     
     playoff_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.PLAYOFF or (round_db.round_type == RoundType.FLIGHT and round_db.date_played >= playoffs_start_date)]
-    print(f"\tPlayoffs: {len(playoff_rounds_db)}")
     if include_playoffs:
         filtered_rounds_db.extend(playoff_rounds_db)
-
+    
+    print(f"\tFlights: {len(flight_rounds_db)}, Tournaments: {len(tournament_rounds_db)}, Playoffs: {len(playoff_rounds_db)}")
     if (not filtered_rounds_db) or (len(filtered_rounds_db) == 0):
         return None
     return filtered_rounds_db
-
-def compile_round_stats(*, rounds_db: List[RoundSummary]):
-    """
-    """
-    stats = {}
 
 def compile_season_statistics(*, session: Session, year: int):
     """
     """
     print(f"Compiling season statistics for {year}")
 
-    PLAYOFFS_START_DATE = datetime(year, 9, 1) # TODO: un-hardcode playoffs start date
+    PLAYOFFS_START_DATE = datetime(year, 9, 5) # TODO: un-hardcode playoffs start date
     rounds = {}
     stats = {}
 
@@ -75,14 +68,14 @@ def compile_season_statistics(*, session: Session, year: int):
                         'track_name': round_db.track_name,
                         'tee_name': round_db.tee_name,
                         'tee_par': round_db.tee_par,
-                        'tee_rating': round_db.tee_rating,
+                        'tee_rating': round(round_db.tee_rating, 2),
                         'tee_slope': round_db.tee_slope,
                         'gross_score': round_db.gross_score,
                         'gross_to_par': round_db.gross_score - round_db.tee_par,
-                        'gross_differential': round_db.score_differential,
+                        'gross_differential': round(round_db.score_differential, 3),
                         'net_score': round_db.net_score,
                         'net_to_par': round_db.net_score - round_db.tee_par,
-                        'net_differential': round_db.score_differential - round_db.golfer_playing_handicap
+                        'net_differential': round(round_db.score_differential - round_db.golfer_playing_handicap, 3)
                     }
 
             # Filter to statistics-relevant rounds (exclude tournaments and playoffs)
@@ -97,10 +90,10 @@ def compile_season_statistics(*, session: Session, year: int):
                     'starting_handicap': 0, # TODO: Compute this
                     'current_handicap': 0, # TODO: Compute this
                     'rounds_played': len(filtered_rounds_db),
-                    'avg_gross_to_par': np.mean([(round_db.gross_score - round_db.tee_par) for round_db in filtered_rounds_db]),
-                    'avg_gross_differential': np.mean([round_db.score_differential for round_db in filtered_rounds_db]),
-                    'avg_net_to_par': np.mean([(round_db.net_score - round_db.tee_par) for round_db in filtered_rounds_db]),
-                    'avg_net_differential': np.mean([(round_db.score_differential - round_db.golfer_playing_handicap) for round_db in filtered_rounds_db])
+                    'avg_gross_to_par': round(np.mean([(round_db.gross_score - round_db.tee_par) for round_db in filtered_rounds_db]), 3),
+                    'avg_gross_differential': round(np.mean([round_db.score_differential for round_db in filtered_rounds_db]), 3),
+                    'avg_net_to_par': round(np.mean([(round_db.net_score - round_db.tee_par) for round_db in filtered_rounds_db]), 3),
+                    'avg_net_differential': round(np.mean([(round_db.score_differential - round_db.golfer_playing_handicap) for round_db in filtered_rounds_db]), 3)
                 }
             
     # Save round summaries to file
