@@ -102,14 +102,14 @@ def compile_season_statistics(*, session: Session, year: int):
                 }
             
     # Save round summaries to file
-    rounds_filename = f"APLGolfLeague_Rounds_{year}.csv"
+    rounds_filename = f"data/APLGolfLeague_Rounds_{year}.csv"
     rounds_df = pd.DataFrame(rounds)
     rounds_df = rounds_df.transpose()
     rounds_df.to_csv(rounds_filename)
     print(f"Saved rounds to file: {rounds_filename}")
 
     # Save season statistics to file
-    stats_filename = f"APLGolfLeague_SeasonStats_{year}.csv"
+    stats_filename = f"data/APLGolfLeague_SeasonStats_{year}.csv"
     stats_df = pd.DataFrame(stats)
     stats_df = stats_df.transpose()
     stats_df.to_csv(stats_filename)
