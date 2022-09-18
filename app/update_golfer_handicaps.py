@@ -6,7 +6,7 @@ from sqlmodel import SQLModel, Session, select, create_engine, desc
 from dotenv import load_dotenv
 
 from models.golfer import Golfer
-from models.round import Round, RoundSummary, ScoringType
+from models.round import Round, RoundSummary, ScoringType, RoundType
 from models.qualifying_score import QualifyingScore
 from models.course import Course
 from models.track import Track
@@ -131,6 +131,7 @@ def get_rounds_in_scoring_record(session: Session, golfer_id: int, min_date: dt_
         qualifying_scores_db = session.exec(select(QualifyingScore).where(QualifyingScore.golfer_id == golfer_id).where(QualifyingScore.date_played >= min_date).where(QualifyingScore.date_played <= max_date)).all()
         for qualifying_score_db in qualifying_scores_db:
             round_summaries.append(RoundSummary(
+                round_type=RoundType.QUALIFYING,
                 date_played=qualifying_score_db.date_played,
                 date_updated=qualifying_score_db.date_updated,
                 course_name=f"Qualifying Score: {qualifying_score_db.course_name if qualifying_score_db.course_name is not None else qualifying_score_db.type}",
