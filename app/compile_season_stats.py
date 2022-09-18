@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from models.golfer import Golfer
 from models.round import RoundSummary, RoundType
-from update_golfer_handicaps import get_rounds_in_scoring_record
+from update_golfer_handicaps import get_rounds_in_scoring_record, get_handicap_index_data
 
 def get_rounds_for_golfer(*, session: Session, year: int, golfer_db: Golfer):
     """
@@ -44,7 +44,8 @@ def compile_season_statistics(*, session: Session, year: int):
     """
     print(f"Compiling season statistics for {year}")
 
-    PLAYOFFS_START_DATE = datetime(year, 9, 5) # TODO: un-hardcode playoffs start date
+    SEASON_START_DATE = datetime(year, 4, 17) # TODO: un-hardcode
+    PLAYOFFS_START_DATE = datetime(year, 9, 5) # TODO: un-hardcode
     rounds = {}
     stats = {}
 
@@ -53,7 +54,7 @@ def compile_season_statistics(*, session: Session, year: int):
     for golfer_db in golfers_db:
         rounds_db = get_rounds_for_golfer(session=session, year=year, golfer_db=golfer_db)
         if rounds_db:
-            print(f"Golfer '{golfer_db.name}' played {len(rounds_db)} rounds in {year}")
+            print(f"Golfer '{golfer_db.name}' (id={golfer_db.id}) played {len(rounds_db)} rounds in {year}")
 
             # Compile round summary data
             for round_db in rounds_db:
@@ -83,12 +84,16 @@ def compile_season_statistics(*, session: Session, year: int):
             if filtered_rounds_db:
                 print(f"\tCompiling statistics using {len(filtered_rounds_db)} rounds")
 
+                # Determine golfer starting and current/ending handicap index
+                golfer_starting_handicap = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(year - 3, 1, 1).date(), max_date=SEASON_START_DATE.date(), limit=10, include_rounds=True) # TODO: Change 3 year horizon to 2 year? Needed for at least one golfer...
+                golfer_current_handicap = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(year - 2, 1, 1).date(), max_date=datetime.today().date(), limit=10, include_rounds=True)
+                
                 # Compile golfer season statistics
                 stats[len(stats)] = {
                     'golfer_id': golfer_db.id,
                     'name': golfer_db.name,
-                    'starting_handicap': 0, # TODO: Compute this
-                    'current_handicap': 0, # TODO: Compute this
+                    'starting_handicap_index': round(golfer_starting_handicap.active_handicap_index, 1),
+                    'current_handicap_index': round(golfer_current_handicap.active_handicap_index, 1),
                     'rounds_played': len(filtered_rounds_db),
                     'avg_gross_to_par': round(np.mean([(round_db.gross_score - round_db.tee_par) for round_db in filtered_rounds_db]), 3),
                     'avg_gross_differential': round(np.mean([round_db.score_differential for round_db in filtered_rounds_db]), 3),
