@@ -133,7 +133,7 @@ dmypy.json
 .angulardoc.json
 
 # Data files
-data/
+/data/
 *.db
 
 # Configuration files
@@ -142,3 +142,6 @@ config/
 
 # Logging files
 logs/
+
+# Database files
+/database/
