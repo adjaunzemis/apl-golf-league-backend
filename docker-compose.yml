@@ -2,6 +2,7 @@ services:
   api:
     environment:
       # Pass environment variables to container from shell
+      - APL_GOLF_LEAGUE_API_DATABASE_CONNECTOR
       - APL_GOLF_LEAGUE_API_DATABASE_USER
       - APL_GOLF_LEAGUE_API_DATABASE_PASSWORD
       - APL_GOLF_LEAGUE_API_DATABASE_URL
