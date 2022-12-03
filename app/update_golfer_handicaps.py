@@ -309,11 +309,11 @@ def recalculate_hole_results(*, session: Session, year: int = 2022):
 if __name__ == "__main__":
     load_dotenv()
 
-    DATABASE_USER = os.environ.get("APLGL_DATABASE_USER")
-    DATABASE_PASSWORD = os.environ.get("APLGL_DATABASE_PASSWORD")
-    DATABASE_ADDRESS = os.environ.get("APLGL_DATABASE_ADDRESS")
-    DATABASE_PORT = os.environ.get("APLGL_DATABASE_PORT")
-    DATABASE_NAME = os.environ.get("APLGL_DATABASE_NAME")
+    DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
+    DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
+    DATABASE_ADDRESS = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
+    DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT")
+    DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
 
     DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
     

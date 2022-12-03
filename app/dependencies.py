@@ -13,14 +13,15 @@ from .models.user import User
 load_dotenv()
 
 """ Database """
-DATABASE_USER = os.environ.get("APLGL_DATABASE_USER")
-DATABASE_PASSWORD = os.environ.get("APLGL_DATABASE_PASSWORD")
-DATABASE_ADDRESS = os.environ.get("APLGL_DATABASE_ADDRESS")
-DATABASE_PORT = os.environ.get("APLGL_DATABASE_PORT")
-DATABASE_NAME = os.environ.get("APLGL_DATABASE_NAME")
-DATABASE_ECHO = os.environ.get("APLGL_DATABASE_ECHO").lower() == 'true'
+DATABASE_CONNECTOR = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_CONNECTOR")
+DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
+DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
+DATABASE_URL = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
+DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT")
+DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
+DATABASE_ECHO = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_ECHO").lower() == 'true'
 
-DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
+DATABASE_URL = f"{DATABASE_CONNECTOR}://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_URL}:{DATABASE_PORT}/{DATABASE_NAME}"
 engine = create_engine(DATABASE_URL, echo=DATABASE_ECHO)
 
 def create_db_and_tables():
@@ -31,9 +32,9 @@ def get_session():
         yield session
 
 """ Authentication """
-APLGL_ACCESS_TOKEN_SECRET_KEY = os.environ.get("APLGL_ACCESS_TOKEN_SECRET_KEY")
-APLGL_ACCESS_TOKEN_ALGORITHM = os.environ.get("APLGL_ACCESS_TOKEN_ALGORITHM")
-APLGL_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("APLGL_ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_SECRET_KEY = os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_SECRET_KEY")
+ACCESS_TOKEN_ALGORITHM = os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
@@ -56,7 +57,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=30)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, APLGL_ACCESS_TOKEN_SECRET_KEY, algorithm=APLGL_ACCESS_TOKEN_ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, ACCESS_TOKEN_SECRET_KEY, algorithm=ACCESS_TOKEN_ALGORITHM)
     return encoded_jwt
 
 async def get_current_user(*, session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
@@ -66,7 +67,7 @@ async def get_current_user(*, session: Session = Depends(get_session), token: st
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, APLGL_ACCESS_TOKEN_SECRET_KEY, algorithms=[APLGL_ACCESS_TOKEN_ALGORITHM])
+        payload = jwt.decode(token, ACCESS_TOKEN_SECRET_KEY, algorithms=[ACCESS_TOKEN_ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

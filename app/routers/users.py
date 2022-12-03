@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
-from ..dependencies import APLGL_ACCESS_TOKEN_EXPIRE_MINUTES, get_session, authenticate_user, create_access_token, get_current_active_user
+from ..dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, get_session, authenticate_user, create_access_token, get_current_active_user
 from ..models.user import User, UserRead, UserWithToken
 
 router = APIRouter(
@@ -20,7 +20,7 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=APLGL_ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
@@ -35,7 +35,7 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
         edit_tournaments=user.edit_tournaments,
         edit_payments=user.edit_payments,
         access_token=access_token,
-        access_token_expires_in=APLGL_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        access_token_expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         token_type="bearer"
     )
 

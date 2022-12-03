@@ -2,7 +2,7 @@ services:
 
   backend:
     environment:
-      - APLGL_DATABASE_ECHO=True
+      - APL_GOLF_LEAGUE_API_DATABASE_ECHO=True
     ports:
       - 80:80
 

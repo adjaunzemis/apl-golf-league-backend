@@ -1,32 +1,32 @@
 services:
 
-  backend:
+  api:
     environment:
       # Pass environment variables to container from shell
-      - APLGL_DATABASE_USER
-      - APLGL_DATABASE_PASSWORD
-      - APLGL_DATABASE_ADDRESS
-      - APLGL_DATABASE_PORT
-      - APLGL_DATABASE_NAME
-      - APLGL_DATABASE_ECHO
-      - APLGL_ACCESS_TOKEN_SECRET_KEY
-      - APLGL_ACCESS_TOKEN_ALGORITHM
-      - APLGL_ACCESS_TOKEN_EXPIRE_MINUTES
+      - APL_GOLF_LEAGUE_API_DATABASE_USER
+      - APL_GOLF_LEAGUE_API_DATABASE_PASSWORD
+      - APL_GOLF_LEAGUE_API_DATABASE_URL
+      - APL_GOLF_LEAGUE_API_DATABASE_PORT
+      - APL_GOLF_LEAGUE_API_DATABASE_NAME
+      - APL_GOLF_LEAGUE_API_DATABASE_ECHO
+      - APL_GOLF_LEAGUE_API_ACCESS_TOKEN_SECRET_KEY
+      - APL_GOLF_LEAGUE_API_ACCESS_TOKEN_ALGORITHM
+      - APL_GOLF_LEAGUE_API_ACCESS_TOKEN_EXPIRE_MINUTES
     build: ./
     restart: always
     labels:
-      # Enable Traefik for this specific "backend" service
+      # Enable Traefik for this specific service
       - traefik.enable=true
       # Define the port inside of the Docker service to use
       - traefik.http.services.app.loadbalancer.server.port=80
       # Make Traefik use this domain in HTTP
       - traefik.http.routers.app-http.entrypoints=http
-      - traefik.http.routers.app-http.rule=Host(`aplgolfapi.jaunzenet.com`)
+      - traefik.http.routers.app-http.rule=Host(`${APL_GOLF_LEAGUE_API_URL?Variable not set}`)
       # Use the traefik-public network (declared below)
       - traefik.docker.network=traefik-public
       # Make Traefik use this domain in HTTPS
       - traefik.http.routers.app-https.entrypoints=https
-      - traefik.http.routers.app-https.rule=Host(`aplgolfapi.jaunzenet.com`)
+      - traefik.http.routers.app-https.rule=Host(`${APL_GOLF_LEAGUE_API_URL?Variable not set}`)
       - traefik.http.routers.app-https.tls=true
       # Use the "le" (Let's Encrypt) resolver
       - traefik.http.routers.app-https.tls.certresolver=le
