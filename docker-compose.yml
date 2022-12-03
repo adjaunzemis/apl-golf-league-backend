@@ -18,6 +18,8 @@ services:
       # copy scripts to create/fill tables (if not already initialized)
       - ./database/postgresql/aplgldb-create-tables.20221201.sql:/docker-entrypoint-initdb.d/create_tables.sql
       - ./database/postgresql/aplgldb-fill-tables.20221201.sql:/docker-entrypoint-initdb.d/fill_tables.sql
+    networks:
+      - postgres-private
 
   api:
     environment:
@@ -61,10 +63,13 @@ services:
       # Middleware to redirect HTTP to HTTPS
       - traefik.http.routers.app-http.middlewares=https-redirect
     networks:
+      - postgres-private
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
       - traefik-public
 
 networks:
+  postgres-private:
+    external: false
   traefik-public:
     external: true
