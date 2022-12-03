@@ -12,14 +12,12 @@ services:
         max-size: 10m
         max-file: "3"
     ports:
-      - '${APL_GOLF_LEAGUE_API_DATABASE_PORT?Variable not set}:5432'
+      - '${APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL?Variable not set}:${APL_GOLF_LEAGUE_API_DATABASE_PORT_INTERNAL?Variable not set}'
     volumes: 
       - ./database/postgresql/data:/var/lib/postgresql/data
       # copy scripts to create/fill tables (if not already initialized)
       - ./database/postgresql/aplgldb-create-tables.20221201.sql:/docker-entrypoint-initdb.d/create_tables.sql
       - ./database/postgresql/aplgldb-fill-tables.20221201.sql:/docker-entrypoint-initdb.d/fill_tables.sql
-    networks:
-      - database
 
   api:
     environment:
@@ -28,7 +26,8 @@ services:
       - APL_GOLF_LEAGUE_API_DATABASE_USER
       - APL_GOLF_LEAGUE_API_DATABASE_PASSWORD
       - APL_GOLF_LEAGUE_API_DATABASE_URL
-      - APL_GOLF_LEAGUE_API_DATABASE_PORT
+      - APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL
+      - APL_GOLF_LEAGUE_API_DATABASE_PORT_INTERNAL
       - APL_GOLF_LEAGUE_API_DATABASE_NAME
       - APL_GOLF_LEAGUE_API_DATABASE_ECHO
       - APL_GOLF_LEAGUE_API_ACCESS_TOKEN_SECRET_KEY
@@ -62,13 +61,10 @@ services:
       # Middleware to redirect HTTP to HTTPS
       - traefik.http.routers.app-http.middlewares=https-redirect
     networks:
-      - database
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
       - traefik-public
 
 networks:
-  database:
-    external: true
   traefik-public:
     external: true
