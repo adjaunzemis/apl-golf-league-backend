@@ -14,7 +14,7 @@ services:
     build: ./
     restart: always
     volumes:
-      - logs:/logs
+      - ./logs:/logs
     labels:
       # Enable Traefik for this specific service
       - traefik.enable=true
