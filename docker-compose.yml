@@ -1,5 +1,4 @@
 services:
-
   api:
     environment:
       # Pass environment variables to container from shell
@@ -14,6 +13,8 @@ services:
       - APL_GOLF_LEAGUE_API_ACCESS_TOKEN_EXPIRE_MINUTES
     build: ./
     restart: always
+    volumes:
+      - logs:/logs
     labels:
       # Enable Traefik for this specific service
       - traefik.enable=true
