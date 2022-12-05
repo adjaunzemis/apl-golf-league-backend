@@ -5,7 +5,7 @@ services:
       - ./database/mongodb/init/:/docker-entrypoint-initdb.d
       - ./database/mongodb/init:/home/mongodb
       - ./database/mongodb/seed/:/home/mongodb/seed
-      - test_mongo_data:/data/db
+      - ./database/mongodb/data:/data/db
     ports:
       - "28000:27017"
     environment:
@@ -16,6 +16,3 @@ services:
       - DB_NAME=TestDB
       - DB_COLLECTION_NAME=TestCollection
       - MONGO_HOSTNAME=mongodb
-
-volumes:
-  test_mongo_data:
