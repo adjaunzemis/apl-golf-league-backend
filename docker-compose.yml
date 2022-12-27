@@ -6,7 +6,7 @@ services:
     restart: always
     environment:
       - POSTGRES_USER=${APL_GOLF_LEAGUE_API_DATABASE_USER?Variable not set}
-      - POSTGRES_PASSWORD=${APL_GOLF_LEAGUE_API_DATABASE_USER?Variable not set}
+      - POSTGRES_PASSWORD=${APL_GOLF_LEAGUE_API_DATABASE_PASSWORD?Variable not set}
     logging:
       options:
         max-size: 10m
