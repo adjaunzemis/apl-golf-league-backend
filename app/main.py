@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 import logging
 
-from .dependencies import create_db_and_tables
+from .dependencies import create_sql_db_and_tables
 from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users, payments
 from .utilities.custom_logger import CustomizeLogger
 
@@ -77,6 +77,6 @@ app.include_router(payments.router, dependencies=[Depends(log_request_data)])
 
 @app.on_event("startup")
 def on_startup():
-    create_db_and_tables()
+    create_sql_db_and_tables()
 
 handler = Mangum(app)

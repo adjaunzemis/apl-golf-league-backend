@@ -1,41 +1,34 @@
-import os
-from typing import Optional
+from functools import lru_cache
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Session, create_engine, select
+from sqlalchemy.future import Engine
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from .models.user import User
+from .config import Settings
 
-load_dotenv()
+@lru_cache()
+def get_settings():
+    return Settings()
 
-""" Database """
-DATABASE_CONNECTOR = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_CONNECTOR")
-DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
-DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
-DATABASE_URL = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
-DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT_INTERNAL")
-DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
-DATABASE_ECHO = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_ECHO").lower() == 'true'
+""" SQL Database """
+@lru_cache()
+def get_sql_db_engine() -> Engine:
+    settings = get_settings()
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{settings.apl_golf_league_api_database_url}:{settings.apl_golf_league_api_database_port_internal}/{settings.apl_golf_league_api_database_name}"
+    return create_engine(db_uri, echo=settings.apl_golf_league_api_database_echo)
 
-DATABASE_URL = f"{DATABASE_CONNECTOR}://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_URL}:{DATABASE_PORT}/{DATABASE_NAME}"
-engine = create_engine(DATABASE_URL, echo=DATABASE_ECHO)
+def create_sql_db_and_tables() -> None:
+    SQLModel.metadata.create_all(get_sql_db_engine())
 
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-def get_session():
-    with Session(engine) as session:
+def get_session() -> Session:
+    with Session(get_sql_db_engine()) as session:
         yield session
 
 """ Authentication """
-ACCESS_TOKEN_SECRET_KEY = os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_SECRET_KEY")
-ACCESS_TOKEN_ALGORITHM = os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("APL_GOLF_LEAGUE_API_ACCESS_TOKEN_EXPIRE_MINUTES"))
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
@@ -50,24 +43,21 @@ def authenticate_user(*, session: Session = Depends(get_session), username: str,
         return False
     return user
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(*, settings: Settings = Depends(get_settings), data: dict):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=30)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, ACCESS_TOKEN_SECRET_KEY, algorithm=ACCESS_TOKEN_ALGORITHM)
+    expire_time = datetime.utcnow() + timedelta(minutes=settings.apl_golf_league_api_access_token_expire_minutes)
+    to_encode.update({"exp": expire_time})
+    encoded_jwt = jwt.encode(to_encode, settings.apl_golf_league_api_access_token_secret_key, algorithm=settings.apl_golf_league_api_access_token_algorithm)
     return encoded_jwt
 
-async def get_current_user(*, session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
+async def get_current_user(*, settings: Settings = Depends(get_settings), session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, ACCESS_TOKEN_SECRET_KEY, algorithms=[ACCESS_TOKEN_ALGORITHM])
+        payload = jwt.decode(token, settings.apl_golf_league_api_access_token_secret_key, algorithms=[settings.apl_golf_league_api_access_token_algorithm])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

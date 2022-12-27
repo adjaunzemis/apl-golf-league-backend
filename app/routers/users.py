@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
-from ..dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, get_session, authenticate_user, create_access_token, get_current_active_user
+from ..dependencies import get_settings, get_session, authenticate_user, create_access_token, get_current_active_user
 from ..models.user import User, UserRead, UserWithToken
 
 router = APIRouter(
@@ -20,10 +20,7 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.username})
     return UserWithToken(
         id=user.id,
         username=user.username,
@@ -35,7 +32,7 @@ async def login(*, session: Session = Depends(get_session), form_data: OAuth2Pas
         edit_tournaments=user.edit_tournaments,
         edit_payments=user.edit_payments,
         access_token=access_token,
-        access_token_expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        access_token_expires_in=get_settings().apl_golf_league_api_access_token_expire_minutes * 60,
         token_type="bearer"
     )
 
