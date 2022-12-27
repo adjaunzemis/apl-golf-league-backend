@@ -24,7 +24,7 @@ def get_sql_db_engine() -> Engine:
 def create_sql_db_and_tables() -> None:
     SQLModel.metadata.create_all(get_sql_db_engine())
 
-def get_session() -> Session:
+def get_sql_db_session() -> Session:
     with Session(get_sql_db_engine()) as session:
         yield session
 
@@ -32,10 +32,10 @@ def get_session() -> Session:
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
-def get_user(*, session: Session = Depends(get_session), username: str) -> User:
+def get_user(*, session: Session = Depends(get_sql_db_session), username: str) -> User:
     return session.exec(select(User).where(User.username == username)).one_or_none()
 
-def authenticate_user(*, session: Session = Depends(get_session), username: str, password: str):
+def authenticate_user(*, session: Session = Depends(get_sql_db_session), username: str, password: str):
     user = get_user(session=session, username=username)
     if not user:
         return False
@@ -50,7 +50,7 @@ def create_access_token(*, settings: Settings = Depends(get_settings), data: dic
     encoded_jwt = jwt.encode(to_encode, settings.apl_golf_league_api_access_token_secret_key, algorithm=settings.apl_golf_league_api_access_token_algorithm)
     return encoded_jwt
 
-async def get_current_user(*, settings: Settings = Depends(get_settings), session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
+async def get_current_user(*, settings: Settings = Depends(get_settings), session: Session = Depends(get_sql_db_session), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

@@ -6,7 +6,7 @@ from sqlmodel import SQLModel, Session, select
 from http import HTTPStatus
 
 from .matches import RoundInput
-from ..dependencies import get_current_active_user, get_session
+from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.tournament import Tournament, TournamentCreate, TournamentUpdate, TournamentRead
 from ..models.tournament_round_link import TournamentRoundLink
 from ..models.tournament_team_link import TournamentTeamLink
@@ -32,7 +32,7 @@ class TournamentInput(SQLModel):
     rounds: List[RoundInput]
 
 @router.get("/", response_model=TournamentInfoWithCount)
-async def read_tournaments(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000)):
+async def read_tournaments(*, session: Session = Depends(get_sql_db_session), year: int = Query(default=None, ge=2000)):
     if year: # filter to a certain year
         tournament_ids = session.exec(select(Tournament.id).where(Tournament.year == year)).all()
     else: # get all
@@ -41,7 +41,7 @@ async def read_tournaments(*, session: Session = Depends(get_session), year: int
     return TournamentInfoWithCount(num_tournaments=len(tournament_ids), tournaments=tournament_info)
 
 @router.post("/", response_model=TournamentRead)
-async def create_tournament(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament: TournamentCreate):
+async def create_tournament(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), tournament: TournamentCreate):
     tournament_db = Tournament.from_orm(tournament)
     session.add(tournament_db)
     session.commit()
@@ -49,7 +49,7 @@ async def create_tournament(*, session: Session = Depends(get_session), current_
     return tournament_db
 
 @router.get("/{tournament_id}", response_model=TournamentData)
-async def read_tournament(*, session: Session = Depends(get_session), tournament_id: int):
+async def read_tournament(*, session: Session = Depends(get_sql_db_session), tournament_id: int):
     # Query database for selected tournament, error if not found
     tournament_data = get_tournaments(session=session, tournament_ids=(tournament_id,))
     if (not tournament_data) or (len(tournament_data) == 0):
@@ -65,7 +65,7 @@ async def read_tournament(*, session: Session = Depends(get_session), tournament
     return tournament_data
 
 @router.patch("/{tournament_id}", response_model=TournamentRead)
-async def update_tournament(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament_id: int, tournament: TournamentUpdate):
+async def update_tournament(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), tournament_id: int, tournament: TournamentUpdate):
     tournament_db = session.get(Tournament, tournament_id)
     if not tournament_db:
         raise HTTPException(status_code=404, detail="Tournament not found")
@@ -78,7 +78,7 @@ async def update_tournament(*, session: Session = Depends(get_session), current_
     return tournament_db
 
 @router.delete("/{tournament_id}")
-async def delete_tournament(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament_id: int):
+async def delete_tournament(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), tournament_id: int):
     tournament_db = session.get(Tournament, tournament_id)
     if not tournament_db:
         raise HTTPException(status_code=404, detail="Tournament not found")
@@ -87,7 +87,7 @@ async def delete_tournament(*, session: Session = Depends(get_session), current_
     return {"ok": True}
 
 @router.post("/rounds", response_model=List[RoundSummary])
-async def post_tournament_rounds(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), tournament_input: TournamentInput):
+async def post_tournament_rounds(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), tournament_input: TournamentInput):
     # TODO: Check user credentials
     ahs = APLHandicapSystem()
     tournament_db = session.get(Tournament, tournament_input.tournament_id)

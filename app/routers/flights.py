@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_current_active_user, get_session
+from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
 from ..models.match import MatchSummary
 from ..models.user import User
@@ -14,7 +14,7 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=FlightInfoWithCount)
-async def read_flights(*, session: Session = Depends(get_session), year: int = Query(default=None, ge=2000)):
+async def read_flights(*, session: Session = Depends(get_sql_db_session), year: int = Query(default=None, ge=2000)):
     if year: # filter to a certain year
         flight_ids = session.exec(select(Flight.id).where(Flight.year == year)).all()
     else: # get all
@@ -23,7 +23,7 @@ async def read_flights(*, session: Session = Depends(get_session), year: int = Q
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
 @router.post("/", response_model=FlightRead)
-async def create_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight: FlightCreate):
+async def create_flight(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), flight: FlightCreate):
     flight_db = Flight.from_orm(flight)
     session.add(flight_db)
     session.commit()
@@ -31,7 +31,7 @@ async def create_flight(*, session: Session = Depends(get_session), current_user
     return flight_db
 
 @router.get("/{flight_id}", response_model=FlightData)
-async def read_flight(*, session: Session = Depends(get_session), flight_id: int):
+async def read_flight(*, session: Session = Depends(get_sql_db_session), flight_id: int):
     # Query database for selected flight, error if not found
     flight_data = get_flights(session=session, flight_ids=(flight_id,))
     if (not flight_data) or (len(flight_data) == 0):
@@ -56,7 +56,7 @@ async def read_flight(*, session: Session = Depends(get_session), flight_id: int
     return flight_data
 
 @router.patch("/{flight_id}", response_model=FlightRead)
-async def update_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight_id: int, flight: FlightUpdate):
+async def update_flight(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), flight_id: int, flight: FlightUpdate):
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
@@ -69,7 +69,7 @@ async def update_flight(*, session: Session = Depends(get_session), current_user
     return flight_db
 
 @router.delete("/{flight_id}")
-async def delete_flight(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), flight_id: int):
+async def delete_flight(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), flight_id: int):
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")

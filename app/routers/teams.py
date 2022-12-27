@@ -5,7 +5,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 
 
-from ..dependencies import get_current_active_user, get_session
+from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.team import Team, TeamCreate, TeamUpdate, TeamRead
 from ..models.team_golfer_link import TeamGolferLink, TeamRole
 from ..models.golfer import Golfer
@@ -39,11 +39,11 @@ class TournamentTeamSignupData(SQLModel):
     golfer_data: List[TeamGolferSignupData]
 
 @router.get("/", response_model=List[TeamRead])
-async def read_teams(*, session: Session = Depends(get_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+async def read_teams(*, session: Session = Depends(get_sql_db_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
     return session.exec(select(Team).offset(offset).limit(limit)).all()
 
 @router.post("/", response_model=TeamRead)
-async def create_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team: TeamCreate):
+async def create_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team: TeamCreate):
     team_db = Team.from_orm(team)
     session.add(team_db)
     session.commit()
@@ -51,7 +51,7 @@ async def create_team(*, session: Session = Depends(get_session), current_user: 
     return team_db
 
 @router.get("/{team_id}", response_model=TeamWithMatchData)
-async def read_team(*, session: Session = Depends(get_session), team_id: int):
+async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: int):
     team_db = session.exec(select(Team).where(Team.id == team_id)).one_or_none()
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -68,7 +68,7 @@ async def read_team(*, session: Session = Depends(get_session), team_id: int):
     )
 
 @router.patch("/{team_id}", response_model=TeamRead)
-async def update_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team_id: int, team: TeamUpdate):
+async def update_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team_id: int, team: TeamUpdate):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -81,7 +81,7 @@ async def update_team(*, session: Session = Depends(get_session), current_user: 
     return team_db
 
 @router.delete("/{team_id}")
-async def delete_team(*, session: Session = Depends(get_session), current_user: User = Depends(get_current_active_user), team_id: int):
+async def delete_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team_id: int):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -113,7 +113,7 @@ async def delete_team(*, session: Session = Depends(get_session), current_user: 
     return {"ok": True}
 
 @router.post("/flight-signup", response_model=TeamRead)
-async def signup_team_for_flight(*, session: Session = Depends(get_session), team_data: FlightTeamSignupData):
+async def signup_team_for_flight(*, session: Session = Depends(get_sql_db_session), team_data: FlightTeamSignupData):
     # Check if the team name if valid for this flight
     team_db = session.exec(select(Team).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id == team_data.flight_id).where(Team.name == team_data.name)).one_or_none()
     if team_db:
@@ -166,7 +166,7 @@ async def signup_team_for_flight(*, session: Session = Depends(get_session), tea
     return team_db
 
 @router.post("/tournament-signup", response_model=TeamRead)
-async def signup_team_for_tournament(*, session: Session = Depends(get_session), team_data: TournamentTeamSignupData):
+async def signup_team_for_tournament(*, session: Session = Depends(get_sql_db_session), team_data: TournamentTeamSignupData):
     # Check if the team name if valid for this tournament
     team_db = session.exec(select(Team).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id == team_data.tournament_id).where(Team.name == team_data.name)).one_or_none()
     if team_db:

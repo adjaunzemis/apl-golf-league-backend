@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
-from ..dependencies import get_settings, get_session, authenticate_user, create_access_token, get_current_active_user
+from ..dependencies import get_settings, get_sql_db_session, authenticate_user, create_access_token, get_current_active_user
 from ..models.user import User, UserRead, UserWithToken
 
 router = APIRouter(
@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 @router.post("/token", response_model=UserWithToken)
-async def login(*, session: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(*, session: Session = Depends(get_sql_db_session), form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(session=session, username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
