@@ -90,9 +90,9 @@ def startup_db_client():
 def on_shutdown():
     close_nosql_db()
 
-@app.router.get("/mongodb_test/", response_model=List[Dict])
+@app.get("/mongodb_test/", response_model=List[Dict])
 async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
     DB_NAME = "TestDB"
-    return list(client[DB_NAME]["TestCollection"].find(limit=100))
+    return list(client[DB_NAME]["TestCollection"].find(projection={'_id': False}, limit=100))
 
 handler = Mangum(app)
