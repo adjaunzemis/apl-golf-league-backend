@@ -1,9 +1,12 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
+from pymongo import MongoClient
 import logging
 
-from .dependencies import create_sql_db_and_tables
+from typing import List, Dict
+
+from .dependencies import create_sql_db_and_tables, create_nosql_db_and_collections, close_nosql_db, get_nosql_db_client
 from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users, payments
 from .utilities.custom_logger import CustomizeLogger
 
@@ -14,7 +17,7 @@ APL Golf League API
 app = FastAPI(
     title="APL Golf League",
     description=description,
-    version="0.3.0",
+    version="0.4.0",
     contact={
         "name": "Andris Jaunzemis",
         "email": "adjaunzemis@gmail.com",
@@ -78,5 +81,18 @@ app.include_router(payments.router, dependencies=[Depends(log_request_data)])
 @app.on_event("startup")
 def on_startup():
     create_sql_db_and_tables()
+
+@app.on_event("startup")
+def startup_db_client():
+    create_nosql_db_and_collections()
+
+@app.on_event("shutdown")
+def on_shutdown():
+    close_nosql_db()
+
+@app.router.get("/mongodb_test/", response_model=List[Dict])
+async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
+    DB_NAME = "TestDB"
+    return list(client[DB_NAME]["TestCollection"].find(limit=100))
 
 handler = Mangum(app)

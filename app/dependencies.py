@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Session, create_engine, select
 from sqlalchemy.future import Engine
+from pymongo import MongoClient
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -27,6 +28,25 @@ def create_sql_db_and_tables() -> None:
 def get_sql_db_session() -> Session:
     with Session(get_sql_db_engine()) as session:
         yield session
+
+""" NoSQL Database """
+@lru_cache()
+def get_nosql_db_client() -> MongoClient:
+    settings = get_settings()
+    CONNECTOR = "mongodb"
+    USERNAME = "TestAppUser"
+    PASSWORD = "TestAppPassword"
+    URL = "mongodb"
+    PORT = 27017
+    AUTH_SOURCE = "TestDB"
+    db_uri = f"{CONNECTOR}://{USERNAME}:{PASSWORD}@{URL}:{PORT}/?serverSelectionTimeoutMS=5000&connectTimeoutMS=10000&authSource={AUTH_SOURCE}&authMechanism=SCRAM-SHA-256"
+    return MongoClient(db_uri)
+
+def create_nosql_db_and_collections() -> None:
+    get_nosql_db_client()
+
+def close_nosql_db() -> None:
+    get_nosql_db_client().close()
 
 """ Authentication """
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -19,7 +19,27 @@ services:
       - ./database/postgresql/aplgldb-create-tables.20221201.sql:/docker-entrypoint-initdb.d/create_tables.sql
       - ./database/postgresql/aplgldb-fill-tables.20221201.sql:/docker-entrypoint-initdb.d/fill_tables.sql
     networks:
-      - postgres-private
+      - postgresql-private
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - ./database/mongodb/init/:/docker-entrypoint-initdb.d
+      - ./database/mongodb/init:/home/mongodb
+      - ./database/mongodb/seed/:/home/mongodb/seed
+      - ./database/mongodb/data:/data/db
+    ports:
+      - "28000:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=TestRootUser
+      - MONGO_INITDB_ROOT_PASSWORD=TestRootPassword
+      - APP_USER=TestAppUser
+      - APP_PWD=TestAppPassword
+      - DB_NAME=TestDB
+      - DB_COLLECTION_NAME=TestCollection
+      - MONGO_HOSTNAME=mongodb
+    networks:
+      - mongodb-private
 
   api:
     environment:
@@ -39,6 +59,7 @@ services:
     restart: always
     depends_on:
       - postgresql
+      - mongodb
     volumes:
       - ./logs:/logs
     labels:
@@ -63,13 +84,16 @@ services:
       # Middleware to redirect HTTP to HTTPS
       - traefik.http.routers.app-http.middlewares=https-redirect
     networks:
-      - postgres-private
+      - postgresql-private
+      - mongodb-private
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
       - traefik-public
 
 networks:
-  postgres-private:
+  postgresql-private:
+    external: false
+  mongodb-private:
     external: false
   traefik-public:
     external: true
