@@ -66,15 +66,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def get_info():
+    """
+    Returns API info.
+    """
+    return {
+        "title": app.title,
+        "description": app.description,
+        "version": app.version
+    }
+
 @app.get("/heartbeat/", tags=["Heartbeat"])
 async def get_heartbeat():
     """
     Heartbeat for checking connection to API.
-
-    Returns
-    -------
-    str: `alive` if connected to API.
-
     """
     return "alive"
 
