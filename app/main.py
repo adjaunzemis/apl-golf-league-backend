@@ -66,6 +66,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.get("/heartbeat/")
+def get_heartbeat():
+    """
+    Heartbeat for checking connection to API.
+
+    Returns
+    -------
+    str: `alive` if connected to API.
+
+    """
+    return "alive"
+
 app.include_router(users.router, dependencies=[Depends(log_request_data)])
 app.include_router(courses.router, dependencies=[Depends(log_request_data)])
 app.include_router(golfers.router, dependencies=[Depends(log_request_data)])
