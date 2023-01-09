@@ -66,8 +66,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.get("/heartbeat/")
-def get_heartbeat():
+@app.get("/heartbeat/", tags=["Heartbeat"])
+async def get_heartbeat():
     """
     Heartbeat for checking connection to API.
 
