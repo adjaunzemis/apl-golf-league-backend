@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     apl_golf_league_api_access_token_secret_key: str
     apl_golf_league_api_access_token_algorithm: str
     apl_golf_league_api_access_token_expire_minutes: int = 120
+    mail_username: str
+    mail_password: str
+    mail_from_address: str
+    mail_from_name: str
+    mail_server: str
+    mail_port: int
 
     class Config:
         env_file = ".env"

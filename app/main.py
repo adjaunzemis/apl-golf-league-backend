@@ -1,5 +1,6 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, BackgroundTasks, status
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 from mangum import Mangum
 from pymongo import MongoClient
 import logging
@@ -9,6 +10,7 @@ from typing import List, Dict
 from .dependencies import create_sql_db_and_tables, create_nosql_db_and_collections, close_nosql_db, get_nosql_db_client
 from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users, payments
 from .utilities.custom_logger import CustomizeLogger
+from .utilities.notifications import EmailSchema, send_email
 
 description = """
 APL Golf League API
@@ -112,5 +114,10 @@ def on_shutdown():
 async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
     DB_NAME = "TestDB"
     return list(client[DB_NAME]["TestCollection"].find(projection={'_id': False}, limit=100))
+
+@app.post("/email_test/")
+async def test_email(*, email: EmailSchema, background_tasks: BackgroundTasks) -> JSONResponse:
+    send_email(email, "email.html", background_tasks)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Email has been sent"})
 
 handler = Mangum(app)
