@@ -1,7 +1,6 @@
 from fastapi import Depends, FastAPI, Request, BackgroundTasks, status
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from mangum import Mangum
 from pymongo import MongoClient
 import logging
 
@@ -120,4 +119,3 @@ async def test_email(*, email: EmailSchema, background_tasks: BackgroundTasks) -
     send_email(email, "email.html", background_tasks)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Email has been sent"})
 
-handler = Mangum(app)
