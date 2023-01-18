@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from ..main import app
+from ..api import app
 from ..dependencies import get_sql_db_session
 from ..models.flight import Flight
 from ..models.division import Division

@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 from datetime import date
 
-from ..main import app
+from ..api import app
 from ..dependencies import get_sql_db_session
 from ..models.round import Round
 from ..models.hole_result import HoleResult
