@@ -6,9 +6,11 @@ from datetime import datetime
 from .golfer import Golfer
 from .tee import TeeGender
 
+
 class QualifyingScoreType(str, Enum):
     QUALIFYING_ROUND = "Qualifying Round"
     OFFICIAL_HANDICAP_INDEX = "Official Handicap Index"
+
 
 class QualifyingScoreBase(SQLModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
@@ -28,12 +30,15 @@ class QualifyingScoreBase(SQLModel):
     adjusted_gross_score: Optional[int] = None
     comment: Optional[str] = None
 
+
 class QualifyingScore(QualifyingScoreBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     golfer: Golfer = Relationship()
 
+
 class QualifyingScoreCreate(QualifyingScoreBase):
     pass
+
 
 class QualifyingScoreUpdate(SQLModel):
     golfer_id: Optional[int] = None
@@ -52,6 +57,7 @@ class QualifyingScoreUpdate(SQLModel):
     gross_score: Optional[int] = None
     adjusted_gross_score: Optional[int] = None
     comment: Optional[str] = None
+
 
 class QualifyingScoreRead(QualifyingScoreBase):
     id: int

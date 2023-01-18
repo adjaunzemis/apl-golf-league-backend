@@ -8,6 +8,7 @@ from .tournament_division_link import TournamentDivisionLink
 from .team import Team
 from .tournament_team_link import TournamentTeamLink
 
+
 class TournamentBase(SQLModel):
     name: str
     year: int
@@ -30,14 +31,19 @@ class TournamentBase(SQLModel):
     chachacha: Optional[bool] = False
     locked: Optional[bool] = False
 
+
 class Tournament(TournamentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     course: Course = Relationship()
-    divisions: Optional[List[Division]] = Relationship(link_model=TournamentDivisionLink)
+    divisions: Optional[List[Division]] = Relationship(
+        link_model=TournamentDivisionLink
+    )
     teams: Optional[List[Team]] = Relationship(link_model=TournamentTeamLink)
+
 
 class TournamentCreate(TournamentBase):
     pass
+
 
 class TournamentUpdate(SQLModel):
     name: Optional[str] = None
@@ -60,6 +66,7 @@ class TournamentUpdate(SQLModel):
     individual: Optional[bool] = None
     chachacha: Optional[bool] = None
     locked: Optional[bool] = None
+
 
 class TournamentRead(TournamentBase):
     id: int

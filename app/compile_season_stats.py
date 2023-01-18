@@ -8,99 +8,199 @@ from dotenv import load_dotenv
 
 from models.golfer import Golfer
 from models.round import RoundSummary, RoundType
-from update_golfer_handicaps import get_rounds_in_scoring_record, get_handicap_index_data
+from update_golfer_handicaps import (
+    get_rounds_in_scoring_record,
+    get_handicap_index_data,
+)
+
 
 def get_rounds_for_golfer(*, session: Session, year: int, golfer_db: Golfer):
     """
     Gets all rounds played by the given golfer in the given year.
     """
-    rounds_db = get_rounds_in_scoring_record(session=session, golfer_id=golfer_db.id, min_date=datetime(year, 1, 1), max_date=datetime(year+1, 1, 1), limit=None, use_legacy_handicapping=False)
+    rounds_db = get_rounds_in_scoring_record(
+        session=session,
+        golfer_id=golfer_db.id,
+        min_date=datetime(year, 1, 1),
+        max_date=datetime(year + 1, 1, 1),
+        limit=None,
+        use_legacy_handicapping=False,
+    )
     if (rounds_db is None) or (len(rounds_db) == 0):
         return None
     return rounds_db
 
-def filter_rounds(*, rounds_db: List[RoundSummary], include_tournaments: bool = False, include_playoffs: bool = False, playoffs_start_date: datetime = datetime.now()):
+
+def filter_rounds(
+    *,
+    rounds_db: List[RoundSummary],
+    include_tournaments: bool = False,
+    include_playoffs: bool = False,
+    playoffs_start_date: datetime = datetime.now(),
+):
     """
     Filters rounds to those to be used for statistics.
     """
-    flight_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.FLIGHT and round_db.date_played < playoffs_start_date]
+    flight_rounds_db = [
+        round_db
+        for round_db in rounds_db
+        if round_db.round_type == RoundType.FLIGHT
+        and round_db.date_played < playoffs_start_date
+    ]
     filtered_rounds_db = flight_rounds_db
 
-    tournament_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.TOURNAMENT]
+    tournament_rounds_db = [
+        round_db
+        for round_db in rounds_db
+        if round_db.round_type == RoundType.TOURNAMENT
+    ]
     if include_tournaments:
         filtered_rounds_db.extend(tournament_rounds_db)
-    
-    playoff_rounds_db = [round_db for round_db in rounds_db if round_db.round_type == RoundType.PLAYOFF or (round_db.round_type == RoundType.FLIGHT and round_db.date_played >= playoffs_start_date)]
+
+    playoff_rounds_db = [
+        round_db
+        for round_db in rounds_db
+        if round_db.round_type == RoundType.PLAYOFF
+        or (
+            round_db.round_type == RoundType.FLIGHT
+            and round_db.date_played >= playoffs_start_date
+        )
+    ]
     if include_playoffs:
         filtered_rounds_db.extend(playoff_rounds_db)
-    
-    print(f"\tFlights: {len(flight_rounds_db)}, Tournaments: {len(tournament_rounds_db)}, Playoffs: {len(playoff_rounds_db)}")
+
+    print(
+        f"\tFlights: {len(flight_rounds_db)}, Tournaments: {len(tournament_rounds_db)}, Playoffs: {len(playoff_rounds_db)}"
+    )
     if (not filtered_rounds_db) or (len(filtered_rounds_db) == 0):
         return None
     return filtered_rounds_db
 
+
 def compile_season_statistics(*, session: Session, year: int):
-    """
-    """
+    """ """
     print(f"Compiling season statistics for {year}")
 
-    SEASON_START_DATE = datetime(year, 4, 17) # TODO: un-hardcode
-    PLAYOFFS_START_DATE = datetime(year, 9, 5) # TODO: un-hardcode
+    SEASON_START_DATE = datetime(year, 4, 17)  # TODO: un-hardcode
+    PLAYOFFS_START_DATE = datetime(year, 9, 5)  # TODO: un-hardcode
     rounds = {}
     stats = {}
 
     # Get all rounds played by each golfer in the given year
     golfers_db = session.exec(select(Golfer)).all()
     for golfer_db in golfers_db:
-        rounds_db = get_rounds_for_golfer(session=session, year=year, golfer_db=golfer_db)
+        rounds_db = get_rounds_for_golfer(
+            session=session, year=year, golfer_db=golfer_db
+        )
         if rounds_db:
-            print(f"Golfer '{golfer_db.name}' (id={golfer_db.id}) played {len(rounds_db)} rounds in {year}")
+            print(
+                f"Golfer '{golfer_db.name}' (id={golfer_db.id}) played {len(rounds_db)} rounds in {year}"
+            )
 
             # Compile round summary data
             for round_db in rounds_db:
                 if round_db.round_type != RoundType.QUALIFYING:
                     rounds[len(rounds)] = {
-                        'golfer_id': golfer_db.id,
-                        'golfer_name': golfer_db.name,
-                        'golfer_playing_handicap': round_db.golfer_playing_handicap,
-                        'round_type': round_db.round_type,
-                        'round_date': round_db.date_played,
-                        'course_name': round_db.course_name,
-                        'track_name': round_db.track_name,
-                        'tee_name': round_db.tee_name,
-                        'tee_par': round_db.tee_par,
-                        'tee_rating': round(round_db.tee_rating, 2),
-                        'tee_slope': round_db.tee_slope,
-                        'gross_score': round_db.gross_score,
-                        'gross_to_par': round_db.gross_score - round_db.tee_par,
-                        'gross_differential': round(round_db.score_differential, 3),
-                        'net_score': round_db.net_score,
-                        'net_to_par': round_db.net_score - round_db.tee_par,
-                        'net_differential': round(round_db.score_differential - round_db.golfer_playing_handicap, 3)
+                        "golfer_id": golfer_db.id,
+                        "golfer_name": golfer_db.name,
+                        "golfer_playing_handicap": round_db.golfer_playing_handicap,
+                        "round_type": round_db.round_type,
+                        "round_date": round_db.date_played,
+                        "course_name": round_db.course_name,
+                        "track_name": round_db.track_name,
+                        "tee_name": round_db.tee_name,
+                        "tee_par": round_db.tee_par,
+                        "tee_rating": round(round_db.tee_rating, 2),
+                        "tee_slope": round_db.tee_slope,
+                        "gross_score": round_db.gross_score,
+                        "gross_to_par": round_db.gross_score - round_db.tee_par,
+                        "gross_differential": round(round_db.score_differential, 3),
+                        "net_score": round_db.net_score,
+                        "net_to_par": round_db.net_score - round_db.tee_par,
+                        "net_differential": round(
+                            round_db.score_differential
+                            - round_db.golfer_playing_handicap,
+                            3,
+                        ),
                     }
 
             # Filter to statistics-relevant rounds (exclude tournaments and playoffs)
-            filtered_rounds_db = filter_rounds(rounds_db=rounds_db, playoffs_start_date=PLAYOFFS_START_DATE)
+            filtered_rounds_db = filter_rounds(
+                rounds_db=rounds_db, playoffs_start_date=PLAYOFFS_START_DATE
+            )
             if filtered_rounds_db:
                 print(f"\tCompiling statistics using {len(filtered_rounds_db)} rounds")
 
                 # Determine golfer starting and current/ending handicap index
-                golfer_starting_handicap = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(year - 3, 1, 1).date(), max_date=SEASON_START_DATE.date(), limit=10, include_rounds=True) # TODO: Change 3 year horizon to 2 year? Needed for at least one golfer...
-                golfer_current_handicap = get_handicap_index_data(session=session, golfer_id=golfer_db.id, min_date=datetime(year - 2, 1, 1).date(), max_date=datetime.today().date(), limit=10, include_rounds=True)
-                
+                golfer_starting_handicap = get_handicap_index_data(
+                    session=session,
+                    golfer_id=golfer_db.id,
+                    min_date=datetime(year - 3, 1, 1).date(),
+                    max_date=SEASON_START_DATE.date(),
+                    limit=10,
+                    include_rounds=True,
+                )  # TODO: Change 3 year horizon to 2 year? Needed for at least one golfer...
+                golfer_current_handicap = get_handicap_index_data(
+                    session=session,
+                    golfer_id=golfer_db.id,
+                    min_date=datetime(year - 2, 1, 1).date(),
+                    max_date=datetime.today().date(),
+                    limit=10,
+                    include_rounds=True,
+                )
+
                 # Compile golfer season statistics
                 stats[len(stats)] = {
-                    'golfer_id': golfer_db.id,
-                    'name': golfer_db.name,
-                    'starting_handicap_index': round(golfer_starting_handicap.active_handicap_index, 1),
-                    'current_handicap_index': round(golfer_current_handicap.active_handicap_index, 1),
-                    'rounds_played': len(filtered_rounds_db),
-                    'avg_gross_to_par': round(np.mean([(round_db.gross_score - round_db.tee_par) for round_db in filtered_rounds_db]), 3),
-                    'avg_gross_differential': round(np.mean([round_db.score_differential for round_db in filtered_rounds_db]), 3),
-                    'avg_net_to_par': round(np.mean([(round_db.net_score - round_db.tee_par) for round_db in filtered_rounds_db]), 3),
-                    'avg_net_differential': round(np.mean([(round_db.score_differential - round_db.golfer_playing_handicap) for round_db in filtered_rounds_db]), 3)
+                    "golfer_id": golfer_db.id,
+                    "name": golfer_db.name,
+                    "starting_handicap_index": round(
+                        golfer_starting_handicap.active_handicap_index, 1
+                    ),
+                    "current_handicap_index": round(
+                        golfer_current_handicap.active_handicap_index, 1
+                    ),
+                    "rounds_played": len(filtered_rounds_db),
+                    "avg_gross_to_par": round(
+                        np.mean(
+                            [
+                                (round_db.gross_score - round_db.tee_par)
+                                for round_db in filtered_rounds_db
+                            ]
+                        ),
+                        3,
+                    ),
+                    "avg_gross_differential": round(
+                        np.mean(
+                            [
+                                round_db.score_differential
+                                for round_db in filtered_rounds_db
+                            ]
+                        ),
+                        3,
+                    ),
+                    "avg_net_to_par": round(
+                        np.mean(
+                            [
+                                (round_db.net_score - round_db.tee_par)
+                                for round_db in filtered_rounds_db
+                            ]
+                        ),
+                        3,
+                    ),
+                    "avg_net_differential": round(
+                        np.mean(
+                            [
+                                (
+                                    round_db.score_differential
+                                    - round_db.golfer_playing_handicap
+                                )
+                                for round_db in filtered_rounds_db
+                            ]
+                        ),
+                        3,
+                    ),
                 }
-            
+
     # Save round summaries to file
     rounds_filename = f"data/APLGolfLeague_Rounds_{year}.csv"
     rounds_df = pd.DataFrame(rounds)
@@ -115,6 +215,7 @@ def compile_season_statistics(*, session: Session, year: int):
     stats_df.to_csv(stats_filename)
     print(f"Saved season statistics to file: {stats_filename}")
 
+
 if __name__ == "__main__":
     load_dotenv()
 
@@ -125,13 +226,13 @@ if __name__ == "__main__":
     DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
 
     DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
-    
+
     print(f"Connecting to database: {DATABASE_NAME}")
     engine = create_engine(DATABASE_URL, echo=False)
     SQLModel.metadata.create_all(engine)
 
-    YEAR = 2022 # TODO: un-hardcode year for analysis
+    YEAR = 2022  # TODO: un-hardcode year for analysis
 
     with Session(engine) as session:
         compile_season_statistics(session=session, year=YEAR)
-    print('Done!')
+    print("Done!")

@@ -13,14 +13,23 @@ from ..models.flight import Flight
 from ..models.flight_team_link import FlightTeamLink
 from ..models.tournament import Tournament
 from ..models.tournament_team_link import TournamentTeamLink
-from ..models.payment import LeagueDues, LeagueDuesPayment, LeagueDuesType, TournamentEntryFeePayment, TournamentEntryFeeType
-from ..models.user import User
-from ..models.query_helpers import TeamWithMatchData, compute_golfer_statistics_for_matches, get_flight_team_golfers_for_teams, get_matches_for_teams
-
-router = APIRouter(
-    prefix="/teams",
-    tags=["Teams"]
+from ..models.payment import (
+    LeagueDues,
+    LeagueDuesPayment,
+    LeagueDuesType,
+    TournamentEntryFeePayment,
+    TournamentEntryFeeType,
 )
+from ..models.user import User
+from ..models.query_helpers import (
+    TeamWithMatchData,
+    compute_golfer_statistics_for_matches,
+    get_flight_team_golfers_for_teams,
+    get_matches_for_teams,
+)
+
+router = APIRouter(prefix="/teams", tags=["Teams"])
+
 
 class TeamGolferSignupData(SQLModel):
     golfer_id: int
@@ -28,27 +37,42 @@ class TeamGolferSignupData(SQLModel):
     role: str
     division_id: int
 
+
 class FlightTeamSignupData(SQLModel):
     flight_id: int
     name: str
     golfer_data: List[TeamGolferSignupData]
+
 
 class TournamentTeamSignupData(SQLModel):
     tournament_id: int
     name: str
     golfer_data: List[TeamGolferSignupData]
 
+
 @router.get("/", response_model=List[TeamRead])
-async def read_teams(*, session: Session = Depends(get_sql_db_session), offset: int = Query(default=0, ge=0), limit: int = Query(default=100, le=100)):
+async def read_teams(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, le=100),
+):
     return session.exec(select(Team).offset(offset).limit(limit)).all()
 
+
 @router.post("/", response_model=TeamRead)
-async def create_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team: TeamCreate):
+async def create_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    team: TeamCreate,
+):
     team_db = Team.from_orm(team)
     session.add(team_db)
     session.commit()
     session.refresh(team_db)
     return team_db
+
 
 @router.get("/{team_id}", response_model=TeamWithMatchData)
 async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: int):
@@ -56,19 +80,30 @@ async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: 
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
     team_matches = get_matches_for_teams(session=session, team_ids=(team_id,))
-    team_golfers = get_flight_team_golfers_for_teams(session=session, team_ids=(team_id,))
+    team_golfers = get_flight_team_golfers_for_teams(
+        session=session, team_ids=(team_id,)
+    )
     for golfer in team_golfers:
-        golfer.statistics = compute_golfer_statistics_for_matches(golfer.golfer_id, team_matches)
+        golfer.statistics = compute_golfer_statistics_for_matches(
+            golfer.golfer_id, team_matches
+        )
     return TeamWithMatchData(
         id=team_db.id,
         name=team_db.name,
         year=team_golfers[0].year,
         golfers=team_golfers,
-        matches=team_matches
+        matches=team_matches,
     )
 
+
 @router.patch("/{team_id}", response_model=TeamRead)
-async def update_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team_id: int, team: TeamUpdate):
+async def update_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    team_id: int,
+    team: TeamUpdate,
+):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -80,28 +115,42 @@ async def update_team(*, session: Session = Depends(get_sql_db_session), current
     session.refresh(team_db)
     return team_db
 
+
 @router.delete("/{team_id}")
-async def delete_team(*, session: Session = Depends(get_sql_db_session), current_user: User = Depends(get_current_active_user), team_id: int):
+async def delete_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    team_id: int,
+):
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
 
     # Find and remove all team-golfer links
-    team_golfer_links_db = session.exec(select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)).all()
+    team_golfer_links_db = session.exec(
+        select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)
+    ).all()
     for team_golfer_link_db in team_golfer_links_db:
         print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
         session.delete(team_golfer_link_db)
 
     # Find and remove all flight-team links
-    flight_team_links_db = session.exec(select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)).all()
+    flight_team_links_db = session.exec(
+        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
+    ).all()
     for flight_team_link_db in flight_team_links_db:
         print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
         session.delete(flight_team_link_db)
 
     # Find and remove all tournament-team links
-    tournament_team_links_db = session.exec(select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)).all()
+    tournament_team_links_db = session.exec(
+        select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
+    ).all()
     for tournament_team_link_db in tournament_team_links_db:
-        print(f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}")
+        print(
+            f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+        )
         session.delete(tournament_team_link_db)
 
     # Remove team
@@ -112,30 +161,59 @@ async def delete_team(*, session: Session = Depends(get_sql_db_session), current
     session.commit()
     return {"ok": True}
 
+
 @router.post("/flight-signup", response_model=TeamRead)
-async def signup_team_for_flight(*, session: Session = Depends(get_sql_db_session), team_data: FlightTeamSignupData):
+async def signup_team_for_flight(
+    *, session: Session = Depends(get_sql_db_session), team_data: FlightTeamSignupData
+):
     # Check if the team name if valid for this flight
-    team_db = session.exec(select(Team).join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id).join(Flight, onclause=Flight.id == FlightTeamLink.flight_id).where(Flight.id == team_data.flight_id).where(Team.name == team_data.name)).one_or_none()
+    team_db = session.exec(
+        select(Team)
+        .join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id)
+        .join(Flight, onclause=Flight.id == FlightTeamLink.flight_id)
+        .where(Flight.id == team_data.flight_id)
+        .where(Team.name == team_data.name)
+    ).one_or_none()
     if team_db:
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' already exists in flight (id={team_data.flight_id})")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' already exists in flight (id={team_data.flight_id})",
+        )
 
     # Check for duplicate golfers in sign-up
     golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
     if len(golfer_id_list) != len(set(golfer_id_list)):
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups",
+        )
 
     # Check if the given golfers already exist on other teams in this flight and if one captain was designated
     team_has_captain = False
-    flight_golfer_ids = session.exec(select(Golfer.id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id).where(FlightTeamLink.flight_id == team_data.flight_id)).all()
+    flight_golfer_ids = session.exec(
+        select(Golfer.id)
+        .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
+        .join(FlightTeamLink, onclause=FlightTeamLink.team_id == TeamGolferLink.team_id)
+        .where(FlightTeamLink.flight_id == team_data.flight_id)
+    ).all()
     for team_golfer in team_data.golfer_data:
         if team_golfer.golfer_id in flight_golfer_ids:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in flight (id={team_data.flight_id})")
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in flight (id={team_data.flight_id})",
+            )
         if team_golfer.role == TeamRole.CAPTAIN:
             if team_has_captain:
-                raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' cannot have more than one captain")
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=f"Team '{team_data.name}' cannot have more than one captain",
+                )
             team_has_captain = True
     if not team_has_captain:
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' must have a captain")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' must have a captain",
+        )
 
     # Add team to database
     team_db = Team(name=team_data.name)
@@ -143,52 +221,109 @@ async def signup_team_for_flight(*, session: Session = Depends(get_sql_db_sessio
     session.commit()
 
     # Add flight-team link
-    flight_team_link_db = FlightTeamLink(flight_id=team_data.flight_id, team_id=team_db.id)
+    flight_team_link_db = FlightTeamLink(
+        flight_id=team_data.flight_id, team_id=team_db.id
+    )
     session.add(flight_team_link_db)
     session.commit()
 
     # Add team-golfer links
     for team_golfer in team_data.golfer_data:
-        team_golfer_link_db = TeamGolferLink(team_id=team_db.id, golfer_id=team_golfer.golfer_id, division_id=team_golfer.division_id, role=team_golfer.role)
+        team_golfer_link_db = TeamGolferLink(
+            team_id=team_db.id,
+            golfer_id=team_golfer.golfer_id,
+            division_id=team_golfer.division_id,
+            role=team_golfer.role,
+        )
         session.add(team_golfer_link_db)
         session.commit()
 
     # Add golfer registrations/payments (as needed)
-    flight_db = session.exec(select(Flight).where(Flight.id == team_data.flight_id)).one()
-    flight_dues_amount = session.exec(select(LeagueDues.amount).where(LeagueDues.year == flight_db.year).where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)).one()
+    flight_db = session.exec(
+        select(Flight).where(Flight.id == team_data.flight_id)
+    ).one()
+    flight_dues_amount = session.exec(
+        select(LeagueDues.amount)
+        .where(LeagueDues.year == flight_db.year)
+        .where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)
+    ).one()
     for team_golfer in team_data.golfer_data:
-        golfer_dues_payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id).where(LeagueDuesPayment.year == flight_db.year).where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)).one_or_none()
+        golfer_dues_payment_db = session.exec(
+            select(LeagueDuesPayment)
+            .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
+            .where(LeagueDuesPayment.year == flight_db.year)
+            .where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)
+        ).one_or_none()
         if not golfer_dues_payment_db:
-            golfer_dues_payment_db = LeagueDuesPayment(golfer_id=team_golfer.golfer_id, year=flight_db.year, type=LeagueDuesType.FLIGHT_DUES, amount_due=flight_dues_amount)
+            golfer_dues_payment_db = LeagueDuesPayment(
+                golfer_id=team_golfer.golfer_id,
+                year=flight_db.year,
+                type=LeagueDuesType.FLIGHT_DUES,
+                amount_due=flight_dues_amount,
+            )
             session.add(golfer_dues_payment_db)
             session.commit()
 
     return team_db
 
+
 @router.post("/tournament-signup", response_model=TeamRead)
-async def signup_team_for_tournament(*, session: Session = Depends(get_sql_db_session), team_data: TournamentTeamSignupData):
+async def signup_team_for_tournament(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    team_data: TournamentTeamSignupData,
+):
     # Check if the team name if valid for this tournament
-    team_db = session.exec(select(Team).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id).join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id).where(Tournament.id == team_data.tournament_id).where(Team.name == team_data.name)).one_or_none()
+    team_db = session.exec(
+        select(Team)
+        .join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == Team.id)
+        .join(Tournament, onclause=Tournament.id == TournamentTeamLink.tournament_id)
+        .where(Tournament.id == team_data.tournament_id)
+        .where(Team.name == team_data.name)
+    ).one_or_none()
     if team_db:
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' already exists in tournament (id={team_data.tournament_id})")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' already exists in tournament (id={team_data.tournament_id})",
+        )
 
     # Check for duplicate golfers in sign-up
     golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
     if len(golfer_id_list) != len(set(golfer_id_list)):
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups",
+        )
 
     # Check if the given golfers already exist on other teams in this tournament and if one captain was designated
     team_has_captain = False
-    tournament_golfer_ids = session.exec(select(Golfer.id).join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id).join(TournamentTeamLink, onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id).where(TournamentTeamLink.tournament_id == team_data.tournament_id)).all()
+    tournament_golfer_ids = session.exec(
+        select(Golfer.id)
+        .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
+        .join(
+            TournamentTeamLink,
+            onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id,
+        )
+        .where(TournamentTeamLink.tournament_id == team_data.tournament_id)
+    ).all()
     for team_golfer in team_data.golfer_data:
         if team_golfer.golfer_id in tournament_golfer_ids:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in tournament (id={team_data.tournament_id})")
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in tournament (id={team_data.tournament_id})",
+            )
         if team_golfer.role == TeamRole.CAPTAIN:
             if team_has_captain:
-                raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' cannot have more than one captain")
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=f"Team '{team_data.name}' cannot have more than one captain",
+                )
             team_has_captain = True
     if not team_has_captain:
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=f"Team '{team_data.name}' must have a captain")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Team '{team_data.name}' must have a captain",
+        )
 
     # Add team to database
     team_db = Team(name=team_data.name)
@@ -196,24 +331,51 @@ async def signup_team_for_tournament(*, session: Session = Depends(get_sql_db_se
     session.commit()
 
     # Add tournament-team link
-    tournament_team_link_db = TournamentTeamLink(tournament_id=team_data.tournament_id, team_id=team_db.id)
+    tournament_team_link_db = TournamentTeamLink(
+        tournament_id=team_data.tournament_id, team_id=team_db.id
+    )
     session.add(tournament_team_link_db)
     session.commit()
 
     # Add team-golfer links
     for team_golfer in team_data.golfer_data:
-        team_golfer_link_db = TeamGolferLink(team_id=team_db.id, golfer_id=team_golfer.golfer_id, division_id=team_golfer.division_id, role=team_golfer.role)
+        team_golfer_link_db = TeamGolferLink(
+            team_id=team_db.id,
+            golfer_id=team_golfer.golfer_id,
+            division_id=team_golfer.division_id,
+            role=team_golfer.role,
+        )
         session.add(team_golfer_link_db)
         session.commit()
 
     # Add golfer registrations/payments (as needed)
-    tournament_db = session.exec(select(Tournament).where(Tournament.id == team_data.tournament_id)).one()
+    tournament_db = session.exec(
+        select(Tournament).where(Tournament.id == team_data.tournament_id)
+    ).one()
     for team_golfer in team_data.golfer_data:
-        golfer_dues_payment_db = session.exec(select(LeagueDuesPayment).where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id).where(LeagueDuesPayment.year == tournament_db.year)).one_or_none()
-        if not golfer_dues_payment_db: # no dues payment found for golfer, pay non-member fee
-            golfer_dues_payment_db = TournamentEntryFeePayment(golfer_id=team_golfer.golfer_id, year=tournament_db.year, tournament_id=tournament_db.id, type=TournamentEntryFeeType.NON_MEMBER_FEE, amount_due=tournament_db.non_members_entry_fee)
-        else: # dues payment found for golfer, pay member fee
-            golfer_dues_payment_db = TournamentEntryFeePayment(golfer_id=team_golfer.golfer_id, year=tournament_db.year, tournament_id=tournament_db.id, type=TournamentEntryFeeType.MEMBER_FEE, amount_due=tournament_db.members_entry_fee)
+        golfer_dues_payment_db = session.exec(
+            select(LeagueDuesPayment)
+            .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
+            .where(LeagueDuesPayment.year == tournament_db.year)
+        ).one_or_none()
+        if (
+            not golfer_dues_payment_db
+        ):  # no dues payment found for golfer, pay non-member fee
+            golfer_dues_payment_db = TournamentEntryFeePayment(
+                golfer_id=team_golfer.golfer_id,
+                year=tournament_db.year,
+                tournament_id=tournament_db.id,
+                type=TournamentEntryFeeType.NON_MEMBER_FEE,
+                amount_due=tournament_db.non_members_entry_fee,
+            )
+        else:  # dues payment found for golfer, pay member fee
+            golfer_dues_payment_db = TournamentEntryFeePayment(
+                golfer_id=team_golfer.golfer_id,
+                year=tournament_db.year,
+                tournament_id=tournament_db.id,
+                type=TournamentEntryFeeType.MEMBER_FEE,
+                amount_due=tournament_db.members_entry_fee,
+            )
         session.add(golfer_dues_payment_db)
         session.commit()
 

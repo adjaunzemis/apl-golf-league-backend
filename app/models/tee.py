@@ -4,9 +4,11 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from .hole import Hole, HoleRead
 
+
 class TeeGender(str, Enum):
     MENS = "Men's"
     LADIES = "Ladies'"
+
 
 class TeeBase(SQLModel):
     name: str
@@ -15,6 +17,7 @@ class TeeBase(SQLModel):
     slope: int
     color: Optional[str]
     track_id: Optional[int] = Field(default=None, foreign_key="track.id")
+
 
 class Tee(TeeBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -25,8 +28,10 @@ class Tee(TeeBase, table=True):
     def par(self) -> int:
         return sum(hole.par for hole in self.holes)
 
+
 class TeeCreate(TeeBase):
     pass
+
 
 class TeeUpdate(SQLModel):
     name: Optional[str] = None
@@ -36,8 +41,10 @@ class TeeUpdate(SQLModel):
     color: Optional[str] = None
     track_id: Optional[int] = None
 
+
 class TeeRead(TeeBase):
     id: int
+
 
 class TeeReadWithHoles(TeeRead):
     holes: List[HoleRead] = None

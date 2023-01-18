@@ -8,15 +8,18 @@ from .golfer import Golfer, GolferRead
 from .round_golfer_link import RoundGolferLink
 from .hole_result import HoleResult, HoleResultReadWithHole, HoleResultData
 
+
 class RoundType(str, Enum):
     QUALIFYING = "Qualifying"
     FLIGHT = "Flight"
     PLAYOFF = "Playoff"
     TOURNAMENT = "Tournament"
 
+
 class ScoringType(str, Enum):
     INDIVIDUAL = "Individual"
     GROUP = "Group"
+
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
@@ -25,14 +28,17 @@ class RoundBase(SQLModel):
     date_played: datetime
     date_updated: datetime
 
+
 class Round(RoundBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tee: Tee = Relationship()
     golfers: List[Golfer] = Relationship(link_model=RoundGolferLink)
     hole_results: List[HoleResult] = Relationship(back_populates="round")
 
+
 class RoundCreate(RoundBase):
     pass
+
 
 class RoundUpdate(SQLModel):
     tee_id: Optional[int] = None
@@ -41,13 +47,16 @@ class RoundUpdate(SQLModel):
     date_played: Optional[datetime] = None
     date_updated: Optional[datetime] = None
 
+
 class RoundRead(RoundBase):
     id: int
+
 
 class RoundReadWithData(RoundRead):
     tee: Optional[TeeRead] = None
     golfers: Optional[List[GolferRead]] = None
     hole_results: Optional[List[HoleResultReadWithHole]] = None
+
 
 class RoundSummary(SQLModel):
     round_id: Optional[int] = None
@@ -66,6 +75,7 @@ class RoundSummary(SQLModel):
     adjusted_gross_score: Optional[int] = None
     net_score: Optional[int] = None
     score_differential: Optional[float] = None
+
 
 class RoundData(SQLModel):
     round_id: int
@@ -94,6 +104,7 @@ class RoundData(SQLModel):
     net_score: int = None
     score_differential: float = None
     holes: List[HoleResultData] = []
+
 
 class RoundDataWithCount(SQLModel):
     num_rounds: int

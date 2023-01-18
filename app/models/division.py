@@ -5,19 +5,27 @@ from .tee import TeeGender
 from .flight_division_link import FlightDivisionLink
 from .tournament_division_link import TournamentDivisionLink
 
+
 class DivisionBase(SQLModel):
     name: str
     gender: TeeGender
     primary_tee_id: int = Field(default=None, foreign_key="tee.id")
     secondary_tee_id: int = Field(default=None, foreign_key="tee.id")
 
+
 class Division(DivisionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    flight: Optional["Flight"] = Relationship(link_model=FlightDivisionLink, sa_relationship_kwargs={'viewonly': True})
-    tournament: Optional["Tournament"] = Relationship(link_model=TournamentDivisionLink, sa_relationship_kwargs={'viewonly': True})
+    flight: Optional["Flight"] = Relationship(
+        link_model=FlightDivisionLink, sa_relationship_kwargs={"viewonly": True}
+    )
+    tournament: Optional["Tournament"] = Relationship(
+        link_model=TournamentDivisionLink, sa_relationship_kwargs={"viewonly": True}
+    )
+
 
 class DivisionCreate(DivisionBase):
     pass
+
 
 class DivisionUpdate(SQLModel):
     name: Optional[str] = None
@@ -25,8 +33,10 @@ class DivisionUpdate(SQLModel):
     primary_tee_id: Optional[int] = None
     secondary_tee_id: Optional[int] = None
 
+
 class DivisionRead(DivisionBase):
     id: int
+
 
 class DivisionData(SQLModel):
     id: int

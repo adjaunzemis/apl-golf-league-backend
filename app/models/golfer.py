@@ -3,11 +3,13 @@ from enum import Enum
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
+
 class GolferAffiliation(str, Enum):
     APL_EMPLOYEE = "APL Employee"
     APL_RETIREE = "APL Retiree"
     APL_FAMILY = "APL Family"
     NON_APL_EMPLOYEE = "Non-APL Employee"
+
 
 class GolferBase(SQLModel):
     name: str
@@ -17,11 +19,14 @@ class GolferBase(SQLModel):
     handicap_index: Optional[float] = None
     handicap_index_updated: Optional[datetime] = None
 
+
 class Golfer(GolferBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
+
 class GolferCreate(GolferBase):
     pass
+
 
 class GolferUpdate(SQLModel):
     name: Optional[str] = None
@@ -31,8 +36,10 @@ class GolferUpdate(SQLModel):
     handicap_index: Optional[float] = None
     handicap_index_updated: Optional[datetime] = None
 
+
 class GolferRead(GolferBase):
     id: int
+
 
 class GolferStatistics(SQLModel):
     num_rounds: int = 0

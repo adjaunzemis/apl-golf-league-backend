@@ -10,33 +10,68 @@ from ..models.track import Track
 from ..models.tee import Tee
 from ..models.hole import Hole
 
+
 @pytest.fixture(name="session")
 def session_fixture():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
-    
+
+
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
     def get_session_override():
         return session
+
     app.dependency_overrides[get_sql_db_session] = get_session_override
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
 
+
 @pytest.mark.parametrize(
-    "name, year, address, phone, website", [
-        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", None),
-        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", None, "google.com"),
-        ("Test Course Name", 2021, None, "123-456-7890", "google.com")
-    ])
-def test_create_course(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
-    response = client.post("/courses/", json={
-        "name": name, "year": year, "address": address, "phone": phone, "website": website
-    })
+    "name, year, address, phone, website",
+    [
+        (
+            "Test Course Name",
+            2021,
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            "google.com",
+        ),
+        (
+            "Test Course Name",
+            2021,
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            None,
+        ),
+        (
+            "Test Course Name",
+            2021,
+            "Test Street, Test City, ST 12345",
+            None,
+            "google.com",
+        ),
+        ("Test Course Name", 2021, None, "123-456-7890", "google.com"),
+    ],
+)
+def test_create_course(
+    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+):
+    response = client.post(
+        "/courses/",
+        json={
+            "name": name,
+            "year": year,
+            "address": address,
+            "phone": phone,
+            "website": website,
+        },
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -46,37 +81,98 @@ def test_create_course(client: TestClient, name: str, year: int, address: str, p
     assert data["website"] == website
     assert data["id"] is not None
 
-@pytest.mark.parametrize(
-    "name, year, address, phone, website", [
-        (None, 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", None, "Test Street, Test City, ST 12345", "123-456-7890", "google.com")
-    ])
-def test_create_course_incomplete(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
-    # Missing required fieds
-    response = client.post("/courses/", json={
-        "name": name, "year": year, "address": address, "phone": phone, "website": website
-    })
-    assert response.status_code == 422
 
 @pytest.mark.parametrize(
-    "name, year, address, phone, website", [
-        ({"key": "value"}, 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", {"key": "value"}, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
-        ("Test Course Name", 2021, {"key": "value"}, "123-456-7890", "google.com"),
-        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", {"key": "value"}, "google.com"),
-        ("Test Course Name", 2021, "Test Street, Test City, ST 12345", "123-456-7890", {"key": "value"})
-    ])
-def test_create_course_invalid(client: TestClient, name: str, year: int, address: str, phone: str, website: str):
-    # Invalid input data types
-    response = client.post("/courses/", json={
-        "name": name, "address": address, "phone": phone, "website": website
-    })
+    "name, year, address, phone, website",
+    [
+        (None, 2021, "Test Street, Test City, ST 12345", "123-456-7890", "google.com"),
+        (
+            "Test Course Name",
+            None,
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            "google.com",
+        ),
+    ],
+)
+def test_create_course_incomplete(
+    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+):
+    # Missing required fieds
+    response = client.post(
+        "/courses/",
+        json={
+            "name": name,
+            "year": year,
+            "address": address,
+            "phone": phone,
+            "website": website,
+        },
+    )
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "name, year, address, phone, website",
+    [
+        (
+            {"key": "value"},
+            2021,
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            "google.com",
+        ),
+        (
+            "Test Course Name",
+            {"key": "value"},
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            "google.com",
+        ),
+        ("Test Course Name", 2021, {"key": "value"}, "123-456-7890", "google.com"),
+        (
+            "Test Course Name",
+            2021,
+            "Test Street, Test City, ST 12345",
+            {"key": "value"},
+            "google.com",
+        ),
+        (
+            "Test Course Name",
+            2021,
+            "Test Street, Test City, ST 12345",
+            "123-456-7890",
+            {"key": "value"},
+        ),
+    ],
+)
+def test_create_course_invalid(
+    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+):
+    # Invalid input data types
+    response = client.post(
+        "/courses/",
+        json={"name": name, "address": address, "phone": phone, "website": website},
+    )
+    assert response.status_code == 422
+
 
 def test_read_courses(session: Session, client: TestClient):
     courses = [
-        Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com"),
-        Course(name="Test Course 2", year=2021, address="Test Address 2", phone="222-222-2222", website="bing.com")
+        Course(
+            name="Test Course 1",
+            year=2021,
+            address="Test Address 1",
+            phone="111-111-1111",
+            website="google.com",
+        ),
+        Course(
+            name="Test Course 2",
+            year=2021,
+            address="Test Address 2",
+            phone="222-222-2222",
+            website="bing.com",
+        ),
     ]
     for course in courses:
         session.add(course)
@@ -95,8 +191,15 @@ def test_read_courses(session: Session, client: TestClient):
         assert data[dIdx]["website"] == courses[dIdx].website
         assert data[dIdx]["id"] == courses[dIdx].id
 
+
 def test_read_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(
+        name="Test Course 1",
+        year=2021,
+        address="Test Address 1",
+        phone="111-111-1111",
+        website="google.com",
+    )
     session.add(course)
     session.commit()
 
@@ -112,8 +215,15 @@ def test_read_course(session: Session, client: TestClient):
     assert data["id"] == course.id
     assert len(data["tracks"]) == 0
 
+
 def test_update_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(
+        name="Test Course 1",
+        year=2021,
+        address="Test Address 1",
+        phone="111-111-1111",
+        website="google.com",
+    )
     session.add(course)
     session.commit()
 
@@ -128,8 +238,15 @@ def test_update_course(session: Session, client: TestClient):
     assert data["website"] == course.website
     assert data["id"] == course.id
 
+
 def test_delete_course(session: Session, client: TestClient):
-    course = Course(name="Test Course 1", year=2021, address="Test Address 1", phone="111-111-1111", website="google.com")
+    course = Course(
+        name="Test Course 1",
+        year=2021,
+        address="Test Address 1",
+        phone="111-111-1111",
+        website="google.com",
+    )
     session.add(course)
     session.commit()
 
@@ -139,15 +256,14 @@ def test_delete_course(session: Session, client: TestClient):
     course_db = session.get(Course, course.id)
     assert course_db is None
 
+
 @pytest.mark.parametrize(
-    "name, course_id", [
-        ("Test Track Name", 1),
-        ("Test Track Name", None)
-    ])
+    "name, course_id", [("Test Track Name", 1), ("Test Track Name", None)]
+)
 def test_create_track(client: TestClient, name: str, course_id: int):
-    response = client.post("/courses/tracks/", json={
-        "name": name, "course_id": course_id
-    })
+    response = client.post(
+        "/courses/tracks/", json={"name": name, "course_id": course_id}
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -155,27 +271,28 @@ def test_create_track(client: TestClient, name: str, course_id: int):
     assert data["course_id"] == course_id
     assert data["id"] is not None
 
+
 def test_create_track_incomplete(client: TestClient):
     # Missing required 'name' field
     response = client.post("/courses/tracks/", json={"course_id": 1})
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "name, course_id", [
-        ({"key": "value"}, 1),
-        ("Test Track Name", {"key": "value"})
-    ])
+    "name, course_id", [({"key": "value"}, 1), ("Test Track Name", {"key": "value"})]
+)
 def test_create_track_invalid(client: TestClient, name: str, course_id: int):
     # Invalid input data types
-    response = client.post("/courses/tracks/", json={
-        "name": name, "course_id": course_id
-    })
+    response = client.post(
+        "/courses/tracks/", json={"name": name, "course_id": course_id}
+    )
     assert response.status_code == 422
+
 
 def test_read_tracks(session: Session, client: TestClient):
     tracks = [
         Track(name="Test Track 1", course_id=1),
-        Track(name="Test Track 2", course_id=1)
+        Track(name="Test Track 2", course_id=1),
     ]
     for track in tracks:
         session.add(track)
@@ -191,6 +308,7 @@ def test_read_tracks(session: Session, client: TestClient):
         assert data[dIdx]["course_id"] == tracks[dIdx].course_id
         assert data[dIdx]["id"] == tracks[dIdx].id
 
+
 def test_read_track(session: Session, client: TestClient):
     track = Track(name="Test Track 1", course_id=1)
     session.add(track)
@@ -205,18 +323,22 @@ def test_read_track(session: Session, client: TestClient):
     assert data["id"] == track.id
     assert len(data["tees"]) == 0
 
+
 def test_update_track(session: Session, client: TestClient):
     track = Track(name="Test Track 1", course_id=1)
     session.add(track)
     session.commit()
 
-    response = client.patch(f"/courses/tracks/{track.id}", json={"name": "Awesome Track"})
+    response = client.patch(
+        f"/courses/tracks/{track.id}", json={"name": "Awesome Track"}
+    )
     assert response.status_code == 200
 
     data = response.json()
     assert data["name"] == "Awesome Track"
     assert data["course_id"] == track.course_id
     assert data["id"] == track.id
+
 
 def test_delete_track(session: Session, client: TestClient):
     track = Track(name="Test Track 1", course_id=1)
@@ -229,16 +351,35 @@ def test_delete_track(session: Session, client: TestClient):
     track_db = session.get(Track, track.id)
     assert track_db is None
 
+
 @pytest.mark.parametrize(
-    "name, gender, rating, slope, color, track_id", [
+    "name, gender, rating, slope, color, track_id",
+    [
         ("Test Tee Name", "M", 72.3, 128, "Blue", 1),
         ("Test Tee Name", "F", 72.3, 128, "Blue", None),
-        ("Test Tee Name", "M", 72.3, 128, None, 1)
-    ])
-def test_create_tee(client: TestClient, name: str, gender: str, rating: float, slope: int, color: str, track_id: int):
-    response = client.post("/courses/tees/", json={
-        "name": name, "gender": gender, "rating": rating, "slope": slope, "color": color, "track_id": track_id
-    })
+        ("Test Tee Name", "M", 72.3, 128, None, 1),
+    ],
+)
+def test_create_tee(
+    client: TestClient,
+    name: str,
+    gender: str,
+    rating: float,
+    slope: int,
+    color: str,
+    track_id: int,
+):
+    response = client.post(
+        "/courses/tees/",
+        json={
+            "name": name,
+            "gender": gender,
+            "rating": rating,
+            "slope": slope,
+            "color": color,
+            "track_id": track_id,
+        },
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -250,42 +391,94 @@ def test_create_tee(client: TestClient, name: str, gender: str, rating: float, s
     assert data["track_id"] == track_id
     assert data["id"] is not None
 
+
 @pytest.mark.parametrize(
-    "name, gender, rating, slope, color, track_id", [
+    "name, gender, rating, slope, color, track_id",
+    [
         (None, "M", 72.3, 128, "Blue", 1),
         ("Test Tee Name", None, 72.3, 128, "Blue", 1),
         ("Test Tee Name", "M", None, 128, "Blue", 1),
-        ("Test Tee Name", "M", 72.3, None, "Blue", 1)
-    ]
+        ("Test Tee Name", "M", 72.3, None, "Blue", 1),
+    ],
 )
-def test_create_tee_incomplete(client: TestClient, name: str, gender: str, rating: float, slope: int, color: str, track_id: int):
+def test_create_tee_incomplete(
+    client: TestClient,
+    name: str,
+    gender: str,
+    rating: float,
+    slope: int,
+    color: str,
+    track_id: int,
+):
     # Missing required fields
-    response = client.post("/courses/tees/", json={
-        "name": name, "gender": gender, "rating": rating, "slope": slope, "color": color, "track_id": track_id
-    })
+    response = client.post(
+        "/courses/tees/",
+        json={
+            "name": name,
+            "gender": gender,
+            "rating": rating,
+            "slope": slope,
+            "color": color,
+            "track_id": track_id,
+        },
+    )
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "name, gender, rating, slope, color, track_id", [
+    "name, gender, rating, slope, color, track_id",
+    [
         ({"key": "value"}, "M", 72.3, 128, "Blue", 1),
         ("Test Tee Name", {"key": "value"}, 72.3, 128, "Blue", 1),
         ("Test Tee Name", "M", {"key": "value"}, 128, "Blue", 1),
         ("Test Tee Name", "M", 72.3, {"key": "value"}, "Blue", 1),
         ("Test Tee Name", "M", 72.3, 128, {"key": "value"}, 1),
         ("Test Tee Name", "M", 72.3, 128, "Blue", {"key": "value"}),
-        ("Test Tee Name", "INVALID GENDER", 72.3, 128, "Blue", 1)
-    ])
-def test_create_tee_invalid(client: TestClient, name: str, gender: str, rating: float, slope: int, color: str, track_id: int):
+        ("Test Tee Name", "INVALID GENDER", 72.3, 128, "Blue", 1),
+    ],
+)
+def test_create_tee_invalid(
+    client: TestClient,
+    name: str,
+    gender: str,
+    rating: float,
+    slope: int,
+    color: str,
+    track_id: int,
+):
     # Invalid input data types
-    response = client.post("/courses/tees/", json={
-        "name": name, "gender": gender, "rating": rating, "slope": slope, "color": color, "track_id": track_id
-    })
+    response = client.post(
+        "/courses/tees/",
+        json={
+            "name": name,
+            "gender": gender,
+            "rating": rating,
+            "slope": slope,
+            "color": color,
+            "track_id": track_id,
+        },
+    )
     assert response.status_code == 422
+
 
 def test_read_tees(session: Session, client: TestClient):
     tees = [
-        Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1),
-        Tee(name="Test Tee 2", gender="F", rating=68.7, slope=117, color="Red", track_id=1),
+        Tee(
+            name="Test Tee 1",
+            gender="M",
+            rating=72.3,
+            slope=128,
+            color="Blue",
+            track_id=1,
+        ),
+        Tee(
+            name="Test Tee 2",
+            gender="F",
+            rating=68.7,
+            slope=117,
+            color="Red",
+            track_id=1,
+        ),
     ]
     for tee in tees:
         session.add(tee)
@@ -305,8 +498,11 @@ def test_read_tees(session: Session, client: TestClient):
         assert data[dIdx]["track_id"] == tees[dIdx].track_id
         assert data[dIdx]["id"] == tees[dIdx].id
 
+
 def test_read_tee(session: Session, client: TestClient):
-    tee = Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1)
+    tee = Tee(
+        name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1
+    )
     session.add(tee)
     session.commit()
 
@@ -323,8 +519,11 @@ def test_read_tee(session: Session, client: TestClient):
     assert data["id"] == tee.id
     assert len(data["holes"]) == 0
 
+
 def test_update_tee(session: Session, client: TestClient):
-    tee = Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1)
+    tee = Tee(
+        name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1
+    )
     session.add(tee)
     session.commit()
 
@@ -340,8 +539,11 @@ def test_update_tee(session: Session, client: TestClient):
     assert data["track_id"] == tee.track_id
     assert data["id"] == tee.id
 
+
 def test_delete_tee(session: Session, client: TestClient):
-    tee = Tee(name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1)
+    tee = Tee(
+        name="Test Tee 1", gender="M", rating=72.3, slope=128, color="Blue", track_id=1
+    )
     session.add(tee)
     session.commit()
 
@@ -351,15 +553,29 @@ def test_delete_tee(session: Session, client: TestClient):
     tee_db = session.get(Tee, tee.id)
     assert tee_db is None
 
+
 @pytest.mark.parametrize(
-    "number, par, yardage, stroke_index, tee_id", [
-        (1, 4, 385, 3, 1),
-        (1, 4, 385, 3, None)
-    ])
-def test_create_hole(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
-    response = client.post("/courses/holes/", json={
-        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
-    })
+    "number, par, yardage, stroke_index, tee_id",
+    [(1, 4, 385, 3, 1), (1, 4, 385, 3, None)],
+)
+def test_create_hole(
+    client: TestClient,
+    number: int,
+    par: int,
+    yardage: int,
+    stroke_index: int,
+    tee_id: int,
+):
+    response = client.post(
+        "/courses/holes/",
+        json={
+            "number": number,
+            "par": par,
+            "yardage": yardage,
+            "stroke_index": stroke_index,
+            "tee_id": tee_id,
+        },
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -370,39 +586,74 @@ def test_create_hole(client: TestClient, number: int, par: int, yardage: int, st
     assert data["tee_id"] == tee_id
     assert data["id"] is not None
 
+
 @pytest.mark.parametrize(
-    "number, par, yardage, stroke_index, tee_id", [
+    "number, par, yardage, stroke_index, tee_id",
+    [
         (None, 4, 385, 3, 1),
         (1, None, 385, 3, 1),
         (1, 4, None, 3, 1),
-        (1, 4, 385, None, 1)
-    ])
-def test_create_hole_incomplete(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
+        (1, 4, 385, None, 1),
+    ],
+)
+def test_create_hole_incomplete(
+    client: TestClient,
+    number: int,
+    par: int,
+    yardage: int,
+    stroke_index: int,
+    tee_id: int,
+):
     # Missing required fields
-    response = client.post("/courses/holes/", json={
-        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
-    })
+    response = client.post(
+        "/courses/holes/",
+        json={
+            "number": number,
+            "par": par,
+            "yardage": yardage,
+            "stroke_index": stroke_index,
+            "tee_id": tee_id,
+        },
+    )
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "number, par, yardage, stroke_index, tee_id", [
+    "number, par, yardage, stroke_index, tee_id",
+    [
         ({"key": "value"}, 4, 385, 3, 1),
         (1, {"key": "value"}, 385, 3, 1),
         (1, 4, {"key": "value"}, 3, 1),
         (1, 4, 385, {"key": "value"}, 1),
-        (1, 4, 385, 3, {"key": "value"})
-    ])
-def test_create_hole_invalid(client: TestClient, number: int, par: int, yardage: int, stroke_index: int, tee_id: int):
+        (1, 4, 385, 3, {"key": "value"}),
+    ],
+)
+def test_create_hole_invalid(
+    client: TestClient,
+    number: int,
+    par: int,
+    yardage: int,
+    stroke_index: int,
+    tee_id: int,
+):
     # Invalid input data types
-    response = client.post("/courses/holes/", json={
-        "number": number, "par": par, "yardage": yardage, "stroke_index": stroke_index, "tee_id": tee_id
-    })
+    response = client.post(
+        "/courses/holes/",
+        json={
+            "number": number,
+            "par": par,
+            "yardage": yardage,
+            "stroke_index": stroke_index,
+            "tee_id": tee_id,
+        },
+    )
     assert response.status_code == 422
+
 
 def test_read_holes(session: Session, client: TestClient):
     holes = [
         Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1),
-        Hole(number=2, par=5, yardage=495, stroke_index=15, tee_id=1)
+        Hole(number=2, par=5, yardage=495, stroke_index=15, tee_id=1),
     ]
     for hole in holes:
         session.add(hole)
@@ -421,6 +672,7 @@ def test_read_holes(session: Session, client: TestClient):
         assert data[dIdx]["tee_id"] == holes[dIdx].tee_id
         assert data[dIdx]["id"] == holes[dIdx].id
 
+
 def test_read_hole(session: Session, client: TestClient):
     hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
     session.add(hole)
@@ -436,6 +688,7 @@ def test_read_hole(session: Session, client: TestClient):
     assert data["stroke_index"] == hole.stroke_index
     assert data["tee_id"] == hole.tee_id
     assert data["id"] == hole.id
+
 
 def test_update_hole(session: Session, client: TestClient):
     hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
@@ -453,6 +706,7 @@ def test_update_hole(session: Session, client: TestClient):
     assert data["tee_id"] == hole.tee_id
     assert data["id"] == hole.id
 
+
 def test_delete_hole(session: Session, client: TestClient):
     hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
     session.add(hole)
@@ -464,8 +718,15 @@ def test_delete_hole(session: Session, client: TestClient):
     hole_db = session.get(Hole, hole.id)
     assert hole_db is None
 
+
 def test_read_course_with_data(session: Session, client: TestClient):
-    course = Course(name="Test Course", year=2021, address="Test Street, Test City, ST 12345", phone="123-456-7890", website="google.com")
+    course = Course(
+        name="Test Course",
+        year=2021,
+        address="Test Street, Test City, ST 12345",
+        phone="123-456-7890",
+        website="google.com",
+    )
     session.add(course)
     session.commit()
 
@@ -473,7 +734,14 @@ def test_read_course_with_data(session: Session, client: TestClient):
     session.add(track)
     session.commit()
 
-    tee = Tee(name="Test Tee", gender="M", rating=72.3, slope=128, color="Blue", track_id=track.id)
+    tee = Tee(
+        name="Test Tee",
+        gender="M",
+        rating=72.3,
+        slope=128,
+        color="Blue",
+        track_id=track.id,
+    )
     session.add(tee)
     session.commit()
 

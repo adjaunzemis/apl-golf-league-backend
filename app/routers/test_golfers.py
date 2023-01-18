@@ -7,31 +7,37 @@ from ..api import app
 from ..dependencies import get_sql_db_session
 from ..models.golfer import Golfer
 
+
 @pytest.fixture(name="session")
 def session_fixture():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
-    
+
+
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
     def get_session_override():
         return session
+
     app.dependency_overrides[get_sql_db_session] = get_session_override
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
 
+
 @pytest.mark.parametrize(
-    "name, affiliation", [
+    "name, affiliation",
+    [
         ("Test Golfer", "APL_EMPLOYEE"),
         ("Test Golfer", None),
-    ])
+    ],
+)
 def test_create_golfer(client: TestClient, name: str, affiliation: str):
-    response = client.post("/golfers/", json={
-        "name": name, "affiliation": affiliation
-    })
+    response = client.post("/golfers/", json={"name": name, "affiliation": affiliation})
     assert response.status_code == 200
 
     data = response.json()
@@ -39,27 +45,30 @@ def test_create_golfer(client: TestClient, name: str, affiliation: str):
     assert data["affiliation"] == affiliation
     assert data["id"] is not None
 
+
 def test_create_golfer_incomplete(client: TestClient):
     # Missing required fields
     response = client.post("/golfers/", json={"affiliation": "NON_APL_EMPLOYEE"})
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "name, affiliation", [
+    "name, affiliation",
+    [
         ({"key": "value"}, "NON_APL_EMPLOYEE"),
         ("Test Golfer", {"key": "value"}),
-        ("Test Golfer", "BAD_AFFILIATION")
-    ])
+        ("Test Golfer", "BAD_AFFILIATION"),
+    ],
+)
 def test_create_golfer_invalid(client: TestClient, name: str, affiliation: str):
-    response = client.post("/golfers/", json={
-        "name": name, "affiliation": affiliation
-    })
+    response = client.post("/golfers/", json={"name": name, "affiliation": affiliation})
     assert response.status_code == 422
+
 
 def test_read_golfers(session: Session, client: TestClient):
     golfers = [
         Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE"),
-        Golfer(name="Test Golfer B", affiliation="APL_EMPLOYEE")
+        Golfer(name="Test Golfer B", affiliation="APL_EMPLOYEE"),
     ]
     for golfer in golfers:
         session.add(golfer)
@@ -75,6 +84,7 @@ def test_read_golfers(session: Session, client: TestClient):
         assert data[dIdx]["affiliation"] == golfers[dIdx].affiliation
         assert data[dIdx]["id"] == golfers[dIdx].id
 
+
 def test_read_golfer(session: Session, client: TestClient):
     golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")
     session.add(golfer)
@@ -88,6 +98,7 @@ def test_read_golfer(session: Session, client: TestClient):
     assert data["affiliation"] == golfer.affiliation
     assert data["id"] == golfer.id
 
+
 def test_update_golfer(session: Session, client: TestClient):
     golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")
     session.add(golfer)
@@ -100,6 +111,7 @@ def test_update_golfer(session: Session, client: TestClient):
     assert data["name"] == "New Golfer"
     assert data["affiliation"] == golfer.affiliation
     assert data["id"] == golfer.id
+
 
 def test_delete_golfer(session: Session, client: TestClient):
     golfer = Golfer(name="Test Golfer A", affiliation="NON_APL_EMPLOYEE")

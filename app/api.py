@@ -10,8 +10,26 @@ import logging
 
 from typing import List, Dict
 
-from .dependencies import create_sql_db_and_tables, create_nosql_db_and_collections, close_nosql_db, get_nosql_db_client
-from .routers import courses, golfers, teams, flights, tournaments, rounds, matches, handicaps, officers, users, payments, tasks
+from .dependencies import (
+    create_sql_db_and_tables,
+    create_nosql_db_and_collections,
+    close_nosql_db,
+    get_nosql_db_client,
+)
+from .routers import (
+    courses,
+    golfers,
+    teams,
+    flights,
+    tournaments,
+    rounds,
+    matches,
+    handicaps,
+    officers,
+    users,
+    payments,
+    tasks,
+)
 from .utilities.custom_logger import CustomizeLogger
 from .utilities.notifications import EmailSchema, send_email
 
@@ -26,13 +44,14 @@ app = FastAPI(
     contact={
         "name": "Andris Jaunzemis",
         "email": "adjaunzemis@gmail.com",
-    }
+    },
 )
 
 CONFIG_PATH = "app/logging.config"
 logger = logging.getLogger(__name__)
 logger = CustomizeLogger.make_logger(CONFIG_PATH)
 app.logger = logger
+
 
 async def log_request_data(request: Request):
     """
@@ -44,7 +63,7 @@ async def log_request_data(request: Request):
     ----------
     request : Request
         request to log
-    
+
     References
     ----------
     https://stackoverflow.com/questions/63400683/python-logging-with-loguru-log-request-params-on-fastapi-app
@@ -63,6 +82,7 @@ async def log_request_data(request: Request):
     #     logger.debug(f"Body:")
     #     logger.debug(f"\t{req_body}")
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -71,16 +91,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def get_info():
     """
     Returns API info.
     """
-    return {
-        "title": app.title,
-        "description": app.description,
-        "version": app.version
-    }
+    return {"title": app.title, "description": app.description, "version": app.version}
+
 
 @app.get("/heartbeat/", tags=["Heartbeat"])
 async def get_heartbeat():
@@ -88,6 +106,7 @@ async def get_heartbeat():
     Heartbeat for checking connection to API.
     """
     return "alive"
+
 
 app.include_router(tasks.router, dependencies=[Depends(log_request_data)])
 app.include_router(users.router, dependencies=[Depends(log_request_data)])
@@ -102,27 +121,39 @@ app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
 app.include_router(payments.router, dependencies=[Depends(log_request_data)])
 
+
 @app.on_event("startup")
 def on_startup():
     create_sql_db_and_tables()
+
 
 @app.on_event("startup")
 def startup_db_client():
     create_nosql_db_and_collections()
 
+
 @app.on_event("shutdown")
 def on_shutdown():
     close_nosql_db()
 
+
 @app.get("/mongodb_test/", response_model=List[Dict])
 async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
     DB_NAME = "TestDB"
-    return list(client[DB_NAME]["TestCollection"].find(projection={'_id': False}, limit=100))
+    return list(
+        client[DB_NAME]["TestCollection"].find(projection={"_id": False}, limit=100)
+    )
+
 
 @app.post("/email_test/")
-async def test_email(*, email: EmailSchema, background_tasks: BackgroundTasks) -> JSONResponse:
+async def test_email(
+    *, email: EmailSchema, background_tasks: BackgroundTasks
+) -> JSONResponse:
     send_email(email, "email.html", background_tasks)
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Email has been sent"})
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"message": "Email has been sent"}
+    )
+
 
 if __name__ == "__main__":
     app.run()

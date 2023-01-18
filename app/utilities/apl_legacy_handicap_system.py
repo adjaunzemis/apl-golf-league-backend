@@ -3,12 +3,13 @@ import numpy as np
 
 from .world_handicap_system import WorldHandicapSystem
 
+
 class APLLegacyHandicapSystem(WorldHandicapSystem):
     """
     Legacy implementation of the APL golf league handicap system.
 
     Similar to USGA/WHS with some adjustments for 9-hole league play.
-    
+
     All score differentials are computed over 9-hole rounds, so the handicap
     index is a 9-hole handicap index.
 
@@ -22,7 +23,9 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
 
     """
 
-    def compute_hole_maximum_score(self, par: int, stroke_index: int, course_handicap: int = None) -> int:
+    def compute_hole_maximum_score(
+        self, par: int, stroke_index: int, course_handicap: int = None
+    ) -> int:
         # Reference: USGA Equitable Stroke Control (prior to 2020)
         # Note: This has already taken into account 9-hole course handicaps with 18-hole stroke indexes,
         # do not multiply course handicap by two!
@@ -37,10 +40,14 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
         else:
             return 10
 
-    def compute_hole_handicap_strokes(self, stroke_index: int, course_handicap: int) -> int:
+    def compute_hole_handicap_strokes(
+        self, stroke_index: int, course_handicap: int
+    ) -> int:
         # Similar to WHS, but using 9-hole playing handicaps
-        return super().compute_hole_handicap_strokes(stroke_index=stroke_index, course_handicap=course_handicap*2)
-    
+        return super().compute_hole_handicap_strokes(
+            stroke_index=stroke_index, course_handicap=course_handicap * 2
+        )
+
     def compute_handicap_index(self, record: List[float]) -> float:
         # Reference: APL Golf League Handicapping
         record_sorted = np.sort(record)
@@ -54,7 +61,10 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             score_diffs_avg = np.mean(record_sorted[0:4])
         else:
             score_diffs_avg = np.mean(record_sorted[0:5])
-        return min(np.floor((0.96 * score_diffs_avg) * 10.0) / 10.0, self.maximum_handicap_index) # truncate to nearest tenth
+        return min(
+            np.floor((0.96 * score_diffs_avg) * 10.0) / 10.0,
+            self.maximum_handicap_index,
+        )  # truncate to nearest tenth
 
     @property
     def maximum_handicap_index(self) -> float:

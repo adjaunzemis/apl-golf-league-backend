@@ -4,6 +4,7 @@ import numpy as np
 from .apl_legacy_handicap_system import APLLegacyHandicapSystem
 from .world_handicap_system import WorldHandicapSystem
 
+
 class APLHandicapSystem(APLLegacyHandicapSystem):
     """
     Current (as of 2022) implementation of the APL golf league handicap system.
@@ -12,7 +13,7 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
     - Adds pace-of-play maximum score rule: double par + handicap strokes
 
     Similar to USGA/WHS with some adjustments for 9-hole league play.
-    
+
     All score differentials are computed over 9-hole rounds, so the handicap
     index is a 9-hole handicap index.
 
@@ -24,9 +25,13 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
 
     """
 
-    def compute_hole_maximum_score(self, par: int, stroke_index: int, course_handicap: int = None) -> int:
+    def compute_hole_maximum_score(
+        self, par: int, stroke_index: int, course_handicap: int = None
+    ) -> int:
         whs = WorldHandicapSystem()
-        return whs.compute_hole_maximum_score(par=par, stroke_index=stroke_index, course_handicap=course_handicap*2)
+        return whs.compute_hole_maximum_score(
+            par=par, stroke_index=stroke_index, course_handicap=course_handicap * 2
+        )
 
     def compute_hole_maximum_strokes(self, par: int, handicap_strokes: int) -> int:
         """
@@ -40,7 +45,7 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
             hole par
         handicap_strokes : int
             number of handicap strokes given to the relevant golfer on this hole
-        
+
         Returns
         -------
         max_strokes : int

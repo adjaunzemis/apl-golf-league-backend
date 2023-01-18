@@ -2,6 +2,7 @@ from typing import Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field
 
+
 class Committee(str, Enum):
     LEAGUE = "LEAGUE"
     EXECUTIVE = "EXECUTIVE"
@@ -11,6 +12,7 @@ class Committee(str, Enum):
     PUBLICITY = "PUBLICITY"
     PLANNING = "PLANNING"
 
+
 class OfficerBase(SQLModel):
     name: str
     year: int
@@ -19,11 +21,14 @@ class OfficerBase(SQLModel):
     email: Optional[str]
     phone: Optional[str]
 
+
 class Officer(OfficerBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
+
 class OfficerCreate(OfficerBase):
     pass
+
 
 class OfficerUpdate(SQLModel):
     name: Optional[str] = None
@@ -32,6 +37,7 @@ class OfficerUpdate(SQLModel):
     role: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+
 
 class OfficerRead(OfficerBase):
     id: int

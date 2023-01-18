@@ -9,30 +9,50 @@ from ..dependencies import get_sql_db_session
 from ..models.round import Round
 from ..models.hole_result import HoleResult
 
+
 @pytest.fixture(name="session")
 def session_fixture():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
-    
+
+
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
     def get_session_override():
         return session
+
     app.dependency_overrides[get_sql_db_session] = get_session_override
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
 
+
 @pytest.mark.parametrize(
-    "tee_id, golfer_id, handicap_index, playing_handicap, date_played", [
-        (1, 1, 12.3, 12, str(date.today()))
-    ])
-def test_create_round(client: TestClient, tee_id: int, golfer_id: int, handicap_index: float, playing_handicap: int, date_played: date):
-    response = client.post("/rounds/", json={
-        "tee_id": tee_id, "golfer_id": golfer_id, "handicap_index": handicap_index, "playing_handicap": playing_handicap, "date_played": date_played
-    })
+    "tee_id, golfer_id, handicap_index, playing_handicap, date_played",
+    [(1, 1, 12.3, 12, str(date.today()))],
+)
+def test_create_round(
+    client: TestClient,
+    tee_id: int,
+    golfer_id: int,
+    handicap_index: float,
+    playing_handicap: int,
+    date_played: date,
+):
+    response = client.post(
+        "/rounds/",
+        json={
+            "tee_id": tee_id,
+            "golfer_id": golfer_id,
+            "handicap_index": handicap_index,
+            "playing_handicap": playing_handicap,
+            "date_played": date_played,
+        },
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -43,39 +63,86 @@ def test_create_round(client: TestClient, tee_id: int, golfer_id: int, handicap_
     assert data["date_played"] == date_played
     assert data["id"] is not None
 
+
 @pytest.mark.parametrize(
-    "tee_id, golfer_id, handicap_index, playing_handicap, date_played", [
+    "tee_id, golfer_id, handicap_index, playing_handicap, date_played",
+    [
         (1, 1, 12.3, 12, None),
         (1, 1, 12.3, None, str(date.today())),
         (1, 1, None, 12, str(date.today())),
         (1, None, 12.3, 12, str(date.today())),
-        (None, 1, 12.3, 12, str(date.today()))
-    ])
-def test_create_round_incomplete(client: TestClient, tee_id: int, golfer_id: int, handicap_index: float, playing_handicap: int, date_played: date):
+        (None, 1, 12.3, 12, str(date.today())),
+    ],
+)
+def test_create_round_incomplete(
+    client: TestClient,
+    tee_id: int,
+    golfer_id: int,
+    handicap_index: float,
+    playing_handicap: int,
+    date_played: date,
+):
     # Missing required fields
-    response = client.post("/rounds/", json={   
-        "tee_id": tee_id, "golfer_id": golfer_id, "handicap_index": handicap_index, "playing_handicap": playing_handicap, "date_played": date_played
-    })
+    response = client.post(
+        "/rounds/",
+        json={
+            "tee_id": tee_id,
+            "golfer_id": golfer_id,
+            "handicap_index": handicap_index,
+            "playing_handicap": playing_handicap,
+            "date_played": date_played,
+        },
+    )
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "tee_id, golfer_id, handicap_index, playing_handicap, date_played", [
+    "tee_id, golfer_id, handicap_index, playing_handicap, date_played",
+    [
         ({"key": "value"}, 1, 12.3, 12, str(date.today())),
         (1, {"key": "value"}, 12.3, 12, str(date.today())),
         (1, 1, {"key": "value"}, 12, str(date.today())),
         (1, 1, 12.3, {"key": "value"}, str(date.today())),
-        (1, 1, 12.3, 12, {"key": "value"})
-    ])
-def test_create_round_invalid(client: TestClient, tee_id: int, golfer_id: int, handicap_index: float, playing_handicap: int, date_played: date):
-    response = client.post("/rounds/", json={   
-        "tee_id": tee_id, "golfer_id": golfer_id, "handicap_index": handicap_index, "playing_handicap": playing_handicap, "date_played": date_played
-    })
+        (1, 1, 12.3, 12, {"key": "value"}),
+    ],
+)
+def test_create_round_invalid(
+    client: TestClient,
+    tee_id: int,
+    golfer_id: int,
+    handicap_index: float,
+    playing_handicap: int,
+    date_played: date,
+):
+    response = client.post(
+        "/rounds/",
+        json={
+            "tee_id": tee_id,
+            "golfer_id": golfer_id,
+            "handicap_index": handicap_index,
+            "playing_handicap": playing_handicap,
+            "date_played": date_played,
+        },
+    )
     assert response.status_code == 422
+
 
 def test_read_rounds(session: Session, client: TestClient):
     rounds = [
-        Round(tee_id=1, golfer_id=1, handicap_index=12.3, playing_handicap=12, date_played=date.today()),
-        Round(tee_id=2, golfer_id=2, handicap_index=18.6, playing_handicap=17, date_played=date.today())
+        Round(
+            tee_id=1,
+            golfer_id=1,
+            handicap_index=12.3,
+            playing_handicap=12,
+            date_played=date.today(),
+        ),
+        Round(
+            tee_id=2,
+            golfer_id=2,
+            handicap_index=18.6,
+            playing_handicap=17,
+            date_played=date.today(),
+        ),
     ]
     for round in rounds:
         session.add(round)
@@ -94,8 +161,15 @@ def test_read_rounds(session: Session, client: TestClient):
         assert data[dIdx]["date_played"] == str(rounds[dIdx].date_played)
         assert data[dIdx]["id"] == rounds[dIdx].id
 
+
 def test_read_round(session: Session, client: TestClient):
-    round = Round(tee_id=1, golfer_id=1, handicap_index=12.3, playing_handicap=12, date_played=date.today())
+    round = Round(
+        tee_id=1,
+        golfer_id=1,
+        handicap_index=12.3,
+        playing_handicap=12,
+        date_played=date.today(),
+    )
     session.add(round)
     session.commit()
 
@@ -110,8 +184,15 @@ def test_read_round(session: Session, client: TestClient):
     assert data["date_played"] == str(round.date_played)
     assert data["id"] == round.id
 
+
 def test_update_round(session: Session, client: TestClient):
-    round = Round(tee_id=1, golfer_id=1, handicap_index=12.3, playing_handicap=12, date_played=date.today())
+    round = Round(
+        tee_id=1,
+        golfer_id=1,
+        handicap_index=12.3,
+        playing_handicap=12,
+        date_played=date.today(),
+    )
     session.add(round)
     session.commit()
 
@@ -126,8 +207,15 @@ def test_update_round(session: Session, client: TestClient):
     assert data["date_played"] == str(round.date_played)
     assert data["id"] == round.id
 
+
 def test_delete_round(session: Session, client: TestClient):
-    round = Round(tee_id=1, golfer_id=1, handicap_index=12.3, playing_handicap=12, date_played=date.today())
+    round = Round(
+        tee_id=1,
+        golfer_id=1,
+        handicap_index=12.3,
+        playing_handicap=12,
+        date_played=date.today(),
+    )
     session.add(round)
     session.commit()
 
@@ -137,14 +225,15 @@ def test_delete_round(session: Session, client: TestClient):
     round_db = session.get(Round, round.id)
     assert round_db is None
 
-@pytest.mark.parametrize(
-    "round_id, hole_id, strokes", [
-        (1, 1, 4)
-    ])
-def test_create_hole_result(client: TestClient, round_id: int, hole_id: int, strokes: int):
-    response = client.post("/rounds/hole_results/", json={
-        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
-    })
+
+@pytest.mark.parametrize("round_id, hole_id, strokes", [(1, 1, 4)])
+def test_create_hole_result(
+    client: TestClient, round_id: int, hole_id: int, strokes: int
+):
+    response = client.post(
+        "/rounds/hole_results/",
+        json={"round_id": round_id, "hole_id": hole_id, "strokes": strokes},
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -153,35 +242,48 @@ def test_create_hole_result(client: TestClient, round_id: int, hole_id: int, str
     assert data["strokes"] == strokes
     assert data["id"] is not None
 
+
 @pytest.mark.parametrize(
-    "round_id, hole_id, strokes", [
+    "round_id, hole_id, strokes",
+    [
         (1, 1, None),
         (1, None, 4),
         (None, 1, 4),
-    ])
-def test_create_hole_result_incomplete(client: TestClient, round_id: int, hole_id: int, strokes: int):
+    ],
+)
+def test_create_hole_result_incomplete(
+    client: TestClient, round_id: int, hole_id: int, strokes: int
+):
     # Missing required fields
-    response = client.post("/rounds/hole_results/", json={
-        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
-    })
+    response = client.post(
+        "/rounds/hole_results/",
+        json={"round_id": round_id, "hole_id": hole_id, "strokes": strokes},
+    )
     assert response.status_code == 422
 
+
 @pytest.mark.parametrize(
-    "round_id, hole_id, strokes", [
+    "round_id, hole_id, strokes",
+    [
         (1, 1, {"key": "value"}),
         (1, {"key": "value"}, 4),
         ({"key": "value"}, 1, 4),
-    ])
-def test_create_hole_result_invalid(client: TestClient, round_id: int, hole_id: int, strokes: int):
-    response = client.post("/rounds/hole_results/", json={
-        "round_id": round_id, "hole_id": hole_id, "strokes": strokes
-    })
+    ],
+)
+def test_create_hole_result_invalid(
+    client: TestClient, round_id: int, hole_id: int, strokes: int
+):
+    response = client.post(
+        "/rounds/hole_results/",
+        json={"round_id": round_id, "hole_id": hole_id, "strokes": strokes},
+    )
     assert response.status_code == 422
+
 
 def test_read_hole_results(session: Session, client: TestClient):
     hole_results = [
         HoleResult(round_id=1, hole_id=1, strokes=4),
-        HoleResult(round_id=1, hole_id=2, strokes=5)
+        HoleResult(round_id=1, hole_id=2, strokes=5),
     ]
     for hole_result in hole_results:
         session.add(hole_result)
@@ -198,6 +300,7 @@ def test_read_hole_results(session: Session, client: TestClient):
         assert data[dIdx]["strokes"] == hole_results[dIdx].strokes
         assert data[dIdx]["id"] == hole_results[dIdx].id
 
+
 def test_read_hole_result(session: Session, client: TestClient):
     hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)
     session.add(hole_result)
@@ -212,12 +315,15 @@ def test_read_hole_result(session: Session, client: TestClient):
     assert data["strokes"] == hole_result.strokes
     assert data["id"] == hole_result.id
 
+
 def test_update_hole_result(session: Session, client: TestClient):
     hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)
     session.add(hole_result)
     session.commit()
 
-    response = client.patch(f"/rounds/hole_results/{hole_result.id}", json={"strokes": 5})
+    response = client.patch(
+        f"/rounds/hole_results/{hole_result.id}", json={"strokes": 5}
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -225,6 +331,7 @@ def test_update_hole_result(session: Session, client: TestClient):
     assert data["hole_id"] == hole_result.hole_id
     assert data["strokes"] == 5
     assert data["id"] == hole_result.id
+
 
 def test_delete_hole_result(session: Session, client: TestClient):
     hole_result = HoleResult(round_id=1, hole_id=1, strokes=4)

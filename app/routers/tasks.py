@@ -12,10 +12,8 @@ from ..scheduler import app as app_scheduler
 
 session = app_scheduler.session
 
-router = APIRouter(
-    prefix="/tasks",
-    tags=["Tasks"]
-)
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
 
 class Task(BaseModel):
     name: str
@@ -38,15 +36,16 @@ class Task(BaseModel):
     last_terminate: Optional[datetime.datetime]
     last_inaction: Optional[datetime.datetime]
     last_crash: Optional[datetime.datetime]
-    
+
+
 @router.get("/", response_model=List[Task])
 async def get_tasks():
     return [
         Task(
-            start_cond=str(task.start_cond), 
+            start_cond=str(task.start_cond),
             end_cond=str(task.end_cond),
             is_running=task.is_running,
-            **task.dict(exclude={'start_cond', 'end_cond'})
+            **task.dict(exclude={"start_cond", "end_cond"})
         )
         for task in session.tasks
     ]

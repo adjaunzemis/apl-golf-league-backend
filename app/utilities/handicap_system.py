@@ -1,13 +1,16 @@
 from typing import List
 from abc import ABC, abstractmethod, abstractproperty
 
+
 class HandicapSystem(ABC):
     """
     Defines functionality a golf handicap system must support.
     """
 
     @abstractmethod
-    def compute_hole_adjusted_gross_score(self, par: int, stroke_index: int, score: int, course_handicap: int = None) -> int:
+    def compute_hole_adjusted_gross_score(
+        self, par: int, stroke_index: int, score: int, course_handicap: int = None
+    ) -> int:
         """
         Computes adjusted gross score on a hole for handicapping purposes.
 
@@ -27,16 +30,18 @@ class HandicapSystem(ABC):
         course_handicap : int, optional
             player course handicap
             Default: None (player handicap index not established)
-        
+
         Returns
         -------
         score_adjusted : int
             adjusted gross score for this hole
 
         """
-    
+
     @abstractmethod
-    def compute_hole_maximum_score(self, par: int, stroke_index: int, course_handicap: int = None) -> int:
+    def compute_hole_maximum_score(
+        self, par: int, stroke_index: int, course_handicap: int = None
+    ) -> int:
         """
         Computes maximum score on a hole for handicapping purposes.
 
@@ -49,7 +54,7 @@ class HandicapSystem(ABC):
         course_handicap : int, optional
             player course handicap
             Default: None (player handicap index not estalished)
-        
+
         Returns
         -------
         max_score : int
@@ -58,7 +63,9 @@ class HandicapSystem(ABC):
         """
 
     @abstractmethod
-    def compute_hole_handicap_strokes(self, stroke_index: int, course_handicap: int) -> int:
+    def compute_hole_handicap_strokes(
+        self, stroke_index: int, course_handicap: int
+    ) -> int:
         """
         Computes handicap stokes a player recieves on a hole.
 
@@ -68,16 +75,18 @@ class HandicapSystem(ABC):
             hole stroke index
         course_handicap : int
             player course handicap
-        
+
         Returns
         -------
         strokes : int
             handicap strokes received
-        
+
         """
 
     @abstractmethod
-    def compute_course_handicap(self, par: int, rating: float, slope: int, handicap_index: float) -> int:
+    def compute_course_handicap(
+        self, par: int, rating: float, slope: int, handicap_index: float
+    ) -> int:
         """
         Computes course handicap.
 
@@ -89,7 +98,7 @@ class HandicapSystem(ABC):
             course rating
         slope : int
             course slope rating
-        handicap_index : float   
+        handicap_index : float
             player handicap index
 
         Returns
@@ -98,9 +107,15 @@ class HandicapSystem(ABC):
             player course handicap index
 
         """
-    
+
     @abstractmethod
-    def compute_score_differential(self, rating: float, slope: int, score: int, playing_conditions_correction: float) -> int:
+    def compute_score_differential(
+        self,
+        rating: float,
+        slope: int,
+        score: int,
+        playing_conditions_correction: float,
+    ) -> int:
         """
         Computes score differential for a round using course rating and slope.
 
@@ -149,5 +164,5 @@ class HandicapSystem(ABC):
         -------
         max_handicap_index : float
             maximum allowed handicap index
-        
+
         """
