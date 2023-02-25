@@ -1,8 +1,8 @@
 from typing import List
-from datetime import date
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import BaseModel, Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.round import (
@@ -27,6 +27,8 @@ from ..models.tournament import Tournament
 from ..models.tournament_round_link import TournamentRoundLink
 from ..models.user import User
 from ..models.query_helpers import get_flight_rounds, get_tournament_rounds
+from ..utilities.apl_handicap_system import APLHandicapSystem
+from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 
@@ -212,3 +214,85 @@ async def delete_hole_result(
     session.delete(hole_result_db)
     session.commit()
     return {"ok": True}
+
+
+class HoleResultValidationRequest(BaseModel):
+    number: int
+    par: int
+    stroke_index: int
+    gross_score: int
+
+
+class HoleResultValidationResponse(HoleResultValidationRequest):
+    handicap_strokes: int
+    adjusted_gross_score: int
+    net_score: int
+    max_gross_score: int
+    is_valid: bool = False
+
+
+class RoundValidationRequest(BaseModel):
+    date_played: datetime
+    course_handicap: int
+    holes: List[HoleResultValidationRequest] = []
+
+
+class RoundValidationResponse(BaseModel):
+    date_played: datetime
+    course_handicap: int
+    holes: List[HoleResultValidationResponse] = []
+    is_valid: bool = False
+
+
+@router.post("/validate/", response_model=RoundValidationResponse)
+async def validate_round(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    round: RoundValidationRequest
+):
+    # Determine handicapping system
+    if round.date_played.year >= 2022:
+        ahs = APLHandicapSystem()
+    else:
+        ahs = APLLegacyHandicapSystem()
+
+    # Prepare round response
+    round_response = RoundValidationResponse(
+        date_played=round.date_played, course_handicap=round.course_handicap
+    )
+
+    for hole in round.holes:
+        # Initialize hole response with hole request data
+        hole_response = HoleResultValidationResponse()
+        hole_response.number = hole.number
+        hole_response.par = hole.par
+        hole_response.stroke_index = hole.stroke_index
+        hole_response.gross_score = hole.gross_score
+
+        # Compute handicapping scores for this hole
+        hole_response.handicap_strokes = ahs.compute_hole_handicap_strokes(
+            hole.stroke_index, round.course_handicap
+        )
+        hole_response.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(
+            hole.par, hole.stroke_index, hole.gross_score, round.course_handicap
+        )
+        hole_response.net_score = hole.gross_score - hole_response.handicap_strokes
+        hole_response.max_gross_score = ahs.compute_hole_maximum_strokes(
+            hole.par, hole_response.handicap_strokes
+        )
+
+        # Check validity for this hole
+        hole_response.is_valid = (
+            hole_response.gross_score > 0
+            and hole_response.gross_score <= hole_response.max_gross_score
+        )
+
+        # Add hole to round response
+        round_response.holes.append(hole_response)
+
+    # Check validity for this round
+    round_response.is_valid = any([not hole.is_valid for hole in round_response.holes])
+
+    # Return round response
+    return round_response
