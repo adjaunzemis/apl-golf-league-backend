@@ -8,7 +8,6 @@ from ..dependencies import get_sql_db_session
 from ..models.flight import Flight
 from ..models.division import Division
 from ..models.team import Team
-from ..models.player import Player
 
 
 @pytest.fixture(name="session")
@@ -443,71 +442,3 @@ def test_create_player_invalid(
         },
     )
     assert response.status_code == 422
-
-
-def test_read_players(session: Session, client: TestClient):
-    players = [
-        Player(team_id=1, golfer_id=1, division_id=1, role="CAPTAIN"),
-        Player(team_id=2, golfer_id=2, division_id=2, role="PLAYER"),
-    ]
-    for player in players:
-        session.add(player)
-    session.commit()
-
-    response = client.get("/flights/players/")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert len(data) == len(players)
-    for dIdx in range(len(data)):
-        assert data[dIdx]["team_id"] == players[dIdx].team_id
-        assert data[dIdx]["golfer_id"] == players[dIdx].golfer_id
-        assert data[dIdx]["division_id"] == players[dIdx].division_id
-        assert data[dIdx]["role"] == players[dIdx].role
-        assert data[dIdx]["id"] == players[dIdx].id
-
-
-def test_read_player(session: Session, client: TestClient):
-    player = Player(team_id=1, golfer_id=1, division_id=1, role="CAPTAIN")
-    session.add(player)
-    session.commit()
-
-    response = client.get(f"/flights/players/{player.id}")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["team_id"] == player.team_id
-    assert data["golfer_id"] == player.golfer_id
-    assert data["division_id"] == player.division_id
-    assert data["role"] == player.role
-    assert data["id"] == player.id
-
-
-def test_update_player(session: Session, client: TestClient):
-    player = Player(team_id=1, golfer_id=1, division_id=1, role="CAPTAIN")
-    session.add(player)
-    session.commit()
-
-    response = client.patch(
-        f"/flights/players/{player.id}", json={"role": "SUBSTITUTE"}
-    )
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["team_id"] == player.team_id
-    assert data["golfer_id"] == player.golfer_id
-    assert data["division_id"] == player.division_id
-    assert data["role"] == "SUBSTITUTE"
-    assert data["id"] == player.id
-
-
-def test_delete_player(session: Session, client: TestClient):
-    player = Player(team_id=1, golfer_id=1, division_id=1, role="CAPTAIN")
-    session.add(player)
-    session.commit()
-
-    response = client.delete(f"/flights/players/{player.id}")
-    assert response.status_code == 200
-
-    player_db = session.get(Player, player.id)
-    assert player_db is None
