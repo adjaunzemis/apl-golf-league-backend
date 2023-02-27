@@ -2,7 +2,8 @@ from typing import List
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import BaseModel, Session, select
+from pydantic import BaseModel
+from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.round import (
