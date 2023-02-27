@@ -2,12 +2,21 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
-from datetime import date
+from typing import List
+from datetime import date, datetime
+
 
 from ..api import app
 from ..dependencies import get_sql_db_session
 from ..models.round import Round
 from ..models.hole_result import HoleResult
+from ..utilities.apl_handicap_system import APLHandicapSystem
+from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from .rounds import (
+    HoleResultValidationRequest,
+    RoundValidationRequest,
+    RoundValidationResponse,
+)
 
 
 @pytest.fixture(name="session")
@@ -343,3 +352,65 @@ def test_delete_hole_result(session: Session, client: TestClient):
 
     hole_result_db = session.get(HoleResult, hole_result.id)
     assert hole_result_db is None
+
+
+@pytest.mark.parametrize(
+    "date_played, course_handicap, holes, hole_is_valid",
+    (
+        [
+            date.today(),
+            12,
+            [
+                HoleResultValidationRequest(
+                    number=1, par=4, stroke_index=1, gross_score=5
+                )
+            ],
+            [True],
+        ]
+    ),
+)
+def test_validate_round(
+    session: Session,
+    client: TestClient,
+    date_played: datetime,
+    course_handicap: int,
+    holes: List[HoleResultValidationRequest],
+    hole_is_valid: List[bool],
+):
+    if date_played.year >= 2022:
+        ahs = APLHandicapSystem()
+    else:
+        ahs = APLLegacyHandicapSystem()
+
+    round_request = RoundValidationRequest(
+        date_played=date_played, course_handicap=course_handicap, holes=holes
+    )
+    response = client.post(f"/rounds/validate/", json=round_request)
+    assert response.status_code == 200
+
+    round_response: RoundValidationResponse = response.json()
+    for hole_idx, hole_response in enumerate(round_response.holes):
+        assert hole_response.number == holes[hole_idx].number
+        assert hole_response.par == holes[hole_idx].par
+        assert hole_response.stroke_index == holes[hole_idx].stroke_index
+        assert hole_response.gross_score == holes[hole_idx].gross_score
+        handicap_strokes = ahs.compute_hole_handicap_strokes(
+            holes[hole_idx].stroke_index, round_request.course_handicap
+        )
+        assert hole_response.handicap_strokes == handicap_strokes
+        assert (
+            hole_response.adjusted_gross_score
+            == ahs.compute_hole_adjusted_gross_score(
+                holes[hole_idx].par,
+                holes[hole_idx].stroke_index,
+                holes[hole_idx].gross_score,
+                round_request.course_handicap,
+            )
+        )
+        assert hole_response.net_score == holes[hole_idx].gross_score - handicap_strokes
+        assert hole_response.net_score == ahs.compute_hole_maximum_strokes(
+            holes[hole_idx].par, handicap_strokes
+        )
+        assert hole_response.is_valid == hole_is_valid[hole_idx]
+
+    assert round_response.is_valid == all(hole_is_valid)
