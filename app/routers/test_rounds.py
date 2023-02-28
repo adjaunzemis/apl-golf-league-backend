@@ -383,6 +383,7 @@ def test_validate_round(
     round_request_data: Dict,
     hole_is_valid: List[bool],
 ):
+    """Replicates `test_scoring.py::test_validate_round()` using API endpoint."""
     response = client.post(f"/rounds/validate/", json=round_request_data)
     assert response.status_code == 200
 
