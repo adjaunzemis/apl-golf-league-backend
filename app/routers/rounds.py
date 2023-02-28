@@ -1,8 +1,7 @@
-from typing import List, Union
-from datetime import date, datetime
+from typing import List
+from datetime import date
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
@@ -15,6 +14,8 @@ from ..models.round import (
     RoundRead,
     RoundReadWithData,
     RoundDataWithCount,
+    RoundValidationRequest,
+    RoundValidationResponse,
 )
 from ..models.hole_result import (
     HoleResult,
@@ -22,6 +23,7 @@ from ..models.hole_result import (
     HoleResultUpdate,
     HoleResultRead,
     HoleResultReadWithHole,
+    HoleResultValidationResponse,
 )
 from ..models.round_golfer_link import RoundGolferLink
 from ..models.tournament import Tournament
@@ -215,34 +217,6 @@ async def delete_hole_result(
     session.delete(hole_result_db)
     session.commit()
     return {"ok": True}
-
-
-class HoleResultValidationRequest(BaseModel):
-    number: int
-    par: int
-    stroke_index: int
-    gross_score: int
-
-
-class HoleResultValidationResponse(HoleResultValidationRequest):
-    handicap_strokes: int
-    adjusted_gross_score: int
-    net_score: int
-    max_gross_score: int
-    is_valid: bool = False
-
-
-class RoundValidationRequest(BaseModel):
-    date_played: Union[datetime, date]
-    course_handicap: int
-    holes: List[HoleResultValidationRequest] = []
-
-
-class RoundValidationResponse(BaseModel):
-    date_played: Union[datetime, date]
-    course_handicap: int
-    holes: List[HoleResultValidationResponse] = []
-    is_valid: bool = False
 
 
 @router.post("/validate/", response_model=RoundValidationResponse)

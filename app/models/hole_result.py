@@ -1,5 +1,6 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
+from pydantic import BaseModel
 
 from .hole import Hole, HoleRead
 
@@ -53,3 +54,18 @@ class HoleResultData(SQLModel):
     gross_score: int
     adjusted_gross_score: int = None
     net_score: int = None
+
+
+class HoleResultValidationRequest(BaseModel):
+    number: int
+    par: int
+    stroke_index: int
+    gross_score: int
+
+
+class HoleResultValidationResponse(HoleResultValidationRequest):
+    handicap_strokes: int
+    adjusted_gross_score: int
+    net_score: int
+    max_gross_score: int
+    is_valid: bool = False

@@ -9,14 +9,9 @@ from datetime import date
 
 from ..api import app
 from ..dependencies import get_sql_db_session
-from ..models.round import Round
+from ..models.round import Round, RoundValidationRequest, RoundValidationResponse
 from ..models.hole_result import HoleResult
 from ..utilities.apl_handicap_system import APLHandicapSystem
-from .rounds import (
-    HoleResultValidationRequest,
-    RoundValidationRequest,
-    RoundValidationResponse,
-)
 
 
 @pytest.fixture(name="session")

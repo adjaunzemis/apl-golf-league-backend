@@ -1,12 +1,19 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
-from datetime import datetime
+from pydantic import BaseModel
+from datetime import datetime, date
 
 from .tee import Tee, TeeGender, TeeRead
 from .golfer import Golfer, GolferRead
 from .round_golfer_link import RoundGolferLink
-from .hole_result import HoleResult, HoleResultReadWithHole, HoleResultData
+from .hole_result import (
+    HoleResult,
+    HoleResultReadWithHole,
+    HoleResultData,
+    HoleResultValidationRequest,
+    HoleResultValidationResponse,
+)
 
 
 class RoundType(str, Enum):
@@ -109,3 +116,16 @@ class RoundData(SQLModel):
 class RoundDataWithCount(SQLModel):
     num_rounds: int
     rounds: List[RoundData]
+
+
+class RoundValidationRequest(BaseModel):
+    date_played: Union[datetime, date]
+    course_handicap: int
+    holes: List[HoleResultValidationRequest] = []
+
+
+class RoundValidationResponse(BaseModel):
+    date_played: Union[datetime, date]
+    course_handicap: int
+    holes: List[HoleResultValidationResponse] = []
+    is_valid: bool = False
