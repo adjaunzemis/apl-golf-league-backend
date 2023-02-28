@@ -1,6 +1,8 @@
 from typing import List
 import numpy as np
 
+from app.models.match import MatchHoleResult, MatchTeamDesignator
+
 from .world_handicap_system import WorldHandicapSystem
 
 
@@ -66,7 +68,54 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             self.maximum_handicap_index,
         )  # truncate to nearest tenth
 
+    def determine_match_hole_result(
+        home_team_gross_scores: List[int],
+        away_team_gross_scores: List[int],
+        team_receiving_handicap_strokes: MatchTeamDesignator,
+        team_handicap_strokes_received: int,
+    ) -> MatchHoleResult:
+        if team_receiving_handicap_strokes == MatchTeamDesignator.HOME:
+            home_team_net_score = (
+                sum(home_team_gross_scores) - team_handicap_strokes_received
+            )
+            away_team_net_score = sum(away_team_gross_scores)
+        else:
+            away_team_net_score = sum(away_team_gross_scores)
+            away_team_net_score = (
+                sum(away_team_gross_scores) - team_handicap_strokes_received
+            )
+
+        if home_team_net_score < away_team_net_score:
+            return MatchHoleResult.HOME
+        elif away_team_net_score < home_team_net_score:
+            return MatchHoleResult.AWAY
+        return MatchHoleResult.TIE
+
     @property
     def maximum_handicap_index(self) -> float:
         # Reference: APL Golf League Handicapping
         return 30.0
+
+    @property
+    def match_points_for_winning_hole(self) -> float:
+        return 1.0
+
+    @property
+    def match_points_for_tying_hole(self) -> float:
+        return 0.5
+
+    @property
+    def match_points_for_losing_hole(self) -> float:
+        return 0.0
+
+    @property
+    def match_points_for_winning_total_net_score(self) -> float:
+        return 2.0
+
+    @property
+    def match_points_for_tying_total_net_score(self) -> float:
+        return 0.0
+
+    @property
+    def match_points_for_losing_total_net_score(self) -> float:
+        return 0.0

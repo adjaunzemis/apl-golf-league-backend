@@ -13,6 +13,8 @@ from ..models.match import (
     MatchRead,
     MatchData,
     MatchDataWithCount,
+    MatchValidationRequest,
+    MatchValidationResponse,
 )
 from ..models.match_round_link import MatchRoundLink
 from ..models.round_golfer_link import RoundGolferLink
@@ -26,6 +28,7 @@ from ..models.hole_result import HoleResult
 from ..models.user import User
 from ..models.query_helpers import get_matches
 from ..utilities.apl_handicap_system import APLHandicapSystem
+from ..utilities import scoring
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
 
@@ -246,3 +249,11 @@ async def post_match_rounds(
     session.add(match_db)
     session.commit()
     return get_matches(session=session, match_ids=(match_input.match_id,))[0]
+
+
+# TODO: Add route to get hole-by-hole team handicaps
+
+
+@router.post("/validate/", response_model=MatchValidationResponse)
+async def validate_match(*, match: MatchValidationRequest):
+    return scoring.validate_match(match)
