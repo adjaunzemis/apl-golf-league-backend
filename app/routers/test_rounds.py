@@ -361,9 +361,25 @@ def test_delete_hole_result(session: Session, client: TestClient):
             {
                 "course_handicap": 12,
                 "date_played": date.today().isoformat(),
-                "holes": [{"number": 1, "par": 4, "stroke_index": 1, "gross_score": 5}],
+                "holes": [
+                    {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 5},
+                    {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 7},
+                    {"number": 3, "par": 5, "stroke_index": 5, "gross_score": 11},
+                ],
             },
-            [True],
+            [True, True, True],
+        ),
+        (
+            {
+                "course_handicap": 12,
+                "date_played": date.today().isoformat(),
+                "holes": [
+                    {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 11},
+                    {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 0},
+                    {"number": 3, "par": 5, "stroke_index": 7, "gross_score": 12},
+                ],
+            },
+            [False, False, False],
         ),
     ],
 )
