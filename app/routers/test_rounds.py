@@ -390,7 +390,6 @@ def test_validate_round(
     hole_is_valid: List[bool],
 ):
     response = client.post(f"/rounds/validate/", json=round_request_data)
-    print(response.json())
     assert response.status_code == 200
 
     ahs = APLHandicapSystem()
