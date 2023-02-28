@@ -1,9 +1,10 @@
 import pytest
+import json
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
-from typing import List
-from datetime import date, datetime
+from typing import Dict, List
+from datetime import date
 
 
 from ..api import app
@@ -11,7 +12,6 @@ from ..dependencies import get_sql_db_session
 from ..models.round import Round
 from ..models.hole_result import HoleResult
 from ..utilities.apl_handicap_system import APLHandicapSystem
-from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 from .rounds import (
     HoleResultValidationRequest,
     RoundValidationRequest,
@@ -355,61 +355,55 @@ def test_delete_hole_result(session: Session, client: TestClient):
 
 
 @pytest.mark.parametrize(
-    "date_played, course_handicap, holes, hole_is_valid",
-    (
-        [
-            date.today(),
-            12,
-            [
-                HoleResultValidationRequest(
-                    number=1, par=4, stroke_index=1, gross_score=5
-                )
-            ],
+    "round_request_data, hole_is_valid",
+    [
+        (
+            {
+                "course_handicap": 12,
+                "date_played": date.today().isoformat(),
+                "holes": [{"number": 1, "par": 4, "stroke_index": 1, "gross_score": 5}],
+            },
             [True],
-        ]
-    ),
+        ),
+    ],
 )
 def test_validate_round(
     session: Session,
     client: TestClient,
-    date_played: datetime,
-    course_handicap: int,
-    holes: List[HoleResultValidationRequest],
+    round_request_data: Dict,
     hole_is_valid: List[bool],
 ):
-    if date_played.year >= 2022:
-        ahs = APLHandicapSystem()
-    else:
-        ahs = APLLegacyHandicapSystem()
-
-    round_request = RoundValidationRequest(
-        date_played=date_played, course_handicap=course_handicap, holes=holes
-    )
-    response = client.post(f"/rounds/validate/", json=round_request)
+    response = client.post(f"/rounds/validate/", json=round_request_data)
+    print(response.json())
     assert response.status_code == 200
 
-    round_response: RoundValidationResponse = response.json()
+    ahs = APLHandicapSystem()
+    round_request = RoundValidationRequest(**round_request_data)
+    round_response = RoundValidationResponse(**response.json())
     for hole_idx, hole_response in enumerate(round_response.holes):
-        assert hole_response.number == holes[hole_idx].number
-        assert hole_response.par == holes[hole_idx].par
-        assert hole_response.stroke_index == holes[hole_idx].stroke_index
-        assert hole_response.gross_score == holes[hole_idx].gross_score
+        assert hole_response.number == round_request.holes[hole_idx].number
+        assert hole_response.par == round_request.holes[hole_idx].par
+        assert hole_response.stroke_index == round_request.holes[hole_idx].stroke_index
+        assert hole_response.gross_score == round_request.holes[hole_idx].gross_score
         handicap_strokes = ahs.compute_hole_handicap_strokes(
-            holes[hole_idx].stroke_index, round_request.course_handicap
+            round_request.holes[hole_idx].stroke_index, round_request.course_handicap
         )
         assert hole_response.handicap_strokes == handicap_strokes
         assert (
             hole_response.adjusted_gross_score
             == ahs.compute_hole_adjusted_gross_score(
-                holes[hole_idx].par,
-                holes[hole_idx].stroke_index,
-                holes[hole_idx].gross_score,
+                round_request.holes[hole_idx].par,
+                round_request.holes[hole_idx].stroke_index,
+                round_request.holes[hole_idx].gross_score,
                 round_request.course_handicap,
             )
         )
-        assert hole_response.net_score == holes[hole_idx].gross_score - handicap_strokes
-        assert hole_response.net_score == ahs.compute_hole_maximum_strokes(
-            holes[hole_idx].par, handicap_strokes
+        assert (
+            hole_response.net_score
+            == round_request.holes[hole_idx].gross_score - handicap_strokes
+        )
+        assert hole_response.max_gross_score == ahs.compute_hole_maximum_strokes(
+            round_request.holes[hole_idx].par, handicap_strokes
         )
         assert hole_response.is_valid == hole_is_valid[hole_idx]
 

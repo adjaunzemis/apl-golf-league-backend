@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
@@ -233,26 +233,22 @@ class HoleResultValidationResponse(HoleResultValidationRequest):
 
 
 class RoundValidationRequest(BaseModel):
-    date_played: datetime
+    date_played: Union[datetime, date]
     course_handicap: int
     holes: List[HoleResultValidationRequest] = []
 
 
 class RoundValidationResponse(BaseModel):
-    date_played: datetime
+    date_played: Union[datetime, date]
     course_handicap: int
     holes: List[HoleResultValidationResponse] = []
     is_valid: bool = False
 
 
 @router.post("/validate/", response_model=RoundValidationResponse)
-async def validate_round(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    round: RoundValidationRequest
-):
-    # Determine handicapping system
+async def validate_round(*, round: RoundValidationRequest):
+    # Determine handicapping system by year
+    # TODO: Make a utility/factory for this
     if round.date_played.year >= 2022:
         ahs = APLHandicapSystem()
     else:
@@ -264,26 +260,29 @@ async def validate_round(
     )
 
     for hole in round.holes:
-        # Initialize hole response with hole request data
-        hole_response = HoleResultValidationResponse()
-        hole_response.number = hole.number
-        hole_response.par = hole.par
-        hole_response.stroke_index = hole.stroke_index
-        hole_response.gross_score = hole.gross_score
-
         # Compute handicapping scores for this hole
-        hole_response.handicap_strokes = ahs.compute_hole_handicap_strokes(
+        handicap_strokes = ahs.compute_hole_handicap_strokes(
             hole.stroke_index, round.course_handicap
         )
-        hole_response.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(
+        adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(
             hole.par, hole.stroke_index, hole.gross_score, round.course_handicap
         )
-        hole_response.net_score = hole.gross_score - hole_response.handicap_strokes
-        hole_response.max_gross_score = ahs.compute_hole_maximum_strokes(
-            hole.par, hole_response.handicap_strokes
+        net_score = hole.gross_score - handicap_strokes
+        max_gross_score = ahs.compute_hole_maximum_strokes(hole.par, handicap_strokes)
+
+        # Populate hole validation response
+        hole_response = HoleResultValidationResponse(
+            number=hole.number,
+            par=hole.par,
+            stroke_index=hole.stroke_index,
+            gross_score=hole.gross_score,
+            handicap_strokes=handicap_strokes,
+            adjusted_gross_score=adjusted_gross_score,
+            net_score=net_score,
+            max_gross_score=max_gross_score,
         )
 
-        # Check validity for this hole
+        # Update validity for this hole
         hole_response.is_valid = (
             hole_response.gross_score > 0
             and hole_response.gross_score <= hole_response.max_gross_score
@@ -292,8 +291,6 @@ async def validate_round(
         # Add hole to round response
         round_response.holes.append(hole_response)
 
-    # Check validity for this round
-    round_response.is_valid = any([not hole.is_valid for hole in round_response.holes])
-
-    # Return round response
+    # Update validity for this round and return
+    round_response.is_valid = all([hole.is_valid for hole in round_response.holes])
     return round_response
