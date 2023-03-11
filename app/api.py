@@ -105,7 +105,7 @@ async def get_heartbeat():
     """
     Heartbeat for checking connection to API.
     """
-    return "alive"
+    return {"status": "alive"}
 
 
 app.include_router(tasks.router, dependencies=[Depends(log_request_data)])
