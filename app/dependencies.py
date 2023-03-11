@@ -80,23 +80,22 @@ def authenticate_user(
     return user
 
 
-def create_access_token(*, settings: Settings = Depends(get_settings), data: dict):
+def create_access_token(*, data: dict):
     to_encode = data.copy()
     expire_time = datetime.utcnow() + timedelta(
-        minutes=settings.apl_golf_league_api_access_token_expire_minutes
+        minutes=get_settings().apl_golf_league_api_access_token_expire_minutes
     )
     to_encode.update({"exp": expire_time})
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.apl_golf_league_api_access_token_secret_key,
-        algorithm=settings.apl_golf_league_api_access_token_algorithm,
+        get_settings().apl_golf_league_api_access_token_secret_key,
+        algorithm=get_settings().apl_golf_league_api_access_token_algorithm,
     )
     return encoded_jwt
 
 
 async def get_current_user(
     *,
-    settings: Settings = Depends(get_settings),
     session: Session = Depends(get_sql_db_session),
     token: str = Depends(oauth2_scheme),
 ):
@@ -108,8 +107,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.apl_golf_league_api_access_token_secret_key,
-            algorithms=[settings.apl_golf_league_api_access_token_algorithm],
+            get_settings().apl_golf_league_api_access_token_secret_key,
+            algorithms=[get_settings().apl_golf_league_api_access_token_algorithm],
         )
         username: str = payload.get("sub")
         if username is None:
