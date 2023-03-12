@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
+from http import HTTPStatus
 from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
@@ -39,6 +40,11 @@ async def create_flight(
     current_user: User = Depends(get_current_active_user),
     flight: FlightCreate
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to create flights",
+        )
     flight_db = Flight.from_orm(flight)
     session.add(flight_db)
     session.commit()
@@ -89,6 +95,11 @@ async def update_flight(
     flight_id: int,
     flight: FlightUpdate
 ):
+    if not (current_user.edit_flights or current_user.is_admin):
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to update flights",
+        )
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
@@ -108,6 +119,11 @@ async def delete_flight(
     current_user: User = Depends(get_current_active_user),
     flight_id: int
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to delete flights",
+        )
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
