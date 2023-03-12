@@ -1,5 +1,7 @@
 import pytest
+import mock
 from fastapi.testclient import TestClient
+from fastapi import status
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -8,6 +10,7 @@ from ..dependencies import get_sql_db_session
 from ..models.flight import Flight
 from ..models.division import Division
 from ..models.team import Team
+from ..models.user import User
 
 
 @pytest.fixture(name="session")
@@ -35,11 +38,15 @@ def client_fixture(session: Session):
     "name, year, home_course_id",
     [("Test Flight Name", 2021, 1), ("Test Flight Name", 2021, None)],
 )
+@mock.patch(
+    "app.dependencies.get_current_active_user",
+    mock.MagicMock(return_value=User(username="testUser", is_admin=True)),
+)
 def test_create_flight(client: TestClient, name: str, year: int, home_course_id: int):
     response = client.post(
         "/flights/", json={"name": name, "year": year, "home_course_id": home_course_id}
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == name
@@ -51,6 +58,10 @@ def test_create_flight(client: TestClient, name: str, year: int, home_course_id:
 @pytest.mark.parametrize(
     "name, year, home_course_id", [(None, 2021, 1), ("Test Flight Name", None, 1)]
 )
+@mock.patch(
+    "app.dependencies.get_current_active_user",
+    mock.MagicMock(return_value=User(username="testUser", is_admin=True)),
+)
 def test_create_flight_incomplete(
     client: TestClient, name: str, year: int, home_course_id: int
 ):
@@ -58,7 +69,7 @@ def test_create_flight_incomplete(
     response = client.post(
         "/flights/", json={"name": name, "year": year, "home_course_id": home_course_id}
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.parametrize(
@@ -69,6 +80,10 @@ def test_create_flight_incomplete(
         ("Test Flight Name", 2021, {"key": "value"}),
     ],
 )
+@mock.patch(
+    "app.dependencies.get_current_active_user",
+    mock.MagicMock(return_value=User(username="testUser", is_admin=True)),
+)
 def test_create_flight_invalid(
     client: TestClient, name: str, year: int, home_course_id: int
 ):
@@ -76,7 +91,25 @@ def test_create_flight_invalid(
     response = client.post(
         "/flights/", json={"name": name, "year": year, "home_course_id": home_course_id}
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.parametrize(
+    "name, year, home_course_id",
+    [("Test Flight Name", 2021, 1), ("Test Flight Name", 2021, None)],
+)
+@mock.patch(
+    "app.dependencies.get_current_active_user",
+    mock.MagicMock(return_value=User(username="testUser", is_admin=False)),
+)
+def test_create_flight_unauthorized(
+    client: TestClient, name: str, year: int, home_course_id: int
+):
+    # User does not have appropriate credentials
+    response = client.post(
+        "/flights/", json={"name": name, "year": year, "home_course_id": home_course_id}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 def test_read_flights(session: Session, client: TestClient):
@@ -106,7 +139,7 @@ def test_read_flight(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(f"/flights/{flight.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == flight.name
@@ -123,7 +156,7 @@ def test_update_flight(session: Session, client: TestClient):
     session.commit()
 
     response = client.patch(f"/flights/{flight.id}", json={"name": "Awesome Flight"})
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == "Awesome Flight"
@@ -138,7 +171,7 @@ def test_delete_flight(session: Session, client: TestClient):
     session.commit()
 
     response = client.delete(f"/flights/{flight.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     flight_db = session.get(Flight, flight.id)
     assert flight_db is None
@@ -164,7 +197,7 @@ def test_create_division(
             "home_tee_id": home_tee_id,
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == name
@@ -191,7 +224,7 @@ def test_create_division_incomplete(
             "home_tee_id": home_tee_id,
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.parametrize(
@@ -217,7 +250,7 @@ def test_create_division_invalid(
             "home_tee_id": home_tee_id,
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_read_divisions(session: Session, client: TestClient):
@@ -230,7 +263,7 @@ def test_read_divisions(session: Session, client: TestClient):
     session.commit()
 
     response = client.get("/flights/divisions/")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert len(data) == len(divisions)
@@ -250,7 +283,7 @@ def test_read_division(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(f"/flights/divisions/{division.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == division.name
@@ -268,7 +301,7 @@ def test_update_division(session: Session, client: TestClient):
     response = client.patch(
         f"/flights/divisions/{division.id}", json={"name": "Awesome Division"}
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == "Awesome Division"
@@ -284,7 +317,7 @@ def test_delete_division(session: Session, client: TestClient):
     session.commit()
 
     response = client.delete(f"/flights/divisions/{division.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     division_db = session.get(Division, division.id)
     assert division_db is None
@@ -297,7 +330,7 @@ def test_create_team(client: TestClient, name: str, flight_id: int):
     response = client.post(
         "/flights/teams/", json={"name": name, "flight_id": flight_id}
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == name
@@ -311,7 +344,7 @@ def test_create_team_incomplete(client: TestClient, name: str, flight_id: int):
     response = client.post(
         "/flights/teams/", json={"name": name, "flight_id": flight_id}
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.parametrize(
@@ -322,7 +355,7 @@ def test_create_team_invalid(client: TestClient, name: str, flight_id: int):
     response = client.post(
         "/flights/teams/", json={"name": name, "flight_id": flight_id}
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_read_teams(session: Session, client: TestClient):
@@ -335,7 +368,7 @@ def test_read_teams(session: Session, client: TestClient):
     session.commit()
 
     response = client.get("/flights/teams/")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert len(data) == len(teams)
@@ -351,7 +384,7 @@ def test_read_team(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(f"/flights/teams/{team.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == team.name
@@ -366,7 +399,7 @@ def test_update_team(session: Session, client: TestClient):
     session.commit()
 
     response = client.patch(f"/flights/teams/{team.id}", json={"name": "Awesome Team"})
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == "Awesome Team"
@@ -380,7 +413,7 @@ def test_delete_team(session: Session, client: TestClient):
     session.commit()
 
     response = client.delete(f"/flights/teams/{team.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     team_db = session.get(Team, team.id)
     assert team_db is None
@@ -408,7 +441,7 @@ def test_create_player(
             "role": role,
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["team_id"] == team_id
@@ -441,4 +474,4 @@ def test_create_player_invalid(
             "role": role,
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
