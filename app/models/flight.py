@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
 from .course import Course
-from .division import Division
+from .division import Division, DivisionCreate
 from .team import Team
 from .flight_team_link import FlightTeamLink
 from .flight_division_link import FlightDivisionLink
@@ -32,7 +32,7 @@ class Flight(FlightBase, table=True):
 
 
 class FlightCreate(FlightBase):
-    pass
+    divisions: Optional[List[DivisionCreate]] = None
 
 
 class FlightUpdate(SQLModel):

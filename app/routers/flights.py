@@ -5,6 +5,8 @@ from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
+from ..models.division import Division
+from ..models.flight_division_link import FlightDivisionLink
 from ..models.match import MatchSummary
 from ..models.user import User
 from ..models.query_helpers import (
@@ -45,10 +47,29 @@ async def create_flight(
             status_code=HTTPStatus.UNAUTHORIZED,
             detail="User not authorized to create flights",
         )
-    flight_db = Flight.from_orm(flight)
+
+    # TODO: Sanity-check division tees against flight home-course tees
+
+    # Add flight to database
+    flight_db: Flight = Flight.from_orm(flight)
     session.add(flight_db)
     session.commit()
     session.refresh(flight_db)
+
+    # Add divisions and flight-division links to database
+    for division in flight.divisions:
+        division_db: Division = Division.from_orm(division)
+        session.add(division_db)
+        session.commit()
+        session.refresh(division_db)
+
+        flight_division_link_db = FlightDivisionLink(
+            flight_id=flight_db.id, division=division_db.id
+        )
+        session.add(flight_division_link_db)
+        session.commit()
+        session.refresh(flight_division_link_db)
+
     return flight_db
 
 
