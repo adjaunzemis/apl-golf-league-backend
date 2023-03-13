@@ -64,7 +64,7 @@ async def create_flight(
         session.refresh(division_db)
 
         flight_division_link_db = FlightDivisionLink(
-            flight_id=flight_db.id, division=division_db.id
+            flight_id=flight_db.id, division_id=division_db.id
         )
         session.add(flight_division_link_db)
         session.commit()
