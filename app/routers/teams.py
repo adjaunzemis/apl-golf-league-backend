@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
@@ -38,14 +38,9 @@ class TeamGolferSignupData(SQLModel):
     division_id: int
 
 
-class FlightTeamSignupData(SQLModel):
-    flight_id: int
-    name: str
-    golfer_data: List[TeamGolferSignupData]
-
-
-class TournamentTeamSignupData(SQLModel):
-    tournament_id: int
+class TeamSignupData(SQLModel):
+    flight_id: Optional[int] = None
+    tournament_id: Optional[int] = None
     name: str
     golfer_data: List[TeamGolferSignupData]
 
@@ -58,20 +53,6 @@ async def read_teams(
     limit: int = Query(default=100, le=100),
 ):
     return session.exec(select(Team).offset(offset).limit(limit)).all()
-
-
-@router.post("/", response_model=TeamRead)
-async def create_team(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    team: TeamCreate,
-):
-    team_db = Team.from_orm(team)
-    session.add(team_db)
-    session.commit()
-    session.refresh(team_db)
-    return team_db
 
 
 @router.get("/{team_id}", response_model=TeamWithMatchData)
@@ -96,76 +77,27 @@ async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: 
     )
 
 
-@router.patch("/{team_id}", response_model=TeamRead)
-async def update_team(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    team_id: int,
-    team: TeamUpdate,
+@router.post("/", response_model=TeamRead)
+async def create_team(
+    *, session: Session = Depends(get_sql_db_session), team_data: TeamSignupData
 ):
-    team_db = session.get(Team, team_id)
-    if not team_db:
-        raise HTTPException(status_code=404, detail="Team not found")
-    team_data = team.dict(exclude_unset=True)
-    for key, value in team_data.items():
-        setattr(team_db, key, value)
-    session.add(team_db)
-    session.commit()
-    session.refresh(team_db)
-    return team_db
-
-
-@router.delete("/{team_id}")
-async def delete_team(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    team_id: int,
-):
-    team_db = session.get(Team, team_id)
-    if not team_db:
-        raise HTTPException(status_code=404, detail="Team not found")
-
-    # Find and remove all team-golfer links
-    team_golfer_links_db = session.exec(
-        select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)
-    ).all()
-    for team_golfer_link_db in team_golfer_links_db:
-        print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
-        session.delete(team_golfer_link_db)
-
-    # Find and remove all flight-team links
-    flight_team_links_db = session.exec(
-        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
-    ).all()
-    for flight_team_link_db in flight_team_links_db:
-        print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
-        session.delete(flight_team_link_db)
-
-    # Find and remove all tournament-team links
-    tournament_team_links_db = session.exec(
-        select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
-    ).all()
-    for tournament_team_link_db in tournament_team_links_db:
-        print(
-            f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+    if team_data.flight_id and team_data.tournament_id:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team data, must specify only one flight or tournament id",
         )
-        session.delete(tournament_team_link_db)
+    if team_data.flight_id:
+        return signup_team_for_flight(session=session, team_data=team_data)
+    elif team_data.tournament_id:
+        return signup_team_for_tournament(session=session, team_data=team_data)
+    else:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team data, must specify flight or tournament id",
+        )
 
-    # Remove team
-    print(f"Deleting team: id={team_db.id}")
-    session.delete(team_db)
 
-    # Commit database changes
-    session.commit()
-    return {"ok": True}
-
-
-@router.post("/flight-signup", response_model=TeamRead)
-async def signup_team_for_flight(
-    *, session: Session = Depends(get_sql_db_session), team_data: FlightTeamSignupData
-):
+def signup_team_for_flight(*, session: Session, team_data: TeamSignupData) -> TeamRead:
     # Check if the team name if valid for this flight
     team_db = session.exec(
         select(Team)
@@ -177,7 +109,7 @@ async def signup_team_for_flight(
     if team_db:
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail=f"Team '{team_data.name}' already exists in flight (id={team_data.flight_id})",
+            detail=f"Team '{team_data.name}' already exists in flight",
         )
 
     # Check for duplicate golfers in sign-up
@@ -200,7 +132,7 @@ async def signup_team_for_flight(
         if team_golfer.golfer_id in flight_golfer_ids:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in flight (id={team_data.flight_id})",
+                detail=f"Golfer '{team_golfer.golfer_name}' is already on a team in flight",
             )
         if team_golfer.role == TeamRole.CAPTAIN:
             if team_has_captain:
@@ -267,12 +199,11 @@ async def signup_team_for_flight(
     return team_db
 
 
-@router.post("/tournament-signup", response_model=TeamRead)
-async def signup_team_for_tournament(
+def signup_team_for_tournament(
     *,
     session: Session = Depends(get_sql_db_session),
-    team_data: TournamentTeamSignupData,
-):
+    team_data: TeamSignupData,
+) -> TeamRead:
     # Check if the team name if valid for this tournament
     team_db = session.exec(
         select(Team)
@@ -380,3 +311,77 @@ async def signup_team_for_tournament(
         session.commit()
 
     return team_db
+
+
+@router.put("/{team_id}", response_model=TeamRead)
+async def update_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    team_id: int,
+    team: TeamUpdate,
+):
+    team_db = session.get(Team, team_id)
+    if not team_db:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Team not found")
+    
+    # TODO: Rework team update
+    raise HTTPException(
+        status_code=HTTPStatus.NOT_IMPLEMENTED,
+        detail="Team update not yet implemented"
+    )
+    
+    team_data = team.dict(exclude_unset=True)
+    for key, value in team_data.items():
+        setattr(team_db, key, value)
+    session.add(team_db)
+    session.commit()
+    session.refresh(team_db)
+    return team_db
+
+
+@router.delete("/{team_id}")
+async def delete_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    team_id: int,
+):
+    # TODO: Check for user permissions
+
+    team_db = session.get(Team, team_id)
+    if not team_db:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # Find and remove all team-golfer links
+    team_golfer_links_db = session.exec(
+        select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)
+    ).all()
+    for team_golfer_link_db in team_golfer_links_db:
+        print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
+        session.delete(team_golfer_link_db)
+
+    # Find and remove all flight-team links
+    flight_team_links_db = session.exec(
+        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
+    ).all()
+    for flight_team_link_db in flight_team_links_db:
+        print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
+        session.delete(flight_team_link_db)
+
+    # Find and remove all tournament-team links
+    tournament_team_links_db = session.exec(
+        select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
+    ).all()
+    for tournament_team_link_db in tournament_team_links_db:
+        print(
+            f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+        )
+        session.delete(tournament_team_link_db)
+
+    # Remove team
+    print(f"Deleting team: id={team_db.id}")
+    session.delete(team_db)
+
+    # Commit database changes
+    session.commit()
+    return {"ok": True}
