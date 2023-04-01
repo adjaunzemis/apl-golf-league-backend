@@ -1,3 +1,4 @@
+import copy
 from http import HTTPStatus
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
@@ -86,9 +87,9 @@ async def create_team(
 
     # Create team
     if team_data.flight_id:
-        return signup_team_for_flight(session=session, team_data=team_data)
+        return create_team_for_flight(session=session, team_data=team_data)
     elif team_data.tournament_id:
-        return signup_team_for_tournament(session=session, team_data=team_data)
+        return create_team_for_tournament(session=session, team_data=team_data)
     else:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -113,20 +114,20 @@ async def update_team(
         session=session, team_data=team_data, exclude_team_id=team_db.id
     )
 
-    # TODO: Update team name
-    # TODO: Update team-golfer links
-    # TODO: Update golfer-division links
-    raise HTTPException(
-        status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Team update not yet implemented"
-    )
-
-    team_data = team.dict(exclude_unset=True)
-    for key, value in team_data.items():
-        setattr(team_db, key, value)
-    session.add(team_db)
-    session.commit()
-    session.refresh(team_db)
-    return team_db
+    # Update team
+    if team_data.flight_id:
+        return update_team_for_flight(
+            session=session, team_data=team_data, team_db=team_db
+        )
+    elif team_data.tournament_id:
+        return update_team_for_tournament(
+            session=session, team_data=team_data, team_db=team_db
+        )
+    else:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team data, must specify flight or tournament id",
+        )
 
 
 @router.delete("/{team_id}")
@@ -347,7 +348,44 @@ def get_golfer_ids_for_tournament(
         ).all()
 
 
-def signup_team_for_flight(*, session: Session, team_data: TeamSignupData) -> TeamRead:
+def add_golfer_to_team_for_flight(
+    *, session: Session, team_golfer: TeamGolferSignupData, team_id: int, flight_id: int
+) -> None:
+    # Add team-golfer link
+    team_golfer_link_db = TeamGolferLink(
+        team_id=team_id,
+        golfer_id=team_golfer.golfer_id,
+        division_id=team_golfer.division_id,
+        role=team_golfer.role,
+    )
+    session.add(team_golfer_link_db)
+    session.commit()
+
+    # Add registrations/payment (as needed)
+    flight_db = session.exec(select(Flight).where(Flight.id == flight_id)).one()
+    flight_dues_amount = session.exec(
+        select(LeagueDues.amount)
+        .where(LeagueDues.year == flight_db.year)
+        .where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)
+    ).one()
+    golfer_dues_payment_db = session.exec(
+        select(LeagueDuesPayment)
+        .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
+        .where(LeagueDuesPayment.year == flight_db.year)
+        .where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)
+    ).one_or_none()
+    if not golfer_dues_payment_db:
+        golfer_dues_payment_db = LeagueDuesPayment(
+            golfer_id=team_golfer.golfer_id,
+            year=flight_db.year,
+            type=LeagueDuesType.FLIGHT_DUES,
+            amount_due=flight_dues_amount,
+        )
+        session.add(golfer_dues_payment_db)
+        session.commit()
+
+
+def create_team_for_flight(*, session: Session, team_data: TeamSignupData) -> TeamRead:
     # Add team to database
     team_db = Team(name=team_data.name)
     session.add(team_db)
@@ -360,48 +398,70 @@ def signup_team_for_flight(*, session: Session, team_data: TeamSignupData) -> Te
     session.add(flight_team_link_db)
     session.commit()
 
-    # Add team-golfer links
+    # Add golfers to team
     for team_golfer in team_data.golfer_data:
-        team_golfer_link_db = TeamGolferLink(
+        add_golfer_to_team_for_flight(
+            session=session,
+            team_golfer=team_golfer,
             team_id=team_db.id,
-            golfer_id=team_golfer.golfer_id,
-            division_id=team_golfer.division_id,
-            role=team_golfer.role,
+            flight_id=team_data.flight_id,
         )
-        session.add(team_golfer_link_db)
-        session.commit()
-
-    # Add golfer registrations/payments (as needed)
-    flight_db = session.exec(
-        select(Flight).where(Flight.id == team_data.flight_id)
-    ).one()
-    flight_dues_amount = session.exec(
-        select(LeagueDues.amount)
-        .where(LeagueDues.year == flight_db.year)
-        .where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)
-    ).one()
-    for team_golfer in team_data.golfer_data:
-        golfer_dues_payment_db = session.exec(
-            select(LeagueDuesPayment)
-            .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
-            .where(LeagueDuesPayment.year == flight_db.year)
-            .where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)
-        ).one_or_none()
-        if not golfer_dues_payment_db:
-            golfer_dues_payment_db = LeagueDuesPayment(
-                golfer_id=team_golfer.golfer_id,
-                year=flight_db.year,
-                type=LeagueDuesType.FLIGHT_DUES,
-                amount_due=flight_dues_amount,
-            )
-            session.add(golfer_dues_payment_db)
-            session.commit()
 
     # Return new team
     return team_db
 
 
-def signup_team_for_tournament(
+def update_team_for_flight(
+    *, session: Session, team_data: TeamSignupData, team_db: Team
+) -> TeamRead:
+    # Update/remove existing golfers on team
+    existing_golfer_ids = copy.deepcopy([golfer.id for golfer in team_db.golfers])
+    updated_golfer_ids = [golfer.golfer_id for golfer in team_data.golfer_data]
+    for existing_golfer in team_db.golfers:
+        team_golfer_link_db = session.exec(
+            select(TeamGolferLink)
+            .where(TeamGolferLink.team_id == team_db.id)
+            .where(TeamGolferLink.golfer_id == existing_golfer.id)
+        ).one_or_none()
+        if not team_golfer_link_db:
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Unable to find link for golfer '{existing_golfer.name}' to team '{team_db.name}' (id={team_db.id})",
+            )
+        if existing_golfer.id not in updated_golfer_ids:  # remove
+            print(
+                f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}, team_id={team_golfer_link_db.team_id}"
+            )
+            session.delete(team_golfer_link_db)
+        else:  # update
+            for golfer_data in team_data.golfer_data:
+                if golfer_data.golfer_id == existing_golfer.id:
+                    setattr(team_golfer_link_db, "division_id", golfer_data.division_id)
+                    setattr(team_golfer_link_db, "role", golfer_data.role)
+                    session.add(team_golfer_link_db)
+                    session.commit()
+
+    # Add new golfers on team
+    for golfer_data in team_data.golfer_data:
+        if golfer_data.golfer_id not in existing_golfer_ids:
+            add_golfer_to_team_for_flight(
+                session=session,
+                team_golfer=golfer_data,
+                team_id=team_db.id,
+                flight_id=team_data.flight_id,
+            )
+
+    # Update team name
+    setattr(team_db, "name", team_data.name)
+    session.add(team_db)
+    session.commit()
+
+    # Return updated team
+    session.refresh(team_db)
+    return team_db
+
+
+def create_team_for_tournament(
     *,
     session: Session = Depends(get_sql_db_session),
     team_data: TeamSignupData,
@@ -463,4 +523,13 @@ def signup_team_for_tournament(
         session.add(golfer_dues_payment_db)
         session.commit()
 
+    # Return new team
     return team_db
+
+
+def update_team_for_tournament(
+    *, session: Session, team_data: TeamSignupData, team_db: Team
+) -> TeamRead:
+    raise HTTPException(
+        status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Team update not yet implemented"
+    )
