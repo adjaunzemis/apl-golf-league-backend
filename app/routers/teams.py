@@ -323,13 +323,12 @@ async def update_team(
     team_db = session.get(Team, team_id)
     if not team_db:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Team not found")
-    
+
     # TODO: Rework team update
     raise HTTPException(
-        status_code=HTTPStatus.NOT_IMPLEMENTED,
-        detail="Team update not yet implemented"
+        status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Team update not yet implemented"
     )
-    
+
     team_data = team.dict(exclude_unset=True)
     for key, value in team_data.items():
         setattr(team_db, key, value)
@@ -346,7 +345,10 @@ async def delete_team(
     current_user: User = Depends(get_current_active_user),
     team_id: int,
 ):
-    # TODO: Check for user permissions
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, defailt="User not allowed to delete teams"
+        )
 
     team_db = session.get(Team, team_id)
     if not team_db:
