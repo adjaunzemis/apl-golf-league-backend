@@ -5,9 +5,11 @@ from sqlmodel import SQLModel, Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.payment import (
+    LeagueDues,
     LeagueDuesPayment,
     LeagueDuesPaymentRead,
     LeagueDuesPaymentUpdate,
+    LeagueDuesRead,
     LeagueDuesType,
 )
 from ..models.user import User
@@ -30,6 +32,13 @@ class LeagueDuesPaymentInfo(SQLModel):
     amount_due: float
     amount_paid: float
     is_paid: bool
+
+
+@router.get("/dues/amounts", response_model=List[LeagueDuesRead])
+async def read_league_dues_amounts_for_year(
+    *, session: Session = Depends(get_sql_db_session), year: int
+):
+    return session.exec(select(LeagueDues).where(LeagueDues.year == year)).all()
 
 
 @router.get("/dues/info", response_model=List[LeagueDuesPaymentInfo])
