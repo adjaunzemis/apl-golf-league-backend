@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from http import HTTPStatus
 from sqlmodel import SQLModel, Session, select
 
@@ -11,6 +11,7 @@ from ..models.payment import (
     LeagueDuesPaymentUpdate,
     LeagueDuesRead,
     LeagueDuesType,
+    PaymentMethod,
 )
 from ..models.user import User
 from ..models.golfer import Golfer
@@ -32,6 +33,23 @@ class LeagueDuesPaymentInfo(SQLModel):
     amount_due: float
     amount_paid: float
     is_paid: bool
+
+
+class LeagueDuesPaypalTransactionItem(SQLModel):
+    id: Optional[int] = None
+    golfer_id: int
+    type: LeagueDuesType
+
+
+class LeagueDuesPaypalTransaction(SQLModel):
+    year: int
+    amount: float
+    description: str
+    items: List[LeagueDuesPaypalTransactionItem]
+    resource_id: Optional[str] = None
+    update_time: Optional[str] = None
+    payer_name: Optional[str] = None
+    payer_email: Optional[str] = None
 
 
 @router.get("/dues/amounts", response_model=List[LeagueDuesRead])
@@ -70,7 +88,7 @@ async def read_league_dues_payment_data_for_year(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    year: int
+    year: int,
 ):
     if not current_user.edit_payments:
         raise HTTPException(
@@ -101,13 +119,70 @@ async def read_league_dues_payment_data_for_year(
     ]
 
 
+@router.post("/dues")
+async def post_league_dues_paypal_transaction(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    transaction: LeagueDuesPaypalTransaction = Body(...),
+):
+    try:
+        first_item_payment_id = None
+        for item in transaction.items:
+            payment_db = None
+            if item.id is not None:
+                payment_db = session.get(LeagueDuesPayment, item.id)
+
+            if not payment_db:  # create new payment entry in database
+                dues_amount = session.exec(
+                    select(LeagueDues.amount)
+                    .where(LeagueDues.year == transaction.year)
+                    .where(LeagueDues.type == item.type)
+                ).one()
+
+                payment_db = LeagueDuesPayment(
+                    golfer_id=item.golfer_id,
+                    year=transaction.year,
+                    type=item.type,
+                    amount_due=dues_amount,
+                )
+                session.add(payment_db)
+                session.commit()
+                session.refresh(payment_db)
+
+            # Update payment entry
+            setattr(
+                payment_db, "amount_paid", payment_db.amount_due
+            )  # TODO: validate from transaction
+            setattr(payment_db, "is_paid", True)  # TODO: validate from transaction
+            setattr(payment_db, "method", PaymentMethod.PAYPAL)
+
+            if first_item_payment_id is not None:
+                setattr(payment_db, "linked_payment_id", first_item_payment_id)
+
+            payment_comment = f"{transaction.description} | {transaction.resource_id} | {transaction.update_time} | {transaction.payer_name} | {transaction.payer_email}"
+            setattr(payment_db, "comment", payment_comment)
+
+            session.add(payment_db)
+            session.commit()
+            session.refresh(payment_db)
+
+            # Cache first payment id of group of items
+            if first_item_payment_id is None:
+                first_item_payment_id = payment_db.id
+    except:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Unexpected error processing PayPal transaction - please contact treasurer or webmaster!",
+        )
+
+
 @router.patch("/{payment_id}", response_model=LeagueDuesPaymentRead)
 async def update_league_dues_payment(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     payment_id: int,
-    payment: LeagueDuesPaymentUpdate
+    payment: LeagueDuesPaymentUpdate,
 ):
     if not current_user.edit_payments:
         raise HTTPException(
