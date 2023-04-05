@@ -85,7 +85,7 @@ async def create_tournament(
     session.commit()
     session.refresh(tournament_db)
 
-    # Add divisions and flight-division links to database
+    # Add divisions and tournament-division links to database
     for division in tournament.divisions:
         division_db: Division = Division.from_orm(division)
         session.add(division_db)

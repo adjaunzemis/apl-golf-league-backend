@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 from .course import Course
-from .division import Division
+from .division import Division, DivisionCreate
 from .tournament_division_link import TournamentDivisionLink
 from .team import Team
 from .tournament_team_link import TournamentTeamLink
@@ -42,7 +42,7 @@ class Tournament(TournamentBase, table=True):
 
 
 class TournamentCreate(TournamentBase):
-    pass
+    divisions: Optional[List[DivisionCreate]] = None
 
 
 class TournamentUpdate(SQLModel):
