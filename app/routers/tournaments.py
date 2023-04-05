@@ -5,6 +5,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel, Session, select
 from http import HTTPStatus
 
+
 from .matches import RoundInput
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.tournament import (
@@ -33,6 +34,8 @@ from ..models.query_helpers import (
     get_teams_in_tournaments,
 )
 from ..utilities.apl_handicap_system import APLHandicapSystem
+from ..models.division import Division
+from ..models.tournament_division_link import TournamentDivisionLink
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
@@ -68,10 +71,34 @@ async def create_tournament(
     current_user: User = Depends(get_current_active_user),
     tournament: TournamentCreate,
 ):
-    tournament_db = Tournament.from_orm(tournament)
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to create tournaments",
+        )
+
+    # TODO: Sanity-check division tees against tournament course tees
+
+    # Add tournament to database
+    tournament_db: Tournament = Tournament.from_orm(tournament)
     session.add(tournament_db)
     session.commit()
     session.refresh(tournament_db)
+
+    # Add divisions and flight-division links to database
+    for division in tournament.divisions:
+        division_db: Division = Division.from_orm(division)
+        session.add(division_db)
+        session.commit()
+        session.refresh(division_db)
+
+        tournament_division_link_db = TournamentDivisionLink(
+            tournament_id=tournament_db.id, division_id=division_db.id
+        )
+        session.add(tournament_division_link_db)
+        session.commit()
+        session.refresh(tournament_division_link_db)
+
     return tournament_db
 
 
