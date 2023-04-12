@@ -69,7 +69,7 @@ class TournamentEntryFeePaymentInfo(SQLModel):
     golfer_name: str
     year: int
     tournament_id: int
-    type: LeagueDuesType
+    type: TournamentEntryFeeType
     amount_due: float
     amount_paid: float
     is_paid: bool
