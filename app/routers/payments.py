@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from http import HTTPStatus
 from sqlmodel import SQLModel, Session, select
 
+
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.payment import (
     LeagueDues,
@@ -11,10 +12,15 @@ from ..models.payment import (
     LeagueDuesPaymentUpdate,
     LeagueDuesRead,
     LeagueDuesType,
+    TournamentEntryFeePayment,
+    TournamentEntryFeePaymentRead,
+    TournamentEntryFeePaymentUpdate,
+    TournamentEntryFeeType,
     PaymentMethod,
 )
 from ..models.user import User
 from ..models.golfer import Golfer
+from ..models.tournament import Tournament
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -46,6 +52,24 @@ class LeagueDuesPaypalTransaction(SQLModel):
     amount: float
     description: str
     items: List[LeagueDuesPaypalTransactionItem]
+    resource_id: Optional[str] = None
+    update_time: Optional[str] = None
+    payer_name: Optional[str] = None
+    payer_email: Optional[str] = None
+
+
+class TournamentEntryFeePaypalTransactionItem(SQLModel):
+    id: Optional[int] = None
+    golfer_id: int
+    type: TournamentEntryFeeType
+
+
+class TournamentEntryFeePaypalTransaction(SQLModel):
+    year: int
+    tournament_id: int
+    amount: float
+    description: str
+    items: List[TournamentEntryFeePaypalTransactionItem]
     resource_id: Optional[str] = None
     update_time: Optional[str] = None
     payer_name: Optional[str] = None
@@ -190,6 +214,92 @@ async def update_league_dues_payment(
             detail="User not authorized to update payments",
         )
     payment_db = session.get(LeagueDuesPayment, payment_id)
+    if not payment_db:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    payment_data = payment.dict(exclude_unset=True)
+    for key, value in payment_data.items():
+        setattr(payment_db, key, value)
+    session.add(payment_db)
+    session.commit()
+    session.refresh(payment_db)
+    return payment_db
+
+
+@router.post("/fees")
+async def post_tournament_entry_fee_paypal_transaction(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    transaction: TournamentEntryFeePaypalTransaction = Body(...),
+):
+    try:
+        first_item_payment_id = None
+        for item in transaction.items:
+            payment_db = None
+            if item.id is not None:
+                payment_db = session.get(TournamentEntryFeePayment, item.id)
+
+            if not payment_db:  # create new payment entry in database
+                tournament_db = session.exec(
+                    select(Tournament).where(Tournament.id == transaction.tournament_id)
+                ).one()
+
+                if item.type == TournamentEntryFeeType.MEMBER_FEE:
+                    entry_fee = tournament_db.members_entry_fee
+                else:
+                    entry_fee = tournament_db.non_members_entry_fee
+
+                payment_db = TournamentEntryFeePayment(
+                    golfer_id=item.golfer_id,
+                    year=transaction.year,
+                    tournament_id=transaction.tournament_id,
+                    type=item.type,
+                    amount_due=entry_fee,
+                )
+                session.add(payment_db)
+                session.commit()
+                session.refresh(payment_db)
+
+            # Update payment entry
+            setattr(
+                payment_db, "amount_paid", payment_db.amount_due
+            )  # TODO: validate from transaction
+            setattr(payment_db, "is_paid", True)  # TODO: validate from transaction
+            setattr(payment_db, "method", PaymentMethod.PAYPAL)
+
+            if first_item_payment_id is not None:
+                setattr(payment_db, "linked_payment_id", first_item_payment_id)
+
+            payment_comment = f"{transaction.description} | {transaction.resource_id} | {transaction.update_time} | {transaction.payer_name} | {transaction.payer_email}"
+            setattr(payment_db, "comment", payment_comment)
+
+            session.add(payment_db)
+            session.commit()
+            session.refresh(payment_db)
+
+            # Cache first payment id of group of items
+            if first_item_payment_id is None:
+                first_item_payment_id = payment_db.id
+    except:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Unexpected error processing PayPal transaction - please contact treasurer or webmaster!",
+        )
+
+
+@router.patch("/fees/{payment_id}", response_model=TournamentEntryFeePaymentRead)
+async def update_tournament_entry_fee_payment(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    payment_id: int,
+    payment: TournamentEntryFeePaymentUpdate,
+):
+    if not current_user.edit_payments:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to update payments",
+        )
+    payment_db = session.get(TournamentEntryFeePayment, payment_id)
     if not payment_db:
         raise HTTPException(status_code=404, detail="Payment not found")
     payment_data = payment.dict(exclude_unset=True)
