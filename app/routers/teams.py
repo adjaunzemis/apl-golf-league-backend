@@ -160,6 +160,8 @@ async def delete_team(
         )
         session.delete(tournament_team_link_db)
 
+    # TODO: Find and remove all non-paid dues/entry fees for this team
+
     # Remove team
     print(f"Deleting team: id={team_db.id}")
     session.delete(team_db)
@@ -502,6 +504,35 @@ def update_team_signups(
                 f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}, team_id={team_golfer_link_db.team_id}"
             )
             session.delete(team_golfer_link_db)
+            session.commit()
+
+            if (
+                team_data.flight_id
+            ):  # delete flight dues record if unpaid and golfer not on other flight teams
+                # TODO: Implement find/delete of unpaid and unneeded flight dues records
+                print(
+                    f"WARNING: Flight dues payment record deleting not implemented yet!"
+                )
+            elif team_data.tournament_id:  # delete tournament entry fee if unpaid
+                payment_db = session.exec(
+                    select(TournamentEntryFeePayment)
+                    .where(
+                        TournamentEntryFeePayment.tournament_id
+                        == team_data.tournament_id
+                    )
+                    .where(TournamentEntryFeePayment.golfer_id == existing_golfer.id)
+                ).one_or_none()
+                if (payment_db is not None) and (payment_db.amount_paid == 0):
+                    print(
+                        f"Deleting tournament entry fee payment record: tournament_id={payment_db.tournament_id}, golfer_id={payment_db.golfer_id}"
+                    )
+                    session.delete(payment_db)
+                    session.commit()
+            else:
+                raise HTTPException(
+                    status_code=HTTPStatus.BAD_REQUEST,
+                    detail=f"Invalid team data, must specify flight or tournament id",
+                )
         else:  # update
             for golfer_data in team_data.golfer_data:
                 if golfer_data.golfer_id == existing_golfer.id:
