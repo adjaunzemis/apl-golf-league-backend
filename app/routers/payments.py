@@ -58,6 +58,23 @@ class LeagueDuesPaypalTransaction(SQLModel):
     payer_email: Optional[str] = None
 
 
+class TournamentEntryFeePaymentData(TournamentEntryFeePaymentRead):
+    golfer_name: str
+    golfer_email: Optional[str]
+
+
+class TournamentEntryFeePaymentInfo(SQLModel):
+    id: int
+    golfer_id: int
+    golfer_name: str
+    year: int
+    tournament_id: int
+    type: LeagueDuesType
+    amount_due: float
+    amount_paid: float
+    is_paid: bool
+
+
 class TournamentEntryFeePaypalTransactionItem(SQLModel):
     id: Optional[int] = None
     golfer_id: int
@@ -223,6 +240,72 @@ async def update_league_dues_payment(
     session.commit()
     session.refresh(payment_db)
     return payment_db
+
+
+@router.get(
+    "/fees/info/{tournament_id}", response_model=List[TournamentEntryFeePaymentInfo]
+)
+async def read_tournament_entry_fees_payment_info(
+    *, session: Session = Depends(get_sql_db_session), tournament_id: int
+):
+    payment_query_data = session.exec(
+        select(TournamentEntryFeePayment, Golfer)
+        .join(Golfer, onclause=Golfer.id == TournamentEntryFeePayment.golfer_id)
+        .where(TournamentEntryFeePayment.tournament_id == tournament_id)
+    ).all()
+    return [
+        TournamentEntryFeePaymentInfo(
+            id=payment_db.id,
+            golfer_id=payment_db.golfer_id,
+            golfer_name=golfer_db.name,
+            year=payment_db.year,
+            tournament_id=payment_db.tournament_id,
+            type=payment_db.type,
+            amount_due=payment_db.amount_due,
+            amount_paid=payment_db.amount_paid,
+            is_paid=payment_db.is_paid,
+        )
+        for payment_db, golfer_db in payment_query_data
+    ]
+
+
+@router.get(
+    "/fees/data/{tournament_id}", response_model=List[TournamentEntryFeePaymentData]
+)
+async def read_tournament_entry_fee_payment_data(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    tournament_id: int,
+):
+    if not current_user.edit_payments:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to view payments",
+        )
+    payment_query_data = session.exec(
+        select(TournamentEntryFeePayment, Golfer)
+        .join(Golfer, onclause=Golfer.id == TournamentEntryFeePayment.golfer_id)
+        .where(TournamentEntryFeePayment.tournament_id == tournament_id)
+    ).all()
+    return [
+        TournamentEntryFeePaymentData(
+            id=payment_db.id,
+            golfer_id=payment_db.golfer_id,
+            golfer_name=golfer_db.name,
+            golfer_email=golfer_db.email,
+            year=payment_db.year,
+            tournament_id=payment_db.tournament_id,
+            type=payment_db.type,
+            amount_due=payment_db.amount_due,
+            amount_paid=payment_db.amount_paid,
+            is_paid=payment_db.is_paid,
+            linked_payment_id=payment_db.linked_payment_id,
+            method=payment_db.method,
+            comment=payment_db.comment,
+        )
+        for payment_db, golfer_db in payment_query_data
+    ]
 
 
 @router.post("/fees")
