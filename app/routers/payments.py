@@ -176,7 +176,7 @@ async def post_league_dues_paypal_transaction(
         )
 
 
-@router.patch("/{payment_id}", response_model=LeagueDuesPaymentRead)
+@router.patch("/dues/{payment_id}", response_model=LeagueDuesPaymentRead)
 async def update_league_dues_payment(
     *,
     session: Session = Depends(get_sql_db_session),
