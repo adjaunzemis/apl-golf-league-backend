@@ -3,9 +3,9 @@ Finalized flight setup after team sign-ups
 
 """
 
-import os
-from dotenv import load_dotenv
+from functools import lru_cache
 from sqlmodel import SQLModel, Session, create_engine, select
+from pydantic import BaseSettings
 
 from models.course import Course
 from models.track import Track
@@ -39,7 +39,38 @@ from models.payment import (
 from models.user import User
 
 
-def add_scheduled_matches(*, session: Session, flight_db: Flight):
+class Settings(BaseSettings):
+    apl_golf_league_api_url: str
+    apl_golf_league_api_database_connector: str
+    apl_golf_league_api_database_user: str
+    apl_golf_league_api_database_password: str
+    apl_golf_league_api_database_url: str
+    apl_golf_league_api_database_port_external: int
+    apl_golf_league_api_database_port_internal: int
+    apl_golf_league_api_database_name: str
+    apl_golf_league_api_database_echo: bool = True
+    apl_golf_league_api_access_token_secret_key: str
+    apl_golf_league_api_access_token_algorithm: str
+    apl_golf_league_api_access_token_expire_minutes: int = 120
+    mail_username: str
+    mail_password: str
+    mail_from_address: str
+    mail_from_name: str
+    mail_server: str
+    mail_port: int
+
+    class Config:
+        env_file = ".env"
+
+
+@lru_cache()
+def get_settings():
+    return Settings()
+
+
+def add_scheduled_matches(
+    *, session: Session, flight_db: Flight, dry_run: bool = False
+):
     flight_team_links_db = session.exec(
         select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_db.id)
     ).all()
@@ -54,7 +85,7 @@ def add_scheduled_matches(*, session: Session, flight_db: Flight):
 
     team_ids = [link.team_id for link in flight_team_links_db]
 
-    # TODO: Implement 7-team and other schedules as needed
+    # TODO: Implement other team-number/week-number schedules as needed
     if (flight_db.weeks == 18) and (len(team_ids) == 5):
         matchup_matrix = [  # 5 teams, 18 weeks
             [4, 3, 2, 1, None],  # week 1
@@ -96,6 +127,27 @@ def add_scheduled_matches(*, session: Session, flight_db: Flight):
             [3, 6, 1, 5, 4, 2],  # week 16
             [2, 1, 5, 6, 3, 4],  # week 17
             [6, 5, 4, 3, 2, 1],  # week 18
+        ]
+    elif (flight_db.weeks == 18) and (len(team_ids) == 7):
+        matchup_matrix = [  # 7 teams, 18 weeks
+            [6, 5, 4, 3, 2, 1, None],  # week 1
+            [5, 4, 7, 2, 1, None, 3],  # week 2
+            [4, 3, 2, 1, None, 7, 6],  # week 3
+            [3, 7, 1, None, 6, 5, 2],  # week 4
+            [2, 1, None, 6, 7, 4, 5],  # week 5
+            [7, None, 6, 5, 4, 3, 1],  # week 6
+            [None, 6, 5, 7, 3, 2, 4],  # week 7
+            [6, 5, 4, 3, 2, 1, 5],  # week 8
+            [5, 4, 7, 2, 1, 4, 3],  # week 9
+            [4, 3, 2, 1, 7, 7, 6],  # week 10
+            [3, 7, 1, 6, 6, 5, 2],  # week 11
+            [2, 1, None, 6, 7, 4, 5],  # week 12
+            [7, None, 6, 5, 4, 3, 1],  # week 13
+            [None, 6, 5, 7, 3, 2, 4],  # week 14
+            [6, 5, 4, 3, 2, 1, None],  # week 15
+            [5, 4, 7, 2, 1, None, 3],  # week 16
+            [4, 3, 2, 1, None, 7, 6],  # week 17
+            [3, 7, 1, None, 6, 5, 2],  # week 18
         ]
     elif (flight_db.weeks == 18) and (len(team_ids) == 8):
         matchup_matrix = [  # 8 teams, 18 weeks
@@ -188,31 +240,33 @@ def add_scheduled_matches(*, session: Session, flight_db: Flight):
                     print(
                         f"Adding match: week={week}, home_team_id={team_id}, away_team_id={opponent_team_id}"
                     )
-                    match_db = Match(
-                        flight_id=flight_db.id,
-                        week=week,
-                        home_team_id=team_id,
-                        away_team_id=opponent_team_id,
-                    )
-                    session.add(match_db)
-                    session.commit()
+                    if not dry_run:
+                        match_db = Match(
+                            flight_id=flight_db.id,
+                            week=week,
+                            home_team_id=team_id,
+                            away_team_id=opponent_team_id,
+                        )
+                        session.add(match_db)
+                        session.commit()
 
 
 if __name__ == "__main__":
-    YEAR = 2022
+    YEAR = 2023
+    DRY_RUN = False
 
-    load_dotenv()
+    settings = get_settings()
 
-    DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
-    DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
-    DATABASE_ADDRESS = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
-    DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL")
-    DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
+    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_PORT = (
+        settings.apl_golf_league_api_database_port_external
+    )  # NOTE: using external port, not running from inside container
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
-    DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
-
-    print(f"Finalizing flight setup in database: {DATABASE_NAME}")
-    engine = create_engine(DATABASE_URL, echo=False)
+    print(
+        f"Finalizing flight setup in database: {settings.apl_golf_league_api_database_url}"
+    )
+    engine = create_engine(db_uri, echo=False)
 
     SQLModel.metadata.create_all(engine)
 
@@ -223,7 +277,9 @@ if __name__ == "__main__":
             print(f"Flight: {flight_db.name} ({flight_db.year})")
             # Initialize schedule with matches
             try:
-                add_scheduled_matches(session=session, flight_db=flight_db)
+                add_scheduled_matches(
+                    session=session, flight_db=flight_db, dry_run=DRY_RUN
+                )
             except Exception as e:
                 print(f"ERROR: Unable to add scheduled matches - {e}")
 
