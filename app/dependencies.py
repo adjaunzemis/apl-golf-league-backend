@@ -91,7 +91,7 @@ def change_user_password(
 
     setattr(user, "hashed_password", pwd_context.hash(password))
     session.commit()
-    session.refresh()
+    session.refresh(user)
     return user
 
 
