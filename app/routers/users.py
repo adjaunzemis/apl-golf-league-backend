@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
 from ..dependencies import (
+    change_user_password,
     get_settings,
     get_sql_db_session,
     authenticate_user,
@@ -51,3 +52,37 @@ async def login(
 @router.get("/me", response_model=UserRead)
 async def get_current_user(*, current_user: User = Depends(get_current_active_user)):
     return current_user
+
+
+@router.post("/change-password", response_model=UserRead)
+async def change_password(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    current_user: User = Depends(get_current_active_user)
+):
+    user = authenticate_user(
+        session=session, username=form_data.username, password=form_data.password
+    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or old password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if (not current_user.is_admin) and (user.username != current_user.username):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized password change",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = change_user_password(
+        session=session, username=form_data.username, password=form_data.client_secret
+    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to update password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user

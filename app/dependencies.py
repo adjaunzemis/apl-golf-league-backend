@@ -80,6 +80,21 @@ def authenticate_user(
     return user
 
 
+def change_user_password(
+    *, session: Session = Depends(get_sql_db_session), username: str, password: str
+):
+    user = get_user(session=session, username=username)
+    if not user:
+        return False
+
+    # TODO: check validity of new password
+
+    setattr(user, "hashed_password", pwd_context.hash(password))
+    session.commit()
+    session.refresh()
+    return user
+
+
 def create_access_token(*, data: dict):
     to_encode = data.copy()
     expire_time = datetime.utcnow() + timedelta(
