@@ -57,14 +57,26 @@ class CourseData(SQLModel):
 async def read_courses(
     *,
     session: Session = Depends(get_sql_db_session),
-    offset: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, le=100),
+    include_inactive: bool = Query(default=False),
 ):
     # TODO: Refactor querying to use joins and reduce number of queries
-    courses = session.exec(select(Course).offset(offset).limit(limit)).all()
-    courses.sort(
-        key=lambda course: (course.name, -course.year)
-    )  # sort first by name (ascending), then by year (descending)
+    courses = session.exec(select(Course)).all()
+
+    # Exclude inactive courses
+    if not include_inactive:
+        courses_filtered: List[Course] = []
+        course_names = set([course.name for course in courses])
+        for course_name in course_names:
+            course_matches = list(filter(lambda c: c.name == course_name, courses))
+            latest_year = max([c.year for c in course_matches])
+            course_latest = list(
+                filter(lambda c: c.year == latest_year, course_matches)
+            )[0]
+            courses_filtered.append(course_latest)
+        courses = courses_filtered
+
+    # Sort by name (ascending) then year (descending)
+    courses.sort(key=lambda course: (course.name, -course.year))
     return courses
 
 
