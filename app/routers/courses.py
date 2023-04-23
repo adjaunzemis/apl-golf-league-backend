@@ -192,7 +192,8 @@ def upsert_course(*, session: Session, course_data: CourseData) -> CourseRead:
             )
         course_dict = course_data.dict(exclude_unset=True)
         for key, value in course_dict.items():
-            setattr(course_db, key, value)
+            if key != "tracks":
+                setattr(course_db, key, value)
     session.add(course_db)
     session.commit()
     session.refresh(course_db)
@@ -219,7 +220,8 @@ def upsert_track(
             )
         track_dict = track_data.dict(exclude_unset=True)
         for key, value in track_dict.items():
-            setattr(track_db, key, value)
+            if key != "tees":
+                setattr(track_db, key, value)
     setattr(track_db, "course_id", course_id)
     session.add(track_db)
     session.commit()
@@ -243,9 +245,10 @@ def upsert_tee(*, session: Session, tee_data: TeeData, track_id: int) -> TeeRead
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tee (id={tee_data.id}) not found",
             )
-        track_dict = tee_data.dict(exclude_unset=True)
-        for key, value in track_dict.items():
-            setattr(tee_db, key, value)
+        tee_dict = tee_data.dict(exclude_unset=True)
+        for key, value in tee_dict.items():
+            if key != "holes":
+                setattr(tee_db, key, value)
     setattr(tee_db, "track_id", track_id)
     session.add(tee_db)
     session.commit()
