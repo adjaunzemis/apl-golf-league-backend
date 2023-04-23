@@ -177,6 +177,7 @@ def validate_team_signup_data(
     team_data: TeamSignupData,
     exclude_team_id: Optional[int] = None,
 ) -> None:
+    """Raises exception if given team signup data is not valid for creation/update."""
     # Check if flight/tournament selection is valid
     if (team_data.flight_id and team_data.tournament_id) or (
         not team_data.flight_id and not team_data.tournament_id
@@ -252,7 +253,7 @@ def validate_team_signup_data(
             detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups",
         )
 
-    # Check if the given golfers already exist on other teams in this flight and if one captain was designated
+    # Check if the given golfers already exist on other teams in this flight/tournament and if one captain was designated
     if team_data.flight_id is not None:
         existing_golfer_ids = get_golfer_ids_for_flight(
             session=session,
