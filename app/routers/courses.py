@@ -33,6 +33,7 @@ class TeeData(SQLModel):
     gender: TeeGender
     rating: float
     slope: int
+    color: Optional[str] = None
     holes: List[HoleData] = []
 
 
