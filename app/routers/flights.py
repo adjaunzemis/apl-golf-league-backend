@@ -32,6 +32,7 @@ async def read_flights(
     else:  # get all
         flight_ids = session.exec(select(Flight.id)).all()
     flight_info = get_flights(session=session, flight_ids=flight_ids)
+    flight_info.sort(key=lambda flight: (flight.name, -flight.year))
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
 
