@@ -61,7 +61,11 @@ async def read_courses(
     limit: int = Query(default=100, le=100),
 ):
     # TODO: Refactor querying to use joins and reduce number of queries
-    return session.exec(select(Course).offset(offset).limit(limit)).all()
+    courses = session.exec(select(Course).offset(offset).limit(limit)).all()
+    courses.sort(
+        key=lambda course: (course.name, -course.year)
+    )  # sort first by name (ascending), then by year (descending)
+    return courses
 
 
 @router.get("/{course_id}", response_model=CourseReadWithTracks)
@@ -71,6 +75,12 @@ async def read_course(
     course_db = session.get(Course, course_id)
     if not course_db:
         raise HTTPException(status_code=404, detail="Course not found")
+
+    course_db.tracks.sort(key=lambda track: track.id)
+    for track in course_db.tracks:
+        track.tees.sort(key=lambda tee: tee.id)
+        for tee in track.tees:
+            tee.holes.sort(key=lambda hole: hole.number)
     return course_db
 
 
@@ -145,6 +155,7 @@ async def read_tee(*, session: Session = Depends(get_sql_db_session), tee_id: in
     tee_db = session.get(Tee, tee_id)
     if not tee_db:
         raise HTTPException(status_code=404, detail="Tee not found")
+    tee_db.holes.sort(key=lambda hole: hole.number)
     return tee_db
 
 
