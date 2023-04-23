@@ -24,6 +24,7 @@ class Division(DivisionBase, table=True):
 
 
 class DivisionCreate(DivisionBase):
+    id: Optional[int] = None
     pass
 
 

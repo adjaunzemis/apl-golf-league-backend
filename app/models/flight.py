@@ -32,6 +32,7 @@ class Flight(FlightBase, table=True):
 
 
 class FlightCreate(FlightBase):
+    id: Optional[int] = None
     divisions: Optional[List[DivisionCreate]] = None
 
 

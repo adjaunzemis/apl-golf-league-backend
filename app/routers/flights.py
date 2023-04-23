@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
-from ..models.division import Division
+from ..models.division import Division, DivisionCreate, DivisionRead
 from ..models.flight_division_link import FlightDivisionLink
 from ..models.match import MatchSummary
 from ..models.user import User
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/flights", tags=["Flights"])
 async def read_flights(
     *,
     session: Session = Depends(get_sql_db_session),
-    year: int = Query(default=None, ge=2000)
+    year: int = Query(default=None, ge=2000),
 ):
     if year:  # filter to a certain year
         flight_ids = session.exec(select(Flight.id).where(Flight.year == year)).all()
@@ -33,44 +33,6 @@ async def read_flights(
         flight_ids = session.exec(select(Flight.id)).all()
     flight_info = get_flights(session=session, flight_ids=flight_ids)
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
-
-
-@router.post("/", response_model=FlightRead)
-async def create_flight(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    flight: FlightCreate
-):
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.UNAUTHORIZED,
-            detail="User not authorized to create flights",
-        )
-
-    # TODO: Sanity-check division tees against flight home-course tees
-
-    # Add flight to database
-    flight_db: Flight = Flight.from_orm(flight)
-    session.add(flight_db)
-    session.commit()
-    session.refresh(flight_db)
-
-    # Add divisions and flight-division links to database
-    for division in flight.divisions:
-        division_db: Division = Division.from_orm(division)
-        session.add(division_db)
-        session.commit()
-        session.refresh(division_db)
-
-        flight_division_link_db = FlightDivisionLink(
-            flight_id=flight_db.id, division_id=division_db.id
-        )
-        session.add(flight_division_link_db)
-        session.commit()
-        session.refresh(flight_division_link_db)
-
-    return flight_db
 
 
 @router.get("/{flight_id}", response_model=FlightData)
@@ -108,29 +70,45 @@ async def read_flight(
     return flight_data
 
 
-@router.patch("/{flight_id}", response_model=FlightRead)
+@router.post("/", response_model=FlightRead)
+async def create_flight(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    flight: FlightCreate,
+):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to create flights",
+        )
+
+    # TODO: Validate flight data (e.g. division tees against flight home-course tees)
+
+    return upsert_flight(session=session, flight_data=flight)
+
+
+@router.put("/{flight_id}", response_model=FlightRead)
 async def update_flight(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     flight_id: int,
-    flight: FlightUpdate
+    flight: FlightCreate,
 ):
     if not (current_user.edit_flights or current_user.is_admin):
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
             detail="User not authorized to update flights",
         )
+
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
         raise HTTPException(status_code=404, detail="Flight not found")
-    flight_data = flight.dict(exclude_unset=True)
-    for key, value in flight_data.items():
-        setattr(flight_db, key, value)
-    session.add(flight_db)
-    session.commit()
-    session.refresh(flight_db)
-    return flight_db
+
+    # TODO: Validate flight data (e.g. division tees against flight home-course tees)
+
+    return upsert_flight(session=session, flight_data=flight)
 
 
 @router.delete("/{flight_id}")
@@ -138,7 +116,7 @@ async def delete_flight(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    flight_id: int
+    flight_id: int,
 ):
     if not current_user.is_admin:
         raise HTTPException(
@@ -152,3 +130,64 @@ async def delete_flight(
     session.commit()
     # TODO: Delete linked resources (divisions, teams, etc.)
     return {"ok": True}
+
+
+def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
+    """Updates/inserts a flight data record."""
+    if flight_data.id is None:  # create new flight
+        flight_db = Flight.from_orm(flight_data)
+    else:  # update existing flight
+        flight_db = session.get(Flight, flight_data.id)
+        if not flight_db:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Flight (id={flight_data.id}) not found",
+            )
+        flight_dict = flight_data.dict(exclude_unset=True)
+        for key, value in flight_dict.items():
+            if key != "divisions":
+                setattr(flight_db, key, value)
+    session.add(flight_db)
+    session.commit()
+    session.refresh(flight_db)
+
+    for division in flight_data.divisions:
+        division_db = upsert_division(session=session, division_data=division)
+
+        # Create flight-division link (if needed)
+        flight_division_link_db = session.exec(
+            select(FlightDivisionLink)
+            .where(FlightDivisionLink.flight_id == flight_db.id)
+            .where(FlightDivisionLink.division_id == division_db.id)
+        ).one_or_none()
+        if not flight_division_link_db:
+            flight_division_link_db = FlightDivisionLink(
+                flight_id=flight_db.id, division_id=division_db.id
+            )
+            session.add(flight_division_link_db)
+            session.commit()
+            session.refresh(flight_division_link_db)
+
+    session.refresh(flight_db)
+    return flight_db
+
+
+# TODO: Move this to a general utility area
+def upsert_division(*, session: Session, division_data: DivisionCreate) -> DivisionRead:
+    """Updates/inserts a division data record."""
+    if division_data.id is None:  # create new division
+        division_db = Division.from_orm(division_data)
+    else:  # update existing division
+        division_db = session.get(Division, division_data.id)
+        if not division_db:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Division (id={division_data.id}) not found",
+            )
+        division_dict = division_data.dict(exclude_unset=True)
+        for key, value in division_dict.items():
+            setattr(division_db, key, value)
+    session.add(division_db)
+    session.commit()
+    session.refresh(division_db)
+    return division_db
