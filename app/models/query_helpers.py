@@ -113,6 +113,7 @@ class FlightData(SQLModel):
     id: int
     year: int
     name: str
+    course_id: Optional[int] = None
     course: str = None
     logo_url: str = None
     secretary: str = None
@@ -248,6 +249,7 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
             else None,
             weeks=flight.weeks,
             locked=flight.locked,
+            course_id=flight_courses_db[idx].id if flight_courses_db[idx] else None,
             course=flight_courses_db[idx].name if flight_courses_db[idx] else None,
         )
         for idx, flight in enumerate(flights_db)
