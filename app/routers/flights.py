@@ -3,9 +3,9 @@ from fastapi.exceptions import HTTPException
 from http import HTTPStatus
 from sqlmodel import Session, select
 
+
 from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.flight import Flight, FlightCreate, FlightUpdate, FlightRead
-from ..models.division import Division, DivisionCreate, DivisionRead
+from ..models.flight import Flight, FlightCreate, FlightRead
 from ..models.flight_division_link import FlightDivisionLink
 from ..models.match import MatchSummary
 from ..models.user import User
@@ -17,6 +17,7 @@ from ..models.query_helpers import (
     get_matches_for_teams,
     get_teams_in_flights,
 )
+from .utilities import upsert_division
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
@@ -43,7 +44,7 @@ async def read_flight(
     # Query database for selected flight, error if not found
     flight_data = get_flights(session=session, flight_ids=(flight_id,))
     if (not flight_data) or (len(flight_data) == 0):
-        raise HTTPException(status_code=404, detail="Flight not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Flight not found")
     flight_data = flight_data[0]
     # Add division and team data to selected flight
     flight_data.divisions = get_divisions_in_flights(
@@ -105,7 +106,7 @@ async def update_flight(
 
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
-        raise HTTPException(status_code=404, detail="Flight not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Flight not found")
 
     # TODO: Validate flight data (e.g. division tees against flight home-course tees)
 
@@ -126,7 +127,7 @@ async def delete_flight(
         )
     flight_db = session.get(Flight, flight_id)
     if not flight_db:
-        raise HTTPException(status_code=404, detail="Flight not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Flight not found")
     session.delete(flight_db)
     session.commit()
     # TODO: Delete linked resources (divisions, teams, etc.)
@@ -171,24 +172,3 @@ def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
 
     session.refresh(flight_db)
     return flight_db
-
-
-# TODO: Move this to a general utility area
-def upsert_division(*, session: Session, division_data: DivisionCreate) -> DivisionRead:
-    """Updates/inserts a division data record."""
-    if division_data.id is None:  # create new division
-        division_db = Division.from_orm(division_data)
-    else:  # update existing division
-        division_db = session.get(Division, division_data.id)
-        if not division_db:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f"Division (id={division_data.id}) not found",
-            )
-        division_dict = division_data.dict(exclude_unset=True)
-        for key, value in division_dict.items():
-            setattr(division_db, key, value)
-    session.add(division_db)
-    session.commit()
-    session.refresh(division_db)
-    return division_db

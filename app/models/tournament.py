@@ -42,6 +42,7 @@ class Tournament(TournamentBase, table=True):
 
 
 class TournamentCreate(TournamentBase):
+    id: Optional[int] = None
     divisions: Optional[List[DivisionCreate]] = None
 
 

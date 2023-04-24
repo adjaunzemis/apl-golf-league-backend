@@ -11,9 +11,9 @@ from ..dependencies import get_current_active_user, get_sql_db_session
 from ..models.tournament import (
     Tournament,
     TournamentCreate,
-    TournamentUpdate,
     TournamentRead,
 )
+from ..models.tournament_division_link import TournamentDivisionLink
 from ..models.tournament_round_link import TournamentRoundLink
 from ..models.tournament_team_link import TournamentTeamLink
 from ..models.round_golfer_link import RoundGolferLink
@@ -34,8 +34,7 @@ from ..models.query_helpers import (
     get_teams_in_tournaments,
 )
 from ..utilities.apl_handicap_system import APLHandicapSystem
-from ..models.division import Division
-from ..models.tournament_division_link import TournamentDivisionLink
+from .utilities import upsert_division
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
@@ -70,44 +69,6 @@ async def read_tournaments(
     )
 
 
-@router.post("/", response_model=TournamentRead)
-async def create_tournament(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
-    tournament: TournamentCreate,
-):
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.UNAUTHORIZED,
-            detail="User not authorized to create tournaments",
-        )
-
-    # TODO: Sanity-check division tees against tournament course tees
-
-    # Add tournament to database
-    tournament_db: Tournament = Tournament.from_orm(tournament)
-    session.add(tournament_db)
-    session.commit()
-    session.refresh(tournament_db)
-
-    # Add divisions and tournament-division links to database
-    for division in tournament.divisions:
-        division_db: Division = Division.from_orm(division)
-        session.add(division_db)
-        session.commit()
-        session.refresh(division_db)
-
-        tournament_division_link_db = TournamentDivisionLink(
-            tournament_id=tournament_db.id, division_id=division_db.id
-        )
-        session.add(tournament_division_link_db)
-        session.commit()
-        session.refresh(tournament_division_link_db)
-
-    return tournament_db
-
-
 @router.get("/{tournament_id}", response_model=TournamentData)
 async def read_tournament(
     *, session: Session = Depends(get_sql_db_session), tournament_id: int
@@ -115,7 +76,9 @@ async def read_tournament(
     # Query database for selected tournament, error if not found
     tournament_data = get_tournaments(session=session, tournament_ids=(tournament_id,))
     if (not tournament_data) or (len(tournament_data) == 0):
-        raise HTTPException(status_code=404, detail="Tournament not found")
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Tournament not found"
+        )
     tournament_data = tournament_data[0]
     # Add division and team data to selected tournament
     tournament_data.divisions = get_divisions_in_tournaments(
@@ -131,24 +94,47 @@ async def read_tournament(
     return tournament_data
 
 
-@router.patch("/{tournament_id}", response_model=TournamentRead)
+@router.post("/", response_model=TournamentRead)
+async def create_tournament(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    tournament: TournamentCreate,
+):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to create tournaments",
+        )
+
+    # TODO: Validate tournament data (e.g. division tees against tournament course tees)
+
+    return upsert_tournament(session=session, tournament_data=tournament)
+
+
+@router.put("/{tournament_id}", response_model=TournamentRead)
 async def update_tournament(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     tournament_id: int,
-    tournament: TournamentUpdate,
+    tournament: TournamentCreate,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to update tournaments",
+        )
+
     tournament_db = session.get(Tournament, tournament_id)
     if not tournament_db:
-        raise HTTPException(status_code=404, detail="Tournament not found")
-    tournament_data = tournament.dict(exclude_unset=True)
-    for key, value in tournament_data.items():
-        setattr(tournament_db, key, value)
-    session.add(tournament_db)
-    session.commit()
-    session.refresh(tournament_db)
-    return tournament_db
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Tournament not found"
+        )
+
+    # TODO: Validate tournament data (e.g. division tees against tournament course tees)
+
+    return upsert_tournament(session=session, tournament_data=tournament)
 
 
 @router.delete("/{tournament_id}")
@@ -158,9 +144,17 @@ async def delete_tournament(
     current_user: User = Depends(get_current_active_user),
     tournament_id: int,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to create tournaments",
+        )
+
     tournament_db = session.get(Tournament, tournament_id)
     if not tournament_db:
-        raise HTTPException(status_code=404, detail="Tournament not found")
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Tournament not found"
+        )
     session.delete(tournament_db)
     session.commit()
     return {"ok": True}
@@ -283,3 +277,45 @@ async def post_tournament_rounds(
     return get_round_summaries(
         session=session, round_ids=round_ids
     )  # TODO: clean up implementation of response
+
+
+def upsert_tournament(
+    *, session: Session, tournament_data: TournamentCreate
+) -> TournamentRead:
+    """Updates/inserts a tournament data record."""
+    if tournament_data.id is None:  # create new tournament
+        tournament_db = Tournament.from_orm(tournament_data)
+    else:  # update existing tournament
+        tournament_db = session.get(Tournament, tournament_data.id)
+        if not tournament_db:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Tournament (id={tournament_data.id}) not found",
+            )
+        tournament_dict = tournament_data.dict(exclude_unset=True)
+        for key, value in tournament_dict.items():
+            if key != "divisions":
+                setattr(tournament_db, key, value)
+    session.add(tournament_db)
+    session.commit()
+    session.refresh(tournament_db)
+
+    for division in tournament_data.divisions:
+        division_db = upsert_division(session=session, division_data=division)
+
+        # Create tournament-division link (if needed)
+        tournament_division_link_db = session.exec(
+            select(TournamentDivisionLink)
+            .where(TournamentDivisionLink.tournament_id == tournament_db.id)
+            .where(TournamentDivisionLink.division_id == division_db.id)
+        ).one_or_none()
+        if not tournament_division_link_db:
+            tournament_division_link_db = TournamentDivisionLink(
+                tournament_id=tournament_db.id, division_id=division_db.id
+            )
+            session.add(tournament_division_link_db)
+            session.commit()
+            session.refresh(tournament_division_link_db)
+
+    session.refresh(tournament_db)
+    return tournament_db
