@@ -59,7 +59,12 @@ async def read_tournaments(
     else:  # get all
         tournament_ids = session.exec(select(Tournament.id)).all()
     tournament_info = get_tournaments(session=session, tournament_ids=tournament_ids)
-    tournament_info.sort(key=lambda tournament: (tournament.name, -tournament.year))
+    tournament_info.sort(
+        key=lambda tournament: (
+            -tournament.year,
+            datetime.strptime(tournament.date, "%Y-%m-%dT%H:%M:%S%z"),
+        )
+    )
     return TournamentInfoWithCount(
         num_tournaments=len(tournament_ids), tournaments=tournament_info
     )
