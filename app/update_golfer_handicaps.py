@@ -1,21 +1,73 @@
 import os
+from functools import lru_cache
 from typing import List, Optional
 from datetime import datetime, timedelta
 from datetime import date as dt_date
 from sqlmodel import SQLModel, Session, select, create_engine, desc
-from dotenv import load_dotenv
+from pydantic import BaseSettings
 
-from models.golfer import Golfer
-from models.round import Round, RoundSummary, ScoringType, RoundType
-from models.qualifying_score import QualifyingScore
 from models.course import Course
 from models.track import Track
-from models.tee import Tee
+from models.tee import Tee, TeeGender
 from models.hole import Hole
-from models.hole_result import HoleResult, HoleResultData
+from models.golfer import Golfer, GolferAffiliation
+from models.flight import Flight
+from models.division import Division
+from models.flight_division_link import FlightDivisionLink
+from models.team import Team
+from models.team_golfer_link import TeamGolferLink, TeamRole
+from models.flight_team_link import FlightTeamLink
+from models.match import Match
+from models.round import Round, RoundSummary, ScoringType, RoundType
 from models.round_golfer_link import RoundGolferLink
+from models.hole_result import HoleResult, HoleResultData
+from models.match_round_link import MatchRoundLink
+from models.tournament import Tournament
+from models.tournament_division_link import TournamentDivisionLink
+from models.tournament_team_link import TournamentTeamLink
+from models.tournament_round_link import TournamentRoundLink
+from models.officer import Officer
+from models.payment import (
+    LeagueDues,
+    LeagueDuesType,
+    LeagueDuesPayment,
+    TournamentEntryFeeType,
+    TournamentEntryFeePayment,
+    PaymentMethod,
+)
+from models.qualifying_score import QualifyingScore
+from models.user import User
 from utilities.apl_handicap_system import APLHandicapSystem
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+
+
+class Settings(BaseSettings):
+    apl_golf_league_api_url: str
+    apl_golf_league_api_database_connector: str
+    apl_golf_league_api_database_user: str
+    apl_golf_league_api_database_password: str
+    apl_golf_league_api_database_url: str
+    apl_golf_league_api_database_port_external: int
+    apl_golf_league_api_database_port_internal: int
+    apl_golf_league_api_database_name: str
+    apl_golf_league_api_database_echo: bool = True
+    apl_golf_league_api_access_token_secret_key: str
+    apl_golf_league_api_access_token_algorithm: str
+    apl_golf_league_api_access_token_expire_minutes: int = 120
+    mail_username: str
+    mail_password: str
+    mail_from_address: str
+    mail_from_name: str
+    mail_server: str
+    mail_port: int
+
+    class Config:
+        env_file = ".env"
+
+
+@lru_cache()
+def get_settings():
+    return Settings()
 
 
 class HandicapIndexData(SQLModel):
@@ -313,7 +365,11 @@ def get_handicap_index_data(
 
 
 def update_golfer_handicaps(
-    *, session: Session, old_max_date: datetime, new_max_date: datetime
+    *,
+    session: Session,
+    old_max_date: datetime,
+    new_max_date: datetime,
+    dry_run: bool = False,
 ):
     """
     Updates handicap index for each golfer with pending rounds.
@@ -324,6 +380,9 @@ def update_golfer_handicaps(
         database session
     limit : integer
         maximum number of rounds allowed for handicap consideration
+    dry_run : bool, optional
+        if true, does not commit changes to database records
+        Default: False
 
     """
     print(f"Updating golfer handicap index data")
@@ -368,11 +427,15 @@ def update_golfer_handicaps(
             )
             golfer_db.handicap_index = new_handicap_index
             golfer_db.handicap_index_updated = datetime.now()
-            session.add(golfer_db)
-    session.commit()  # update all handicaps at once
+            if not dry_run:
+                session.add(golfer_db)
+    if not dry_run:
+        session.commit()  # update all handicaps at once
 
 
-def recalculate_hole_results(*, session: Session, year: int = 2022):
+def recalculate_hole_results(
+    *, session: Session, year: int = 2022, dry_run: bool = False
+):
     """
     Recalculates hole results for any rounds played in the given year.
 
@@ -388,6 +451,9 @@ def recalculate_hole_results(*, session: Session, year: int = 2022):
     year : int, optional
         year for rounds played to be analyzed and corrected
         Default: 2022
+    dry_run : bool, optional
+        if true, does not commit changes to database records
+        Default: False
 
     """
     print(f"Recalculating hole results for {year} season")
@@ -435,37 +501,49 @@ def recalculate_hole_results(*, session: Session, year: int = 2022):
                 hole_result_db.handicap_strokes = handicap_strokes
                 hole_result_db.adjusted_gross_score = adj_gross_score
                 hole_result_db.net_score = net_score
-                session.add(hole_result_db)
-                session.commit()
-                session.refresh(hole_result_db)
+                if not dry_run:
+                    session.add(hole_result_db)
+                    session.commit()
+                    session.refresh(hole_result_db)
             if error_found_in_round:
                 round_db.date_updated = datetime.now()
-                session.add(round_db)
-                session.commit()
-                session.refresh(round_db)
+                if not dry_run:
+                    session.add(round_db)
+                    session.commit()
+                    session.refresh(round_db)
     print(f"Corrected errors in {round_error_counter} rounds")
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    # TODO: Make this a runnable task
 
-    DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
-    DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
-    DATABASE_ADDRESS = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
-    DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL")
-    DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
+    DRY_RUN = False
 
-    DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
+    OLD_MAX_DATE = datetime(2022, 9, 5)  # TODO: un-hardcode date
+    NEW_MAX_DATE = datetime(2023, 5, 1)  # TODO: un-hardcode date
 
-    print(f"Updating database: {DATABASE_NAME}")
-    engine = create_engine(DATABASE_URL, echo=False)
+    settings = get_settings()
+
+    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_PORT = (
+        settings.apl_golf_league_api_database_port_external
+    )  # NOTE: using external port, not running from inside container
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+
+    print(
+        f"Updating golfer handicaps in database: {settings.apl_golf_league_api_database_url}"
+    )
+    print(f"Handicap update date range: {OLD_MAX_DATE} - {NEW_MAX_DATE}")
+    engine = create_engine(db_uri, echo=False)
+
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        # recalculate_hole_results(session=session, year=2022)
+        # recalculate_hole_results(session=session, year=2023)
         update_golfer_handicaps(
             session=session,
-            old_max_date=datetime(2022, 8, 29),
-            new_max_date=datetime(2022, 9, 5),
-        )  # TODO: un-hardcode dates
-    print("Done!")
+            old_max_date=OLD_MAX_DATE,
+            new_max_date=NEW_MAX_DATE,
+            dry_run=DRY_RUN,
+        )
+        print("Done!")
