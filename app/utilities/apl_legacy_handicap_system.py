@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 
-from models.match import MatchHoleResult, MatchTeamDesignator
+from app.models.match import MatchHoleResult, MatchTeamDesignator
 
 from .world_handicap_system import WorldHandicapSystem
 
