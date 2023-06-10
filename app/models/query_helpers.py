@@ -1169,7 +1169,7 @@ def get_hole_results_for_rounds(
         )
         for hole_result, hole in hole_query_data
     ]
-    return hole_result_data.sort(key=lambda h: h.number)
+    return sorted(hole_result_data, key=lambda h: h.number)
 
 
 def compute_golfer_statistics_for_rounds(
