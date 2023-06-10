@@ -1153,7 +1153,7 @@ def get_hole_results_for_rounds(
     hole_query_data = session.exec(
         select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids))
     )
-    return [
+    hole_result_data = [
         HoleResultData(
             hole_result_id=hole_result.id,
             round_id=hole_result.round_id,
@@ -1169,6 +1169,7 @@ def get_hole_results_for_rounds(
         )
         for hole_result, hole in hole_query_data
     ]
+    return hole_result_data.sort(key=lambda h: h.number)
 
 
 def compute_golfer_statistics_for_rounds(
