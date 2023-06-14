@@ -3,7 +3,7 @@ import numpy as np
 
 from app.models.match import MatchHoleResult, MatchTeamDesignator
 
-from .world_handicap_system import WorldHandicapSystem
+from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
 class APLLegacyHandicapSystem(WorldHandicapSystem):

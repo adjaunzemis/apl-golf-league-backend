@@ -6,9 +6,9 @@ from datetime import datetime
 from sqlmodel import SQLModel, Session, select, create_engine
 from dotenv import load_dotenv
 
-from models.golfer import Golfer
-from models.round import RoundSummary, RoundType
-from update_golfer_handicaps import (
+from app.models.golfer import Golfer
+from app.models.round import RoundSummary, RoundType
+from app.tasks.update_golfer_handicaps import (
     get_rounds_in_scoring_record,
     get_handicap_index_data,
 )
