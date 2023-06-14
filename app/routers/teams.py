@@ -353,27 +353,28 @@ def add_golfer_to_team_for_flight(
     session.commit()
 
     # Add registrations/payment (as needed)
-    flight_db = session.exec(select(Flight).where(Flight.id == flight_id)).one()
-    flight_dues_amount = session.exec(
-        select(LeagueDues.amount)
-        .where(LeagueDues.year == flight_db.year)
-        .where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)
-    ).one()
-    golfer_dues_payment_db = session.exec(
-        select(LeagueDuesPayment)
-        .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
-        .where(LeagueDuesPayment.year == flight_db.year)
-        .where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)
-    ).one_or_none()
-    if not golfer_dues_payment_db:
-        golfer_dues_payment_db = LeagueDuesPayment(
-            golfer_id=team_golfer.golfer_id,
-            year=flight_db.year,
-            type=LeagueDuesType.FLIGHT_DUES,
-            amount_due=flight_dues_amount,
-        )
-        session.add(golfer_dues_payment_db)
-        session.commit()
+    if team_golfer.role != TeamRole.SUBSTITUTE:
+        flight_db = session.exec(select(Flight).where(Flight.id == flight_id)).one()
+        flight_dues_amount = session.exec(
+            select(LeagueDues.amount)
+            .where(LeagueDues.year == flight_db.year)
+            .where(LeagueDues.type == LeagueDuesType.FLIGHT_DUES)
+        ).one()
+        golfer_dues_payment_db = session.exec(
+            select(LeagueDuesPayment)
+            .where(LeagueDuesPayment.golfer_id == team_golfer.golfer_id)
+            .where(LeagueDuesPayment.year == flight_db.year)
+            .where(LeagueDuesPayment.type == LeagueDuesType.FLIGHT_DUES)
+        ).one_or_none()
+        if not golfer_dues_payment_db:
+            golfer_dues_payment_db = LeagueDuesPayment(
+                golfer_id=team_golfer.golfer_id,
+                year=flight_db.year,
+                type=LeagueDuesType.FLIGHT_DUES,
+                amount_due=flight_dues_amount,
+            )
+            session.add(golfer_dues_payment_db)
+            session.commit()
 
 
 def create_team_for_flight(*, session: Session, team_data: TeamSignupData) -> TeamRead:
