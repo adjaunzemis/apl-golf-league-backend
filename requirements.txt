@@ -1,5 +1,5 @@
 aiosmtplib==2.0.1
-anyio==3.6.2
+anyio==3.7.1
 asgiref==3.4.1
 atomicwrites==1.4.0
 attrs==21.2.0
