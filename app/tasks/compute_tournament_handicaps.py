@@ -1,8 +1,8 @@
 import csv
 from typing import List, Optional
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select, create_engine
 
-from app.dependencies import get_sql_db_session
+from app.dependencies import get_settings
 from app.models.course import Course
 from app.models.tee import Tee
 from app.models.golfer import Golfer
@@ -24,16 +24,62 @@ class HandicapIndexData(SQLModel):
     pending_rounds: Optional[List[RoundSummary]] = None
 
 
+def organize_team_handicaps_scramble(
+    hcps: list[float],
+) -> tuple[float, float, float, float]:
+    sorted_indexes = sorted(hcps)
+    if len(hcps) == 4:
+        return tuple(sorted_indexes)
+    elif len(hcps) == 3:
+        return (
+            sorted_indexes[0],
+            sorted_indexes[1],
+            sorted_indexes[1],
+            sorted_indexes[2],
+        )
+    elif len(hcps) == 2:
+        return (
+            sorted_indexes[0],
+            sorted_indexes[0],
+            sorted_indexes[1],
+            sorted_indexes[1],
+        )
+    raise ValueError(
+        f"Unable to organize team handicap indexes given {len(hcps)} indexes"
+    )
+
+
+def compute_team_handicap_scramble(
+    hcp_a: int, hcp_b: int, hcp_c: int, hcp_d: int
+) -> int:
+    return round(0.25 * hcp_a + 0.20 * hcp_b + 0.15 * hcp_c + 0.10 * hcp_d)
+
+
 if __name__ == "__main__":
     # TODO: Make this a runnable task
 
     # TOURNAMENT_ID = 24  # Musket Ridge (2023) TODO: un-hardcode id
-    TOURNAMENT_ID = 27  # Worthington Manor (2023) TODO: un-hardcode id
+    # TOURNAMENT_ID = 27  # Worthington Manor (2023) TODO: un-hardcode id
+    TOURNAMENT_ID = 31  # Lake Presidential (2023) TODO: un-hardcode id
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
     ahs = APLHandicapSystem()
-    with get_sql_db_session as session:
+
+    settings = get_settings()
+
+    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_PORT = (
+        settings.apl_golf_league_api_database_port_external
+    )  # NOTE: using external port, not running from inside container
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+
+    print(
+        f"Computing tournament (id={TOURNAMENT_ID}) handicaps in database: {settings.apl_golf_league_api_database_url}"
+    )
+    engine = create_engine(db_uri, echo=False)
+
+    with Session(engine) as session:
 
         # Get tournament and course info
         tournament_db = session.exec(
@@ -80,7 +126,7 @@ if __name__ == "__main__":
         ).all()
 
         # For each golfer:
-        HEADERS = [
+        GOLFER_HEADERS = [
             "Team",
             "Golfer",
             "Division",
@@ -97,7 +143,7 @@ if __name__ == "__main__":
             "Back CH",
             "Tournament CH",
         ]
-        DATA = []
+        GOLFER_DATA = []
         for golfer_db, team_db, team_golfer_link_db in golfer_team_list:
             # TODO: Fix handicap validity date, get relevant handicap index
             # NOTE: This will be much easier when historical handicap table is available
@@ -127,7 +173,7 @@ if __name__ == "__main__":
 
             course_handicap = round(course_handicap_primary + course_handicap_secondary)
 
-            DATA.append(
+            GOLFER_DATA.append(
                 [
                     team_db.name,
                     golfer_db.name,
@@ -151,6 +197,39 @@ if __name__ == "__main__":
                 f"{team_db.name}: {golfer_db.name} ({golfer_db.handicap_index}), Front: {tee_primary.name} ({tee_primary.rating}/{tee_primary.slope}) -> {course_handicap_primary:0.2f}, Back: {tee_secondary.name} ({tee_secondary.rating}/{tee_secondary.slope}) -> {course_handicap_secondary:0.2f} | Course Handicap = {course_handicap}"
             )
 
+        # Compute team handicaps for scramble
+        if tournament_db.scramble:
+            print(f"Team handicaps (scramble)")
+
+            TEAM_HEADERS = ["Team", "CH A", "CH B", "CH C", "CH D", "Team CH"]
+            TEAM_DATA = []
+
+            team_names: list[str] = []
+            for golfer_db, team_db, team_golfer_link_db in golfer_team_list:
+                if team_db.name not in team_names:
+                    team_names.append(team_db.name)
+
+                    # TODO: Make less fragile in case column numbers change
+                    team_hcps = [
+                        golfer_data[14]
+                        for golfer_data in GOLFER_DATA
+                        if golfer_data[0] == team_db.name
+                    ]
+                    hcp_a, hcp_b, hcp_c, hcp_d = organize_team_handicaps_scramble(
+                        team_hcps
+                    )
+                    team_hcp = compute_team_handicap_scramble(
+                        hcp_a, hcp_b, hcp_c, hcp_d
+                    )
+
+                    TEAM_DATA.append(
+                        [team_db.name, hcp_a, hcp_b, hcp_c, hcp_d, team_hcp]
+                    )
+
+                    print(
+                        f"{team_db.name}: [{hcp_a}, {hcp_b}, {hcp_c}, {hcp_d}] -> {team_hcp}"
+                    )
+
         # Output to spreadsheet
         filename = f"handicaps_{tournament_db.name.lower().replace(' ', '')}_{tournament_db.year}.csv"
         print(f"Writing results to file: {filename}")
@@ -168,7 +247,11 @@ if __name__ == "__main__":
 
             csvwriter.writerow([])
 
-            csvwriter.writerow(HEADERS)
-            csvwriter.writerows(DATA)
+            csvwriter.writerow(GOLFER_HEADERS)
+            csvwriter.writerows(GOLFER_DATA)
+
+            csvwriter.writerow([])
+            csvwriter.writerow(TEAM_HEADERS)
+            csvwriter.writerows(TEAM_DATA)
 
         print("Done!")
