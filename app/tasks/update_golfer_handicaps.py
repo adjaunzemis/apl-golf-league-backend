@@ -1,18 +1,40 @@
 from typing import List, Optional
 from datetime import datetime, timedelta
 from datetime import date as dt_date
-from sqlmodel import SQLModel, Session, select, desc
+from sqlmodel import SQLModel, Session, select, desc, create_engine
 
-
+from app.dependencies import get_settings
 from app.models.course import Course
 from app.models.track import Track
-from app.models.tee import Tee
+from app.models.tee import Tee, TeeGender
 from app.models.hole import Hole
-from app.models.golfer import Golfer
+from app.models.golfer import Golfer, GolferAffiliation
+from app.models.flight import Flight
+from app.models.division import Division
+from app.models.flight_division_link import FlightDivisionLink
+from app.models.team import Team
+from app.models.team_golfer_link import TeamGolferLink, TeamRole
+from app.models.flight_team_link import FlightTeamLink
+from app.models.match import Match
 from app.models.round import Round, RoundSummary, ScoringType, RoundType
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.hole_result import HoleResult, HoleResultData
+from app.models.match_round_link import MatchRoundLink
+from app.models.tournament import Tournament
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.officer import Officer
+from app.models.payment import (
+    LeagueDues,
+    LeagueDuesType,
+    LeagueDuesPayment,
+    TournamentEntryFeeType,
+    TournamentEntryFeePayment,
+    PaymentMethod,
+)
 from app.models.qualifying_score import QualifyingScore
+from app.models.user import User
 from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -459,3 +481,38 @@ def recalculate_hole_results(
                     session.commit()
                     session.refresh(round_db)
     print(f"Corrected errors in {round_error_counter} rounds")
+
+
+if __name__ == "__main__":
+    # TODO: Make this a runnable task
+
+    DRY_RUN = False
+
+    OLD_MAX_DATE = datetime(2023, 7, 10)  # TODO: un-hardcode date
+    NEW_MAX_DATE = datetime(2023, 7, 17)  # TODO: un-hardcode date
+
+    settings = get_settings()
+
+    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_PORT = (
+        settings.apl_golf_league_api_database_port_external
+    )  # NOTE: using external port, not running from inside container
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+
+    print(
+        f"Updating golfer handicaps in database: {settings.apl_golf_league_api_database_url}"
+    )
+    print(f"Handicap update date range: {OLD_MAX_DATE} - {NEW_MAX_DATE}")
+    engine = create_engine(db_uri, echo=False)
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        # recalculate_hole_results(session=session, year=2023)
+        update_golfer_handicaps(
+            session=session,
+            old_max_date=OLD_MAX_DATE,
+            new_max_date=NEW_MAX_DATE,
+            dry_run=DRY_RUN,
+        )
+        print("Done!")
