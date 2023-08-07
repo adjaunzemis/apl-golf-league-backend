@@ -389,11 +389,11 @@ def update_golfer_handicaps(
                 update_required = True
                 update_reasons.append("pending rounds")
                 break
-        print(
-            f"{'U' if update_required else 'Not u'}pdating handicap index for golfer '{golfer_db.name}' ({old_handicap_index}) from {old_handicap_index_data.active_handicap_index} to {new_handicap_index} : "
-            + ", ".join(update_reasons)
-        )
         if update_required:
+            print(
+                f"Updating handicap index for golfer '{golfer_db.name}' ({old_handicap_index}) from {old_handicap_index_data.active_handicap_index} to {new_handicap_index} : "
+                + ", ".join(update_reasons)
+            )
             golfer_db.handicap_index = new_handicap_index
             golfer_db.handicap_index_updated = datetime.now()
             if not dry_run:
@@ -488,8 +488,8 @@ if __name__ == "__main__":
 
     DRY_RUN = False
 
-    OLD_MAX_DATE = datetime(2023, 7, 10)  # TODO: un-hardcode date
-    NEW_MAX_DATE = datetime(2023, 7, 17)  # TODO: un-hardcode date
+    OLD_MAX_DATE = datetime(2023, 7, 31)  # TODO: un-hardcode date
+    NEW_MAX_DATE = datetime(2023, 8, 7)  # TODO: un-hardcode date
 
     settings = get_settings()
 
