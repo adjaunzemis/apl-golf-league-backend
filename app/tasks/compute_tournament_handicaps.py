@@ -60,7 +60,8 @@ if __name__ == "__main__":
 
     # TOURNAMENT_ID = 24  # Musket Ridge (2023) TODO: un-hardcode id
     # TOURNAMENT_ID = 27  # Worthington Manor (2023) TODO: un-hardcode id
-    TOURNAMENT_ID = 31  # Lake Presidential (2023) TODO: un-hardcode id
+    # TOURNAMENT_ID = 31  # Lake Presidential (2023) TODO: un-hardcode id
+    TOURNAMENT_ID = 29  # Maryland National (2023) TODO: un-hardcode id
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
@@ -115,8 +116,9 @@ if __name__ == "__main__":
 
         # Get golfers signed up for this tournament
         golfer_team_list = session.exec(
-            select(Golfer, Team, TeamGolferLink)
+            select(Golfer, Team, Division)
             .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=Division.id == TeamGolferLink.division_id)
             .join(
                 TournamentTeamLink,
                 onclause=TournamentTeamLink.team_id == TeamGolferLink.team_id,
@@ -129,8 +131,8 @@ if __name__ == "__main__":
         GOLFER_HEADERS = [
             "Team",
             "Golfer",
-            "Division",
             "Handicap Index",
+            "Division",
             "Front Tee",
             "Front Par",
             "Front Rating",
@@ -144,7 +146,7 @@ if __name__ == "__main__":
             "Tournament CH",
         ]
         GOLFER_DATA = []
-        for golfer_db, team_db, team_golfer_link_db in golfer_team_list:
+        for golfer_db, team_db, division_db in golfer_team_list:
             # TODO: Fix handicap validity date, get relevant handicap index
             # NOTE: This will be much easier when historical handicap table is available
 
@@ -153,7 +155,7 @@ if __name__ == "__main__":
                 course_handicap_primary = 0
                 course_handicap_secondary = 0
             else:
-                tee_primary = division_tees[team_golfer_link_db.division_id]["primary"]
+                tee_primary = division_tees[division_db.id]["primary"]
                 course_handicap_primary = ahs.compute_course_handicap(
                     par=tee_primary.par,
                     rating=tee_primary.rating,
@@ -161,9 +163,7 @@ if __name__ == "__main__":
                     handicap_index=golfer_db.handicap_index,
                 )
 
-                tee_secondary = division_tees[team_golfer_link_db.division_id][
-                    "secondary"
-                ]
+                tee_secondary = division_tees[division_db.id]["secondary"]
                 course_handicap_secondary = ahs.compute_course_handicap(
                     par=tee_secondary.par,
                     rating=tee_secondary.rating,
@@ -197,7 +197,8 @@ if __name__ == "__main__":
                 f"{team_db.name}: {golfer_db.name} ({golfer_db.handicap_index}), Front: {tee_primary.name} ({tee_primary.rating}/{tee_primary.slope}) -> {course_handicap_primary:0.2f}, Back: {tee_secondary.name} ({tee_secondary.rating}/{tee_secondary.slope}) -> {course_handicap_secondary:0.2f} | Course Handicap = {course_handicap}"
             )
 
-        # Compute team handicaps for scramble
+        # Compute team handicaps
+        TEAM_DATA = None
         if tournament_db.scramble:
             print(f"Team handicaps (scramble)")
 
@@ -205,7 +206,7 @@ if __name__ == "__main__":
             TEAM_DATA = []
 
             team_names: list[str] = []
-            for golfer_db, team_db, team_golfer_link_db in golfer_team_list:
+            for golfer_db, team_db, division_db in golfer_team_list:
                 if team_db.name not in team_names:
                     team_names.append(team_db.name)
 
@@ -250,8 +251,9 @@ if __name__ == "__main__":
             csvwriter.writerow(GOLFER_HEADERS)
             csvwriter.writerows(GOLFER_DATA)
 
-            csvwriter.writerow([])
-            csvwriter.writerow(TEAM_HEADERS)
-            csvwriter.writerows(TEAM_DATA)
+            if TEAM_DATA is not None:
+                csvwriter.writerow([])
+                csvwriter.writerow(TEAM_HEADERS)
+                csvwriter.writerows(TEAM_DATA)
 
         print("Done!")
