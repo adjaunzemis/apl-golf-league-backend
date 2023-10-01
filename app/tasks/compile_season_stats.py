@@ -1,11 +1,12 @@
-import os
 from typing import List
 import numpy as np
 import pandas as pd
-from datetime import datetime
-from sqlmodel import SQLModel, Session, select, create_engine
+import pytz
+from datetime import datetime, timedelta
+from sqlmodel import Session, select, create_engine
 from dotenv import load_dotenv
 
+from app.dependencies import get_settings
 from app.models.golfer import Golfer
 from app.models.round import RoundSummary, RoundType
 from app.tasks.update_golfer_handicaps import (
@@ -81,8 +82,8 @@ def compile_season_statistics(*, session: Session, year: int):
     """ """
     print(f"Compiling season statistics for {year}")
 
-    SEASON_START_DATE = datetime(year, 4, 17)  # TODO: un-hardcode
-    PLAYOFFS_START_DATE = datetime(year, 9, 5)  # TODO: un-hardcode
+    SEASON_START_DATE = datetime(year, 4, 24, tzinfo=pytz.UTC)  # TODO: un-hardcode
+    PLAYOFFS_START_DATE = datetime(year, 9, 4, tzinfo=pytz.UTC)  # TODO: un-hardcode
     rounds = {}
     stats = {}
 
@@ -131,15 +132,41 @@ def compile_season_statistics(*, session: Session, year: int):
             if filtered_rounds_db:
                 print(f"\tCompiling statistics using {len(filtered_rounds_db)} rounds")
 
-                # Determine golfer starting and current/ending handicap index
+                # Determine golfer starting handicap index
                 golfer_starting_handicap = get_handicap_index_data(
                     session=session,
                     golfer_id=golfer_db.id,
-                    min_date=datetime(year - 3, 1, 1).date(),
+                    min_date=datetime(year - 2, 1, 1).date(),
                     max_date=SEASON_START_DATE.date(),
                     limit=10,
                     include_rounds=True,
-                )  # TODO: Change 3 year horizon to 2 year? Needed for at least one golfer...
+                )
+
+                if golfer_starting_handicap.active_handicap_index is None:
+                    # Check for qualifying scores entered after season start
+                    print(f"WARNING: Expanding starting handicap search into season")
+                    first_round = sorted(
+                        filtered_rounds_db, key=lambda r: r.date_played
+                    )[0]
+                    golfer_starting_handicap = get_handicap_index_data(
+                        session=session,
+                        golfer_id=golfer_db.id,
+                        min_date=datetime(year - 2, 1, 1).date(),
+                        max_date=(first_round.date_played - timedelta(days=1)).date(),
+                        limit=10,
+                        include_rounds=True,
+                    )
+
+                    if golfer_starting_handicap.active_handicap_index is None:
+                        print(
+                            f"WARNING: No starting handicap found - using first playing handicap to calculate"
+                        )
+                        golfer_starting_handicap.active_handicap_index = (
+                            first_round.golfer_playing_handicap
+                            - (first_round.tee_rating - first_round.tee_par)
+                        ) / (first_round.tee_slope / 113)
+
+                # Determine golfer current/ending handicap index
                 golfer_current_handicap = get_handicap_index_data(
                     session=session,
                     golfer_id=golfer_db.id,
@@ -202,14 +229,14 @@ def compile_season_statistics(*, session: Session, year: int):
                 }
 
     # Save round summaries to file
-    rounds_filename = f"data/APLGolfLeague_Rounds_{year}.csv"
+    rounds_filename = f"APLGolfLeague_Rounds_{year}.csv"
     rounds_df = pd.DataFrame(rounds)
     rounds_df = rounds_df.transpose()
     rounds_df.to_csv(rounds_filename)
     print(f"Saved rounds to file: {rounds_filename}")
 
     # Save season statistics to file
-    stats_filename = f"data/APLGolfLeague_SeasonStats_{year}.csv"
+    stats_filename = f"APLGolfLeague_SeasonStats_{year}.csv"
     stats_df = pd.DataFrame(stats)
     stats_df = stats_df.transpose()
     stats_df.to_csv(stats_filename)
@@ -219,19 +246,16 @@ def compile_season_statistics(*, session: Session, year: int):
 if __name__ == "__main__":
     load_dotenv()
 
-    DATABASE_USER = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_USER")
-    DATABASE_PASSWORD = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PASSWORD")
-    DATABASE_ADDRESS = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_URL")
-    DATABASE_PORT = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL")
-    DATABASE_NAME = os.environ.get("APL_GOLF_LEAGUE_API_DATABASE_NAME")
+    settings = get_settings()
 
-    DATABASE_URL = f"mysql+mysqlconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}"
+    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_PORT = (
+        settings.apl_golf_league_api_database_port_external
+    )  # NOTE: using external port, not running from inside container
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
-    print(f"Connecting to database: {DATABASE_NAME}")
-    engine = create_engine(DATABASE_URL, echo=False)
-    SQLModel.metadata.create_all(engine)
-
-    YEAR = 2022  # TODO: un-hardcode year for analysis
+    engine = create_engine(db_uri, echo=False)
+    YEAR = 2023  # TODO: un-hardcode year for analysis
 
     with Session(engine) as session:
         compile_season_statistics(session=session, year=YEAR)
