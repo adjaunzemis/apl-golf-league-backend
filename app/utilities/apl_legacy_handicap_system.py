@@ -67,6 +67,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
         )  # truncate to nearest tenth
 
     def determine_match_hole_result(
+        self,
         home_team_gross_scores: list[int],
         away_team_gross_scores: list[int],
         team_receiving_handicap_strokes: MatchTeamDesignator,

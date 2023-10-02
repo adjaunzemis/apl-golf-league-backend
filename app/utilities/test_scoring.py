@@ -2,7 +2,7 @@ import pytest
 from datetime import date
 
 from ..models.round import RoundValidationRequest
-from ..models.match import MatchHoleResult
+from ..models.match import MatchHoleResult, MatchValidationRequest
 from .apl_handicap_system import APLHandicapSystem
 from . import scoring
 
@@ -92,8 +92,287 @@ def test_validate_round(
     assert round_response.is_valid == all(hole_is_valid)
 
 
-def test_validate_match():
-    raise NotImplementedError()
+@pytest.mark.parametrize(
+    "match_request_data, home_team_score, away_team_score, hole_results, match_is_valid",
+    [
+        # TODO: Add edge-case tests
+        (
+            {
+                "home_team_rounds": [
+                    {
+                        "course_handicap": 9,
+                        "date_played": date(year=2023, month=8, day=16),
+                        "holes": [
+                            {
+                                "number": 1,
+                                "par": 4,
+                                "stroke_index": 7,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 2,
+                                "par": 4,
+                                "stroke_index": 5,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 3,
+                                "par": 4,
+                                "stroke_index": 1,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 4,
+                                "par": 4,
+                                "stroke_index": 11,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 5,
+                                "par": 3,
+                                "stroke_index": 3,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 6,
+                                "par": 4,
+                                "stroke_index": 9,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 7,
+                                "par": 4,
+                                "stroke_index": 13,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 8,
+                                "par": 3,
+                                "stroke_index": 17,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 9,
+                                "par": 5,
+                                "stroke_index": 15,
+                                "gross_score": 6,
+                            },
+                        ],
+                    },
+                    {
+                        "course_handicap": 7,
+                        "date_played": date(year=2023, month=8, day=16),
+                        "holes": [
+                            {
+                                "number": 1,
+                                "par": 4,
+                                "stroke_index": 7,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 2,
+                                "par": 4,
+                                "stroke_index": 5,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 3,
+                                "par": 4,
+                                "stroke_index": 1,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 4,
+                                "par": 4,
+                                "stroke_index": 11,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 5,
+                                "par": 3,
+                                "stroke_index": 3,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 6,
+                                "par": 4,
+                                "stroke_index": 9,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 7,
+                                "par": 4,
+                                "stroke_index": 13,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 8,
+                                "par": 3,
+                                "stroke_index": 17,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 9,
+                                "par": 5,
+                                "stroke_index": 15,
+                                "gross_score": 5,
+                            },
+                        ],
+                    },
+                ],
+                "away_team_rounds": [
+                    {
+                        "course_handicap": 11,
+                        "date_played": date(year=2023, month=8, day=16),
+                        "holes": [
+                            {
+                                "number": 1,
+                                "par": 4,
+                                "stroke_index": 7,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 2,
+                                "par": 4,
+                                "stroke_index": 5,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 3,
+                                "par": 4,
+                                "stroke_index": 1,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 4,
+                                "par": 4,
+                                "stroke_index": 11,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 5,
+                                "par": 3,
+                                "stroke_index": 3,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 6,
+                                "par": 4,
+                                "stroke_index": 9,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 7,
+                                "par": 4,
+                                "stroke_index": 13,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 8,
+                                "par": 3,
+                                "stroke_index": 17,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 9,
+                                "par": 5,
+                                "stroke_index": 15,
+                                "gross_score": 8,
+                            },
+                        ],
+                    },
+                    {
+                        "course_handicap": 14,
+                        "date_played": date(year=2023, month=8, day=16),
+                        "holes": [
+                            {
+                                "number": 1,
+                                "par": 4,
+                                "stroke_index": 7,
+                                "gross_score": 6,
+                            },
+                            {
+                                "number": 2,
+                                "par": 4,
+                                "stroke_index": 5,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 3,
+                                "par": 4,
+                                "stroke_index": 1,
+                                "gross_score": 8,
+                            },
+                            {
+                                "number": 4,
+                                "par": 4,
+                                "stroke_index": 11,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 5,
+                                "par": 3,
+                                "stroke_index": 3,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 6,
+                                "par": 4,
+                                "stroke_index": 9,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 7,
+                                "par": 4,
+                                "stroke_index": 13,
+                                "gross_score": 5,
+                            },
+                            {
+                                "number": 8,
+                                "par": 3,
+                                "stroke_index": 17,
+                                "gross_score": 4,
+                            },
+                            {
+                                "number": 9,
+                                "par": 5,
+                                "stroke_index": 15,
+                                "gross_score": 6,
+                            },
+                        ],
+                    },
+                ],
+            },
+            6.5,
+            4.6,
+            [
+                MatchHoleResult.HOME,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.HOME,
+                MatchHoleResult.TIE,
+                MatchHoleResult.TIE,
+                MatchHoleResult.TIE,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.HOME,
+            ],
+            True,
+        ),
+    ],
+)
+def test_validate_match(
+    match_request_data, home_team_score, away_team_score, hole_results, match_is_valid
+):
+    match_request = MatchValidationRequest(**match_request_data)
+    match_response = scoring.validate_match(match_request)
+
+    assert match_response.home_team_score == home_team_score
+    assert match_response.away_team_score == away_team_score
+
+    for idx, hole_result in enumerate(match_response.hole_results):
+        assert hole_result == hole_results[idx]
+
+    assert match_response.is_valid == match_is_valid
 
 
 @pytest.mark.parametrize(

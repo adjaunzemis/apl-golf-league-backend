@@ -14,6 +14,22 @@ from .apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 def validate_round(round: RoundValidationRequest) -> RoundValidationResponse:
+    """Determines whether a given round is valid under the relevant handicap system.
+
+    Checks whether the gross score is strictly positive and less than the max allowed.
+    Aggregates per-hole validity into round validity.
+
+    Parameters
+    ----------
+    round: RoundValidationRequest
+        round data to be validated
+
+    Returns
+    -------
+    response: RoundValidationResponse
+        round data with validation
+
+    """
     # Determine handicapping system by year
     # TODO: Make a utility/factory for this
     if round.date_played.year >= 2022:
@@ -64,6 +80,23 @@ def validate_round(round: RoundValidationRequest) -> RoundValidationResponse:
 
 
 def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
+    """Determines whether a given match is valid under the relevant handicap system.
+
+    Validates each round.
+    Determines per-hole winning team and each team's match score.
+    Aggregates per-round validity into match validity.
+
+    Parameters
+    ----------
+    match: MatchValidationRequest
+        match data to be validated
+
+    Returns
+    -------
+    response: MatchValidationResponse
+        match data with validation
+
+    """
     # Determine handicapping system by year
     # TODO: Make a utility/factory for this
     date_played = match.home_team_rounds[0].date_played
@@ -83,7 +116,13 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
 
     # TODO: Calculate hole-by-hole team handicaps
     team_receiving_handicap_strokes = MatchTeamDesignator.HOME  # TODO: Implement
-    team_handicap_strokes_received = [0 for idx in range(9)]  # TODO: Implement
+    team_handicap = 0  # TODO: Implement
+    team_handicap_strokes_received = [
+        ahs.compute_hole_handicap_strokes(
+            stroke_index=hole.stroke_index, course_handicap=team_handicap
+        )
+        for hole in match.home_team_rounds[0].holes
+    ]
 
     # Initialize match response, check for match validity
     match_response = MatchValidationResponse(
