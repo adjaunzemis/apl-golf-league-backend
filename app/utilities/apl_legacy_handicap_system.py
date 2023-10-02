@@ -1,8 +1,6 @@
-from typing import List
 import numpy as np
 
 from app.models.match import MatchHoleResult, MatchTeamDesignator
-
 from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
@@ -50,7 +48,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             stroke_index=stroke_index, course_handicap=course_handicap * 2
         )
 
-    def compute_handicap_index(self, record: List[float]) -> float:
+    def compute_handicap_index(self, record: list[float]) -> float:
         # Reference: APL Golf League Handicapping
         record_sorted = np.sort(record)
         if len(record) < 4:
@@ -69,8 +67,8 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
         )  # truncate to nearest tenth
 
     def determine_match_hole_result(
-        home_team_gross_scores: List[int],
-        away_team_gross_scores: List[int],
+        home_team_gross_scores: list[int],
+        away_team_gross_scores: list[int],
         team_receiving_handicap_strokes: MatchTeamDesignator,
         team_handicap_strokes_received: int,
     ) -> MatchHoleResult:
@@ -114,7 +112,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
 
     @property
     def match_points_for_tying_total_net_score(self) -> float:
-        return 0.0
+        return 1.0
 
     @property
     def match_points_for_losing_total_net_score(self) -> float:

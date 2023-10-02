@@ -1,8 +1,8 @@
 import pytest
 from datetime import date
-from typing import List, Dict
 
-from ..models.round import RoundValidationRequest, RoundValidationResponse
+from ..models.round import RoundValidationRequest
+from ..models.match import MatchHoleResult
 from .apl_handicap_system import APLHandicapSystem
 from . import scoring
 
@@ -37,8 +37,8 @@ from . import scoring
     ],
 )
 def test_validate_round(
-    round_request_data: Dict,
-    hole_is_valid: List[bool],
+    round_request_data: dict,
+    hole_is_valid: list[bool],
 ):
     round_request = RoundValidationRequest(**round_request_data)
     round_response = scoring.validate_round(round_request)
@@ -72,3 +72,44 @@ def test_validate_round(
         assert hole_response.is_valid == hole_is_valid[hole_idx]
 
     assert round_response.is_valid == all(hole_is_valid)
+
+
+@pytest.mark.parametrize(
+    "match_hole_results, home_net_score, away_net_score, date_played, expected_home_score, expected_away_score",
+    [
+        ([MatchHoleResult.HOME] * 9, 70, 72, date.today(), 11.0, 0.0),
+        ([MatchHoleResult.AWAY] * 9, 72, 70, date.today(), 0.0, 11.0),
+        ([MatchHoleResult.TIE] * 9, 72, 72, date.today(), 5.5, 5.5),
+        (
+            [
+                MatchHoleResult.TIE,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.HOME,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.AWAY,
+                MatchHoleResult.HOME,
+                MatchHoleResult.HOME,
+                MatchHoleResult.HOME,
+            ],
+            82,
+            87,
+            date(year=2023, month=5, day=3),
+            6.5,
+            4.5,
+        ),
+    ],
+)
+def test_compute_match_score(
+    match_hole_results: list[MatchHoleResult],
+    home_net_score: int,
+    away_net_score: int,
+    date_played: date,
+    expected_home_score: float,
+    expected_away_score: float,
+):
+    (home_score, away_score) = scoring.compute_match_score(
+        match_hole_results, home_net_score, away_net_score, date_played
+    )
+    assert home_score == expected_home_score
+    assert away_score == expected_away_score

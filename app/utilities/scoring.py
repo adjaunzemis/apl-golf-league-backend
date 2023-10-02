@@ -1,5 +1,5 @@
-from typing import List, Union
 from datetime import datetime, date
+from typing import Union
 
 from ..models.hole_result import HoleResultValidationResponse
 from ..models.round import RoundValidationRequest, RoundValidationResponse
@@ -73,11 +73,11 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
         ahs = APLLegacyHandicapSystem()
 
     # Validate rounds
-    home_team_round_responses: List[RoundValidationResponse] = []
+    home_team_round_responses: list[RoundValidationResponse] = []
     for home_team_round in match.home_team_rounds:
         home_team_round_responses.append(validate_round(home_team_round))
 
-    away_team_round_responses: List[RoundValidationResponse] = []
+    away_team_round_responses: list[RoundValidationResponse] = []
     for away_team_round in match.away_team_rounds:
         away_team_round_responses.append(validate_round(away_team_round))
 
@@ -96,7 +96,7 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
 
     if match_response.is_valid:
         # Compute match hole-by-hole results and team net scores
-        match_hole_results: List[MatchHoleResult] = []
+        match_hole_results: list[MatchHoleResult] = []
         home_team_net_score = 0.0
         away_team_net_score = 0.0
         for hole_idx in range(len(match_response.home_team_rounds[0].holes)):
@@ -143,7 +143,7 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
 
 
 def compute_match_score(
-    match_hole_results: List[MatchTeamDesignator],
+    match_hole_results: list[MatchHoleResult],
     home_net_score: int,
     away_net_score: int,
     date_played: Union[datetime, date],
