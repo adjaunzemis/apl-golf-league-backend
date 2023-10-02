@@ -34,6 +34,24 @@ from . import scoring
             },
             [False, False, False],
         ),
+        (
+            {
+                "course_handicap": 6,
+                "date_played": date(year=2023, month=7, day=19),
+                "holes": [
+                    {"number": 1, "par": 4, "stroke_index": 7, "gross_score": 7},
+                    {"number": 2, "par": 4, "stroke_index": 5, "gross_score": 4},
+                    {"number": 3, "par": 4, "stroke_index": 1, "gross_score": 7},
+                    {"number": 4, "par": 4, "stroke_index": 11, "gross_score": 9},
+                    {"number": 5, "par": 3, "stroke_index": 3, "gross_score": 4},
+                    {"number": 6, "par": 4, "stroke_index": 9, "gross_score": 4},
+                    {"number": 7, "par": 4, "stroke_index": 13, "gross_score": 6},
+                    {"number": 8, "par": 3, "stroke_index": 17, "gross_score": 4},
+                    {"number": 9, "par": 5, "stroke_index": 15, "gross_score": 4},
+                ],
+            },
+            [True, True, True, True, True, True, True, True, True],
+        ),
     ],
 )
 def test_validate_round(
@@ -72,6 +90,10 @@ def test_validate_round(
         assert hole_response.is_valid == hole_is_valid[hole_idx]
 
     assert round_response.is_valid == all(hole_is_valid)
+
+
+def test_validate_match():
+    raise NotImplementedError()
 
 
 @pytest.mark.parametrize(
