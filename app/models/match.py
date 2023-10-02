@@ -15,11 +15,6 @@ from .round import (
 from .match_round_link import MatchRoundLink
 
 
-class MatchTeamDesignator(str, Enum):
-    HOME = "Home"
-    AWAY = "Away"
-
-
 class MatchHoleResult(str, Enum):
     """Indicates which team won the hole during the match."""
 
@@ -104,5 +99,5 @@ class MatchValidationResponse(BaseModel):
     away_team_rounds: List[RoundValidationResponse]
     home_team_score: float = 0.0
     away_team_score: float = 0.0
-    hole_results: List[MatchHoleResult] = []
+    hole_results: List[MatchHoleResult] = []  # TODO: Expand with handicap strokes?
     is_valid: bool = False

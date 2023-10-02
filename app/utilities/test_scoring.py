@@ -344,7 +344,7 @@ def test_validate_round(
                 ],
             },
             6.5,
-            4.6,
+            4.5,
             [
                 MatchHoleResult.HOME,
                 MatchHoleResult.AWAY,
