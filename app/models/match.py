@@ -15,14 +15,6 @@ from .round import (
 from .match_round_link import MatchRoundLink
 
 
-class MatchHoleResult(str, Enum):
-    """Indicates which team won the hole during the match."""
-
-    HOME = "Home"
-    AWAY = "Away"
-    TIE = "Tie"
-
-
 class MatchBase(SQLModel):
     flight_id: int = Field(default=None, foreign_key="flight.id")
     week: int
@@ -89,6 +81,26 @@ class MatchDataWithCount(SQLModel):
     matches: List[MatchData]
 
 
+class MatchHoleWinner(str, Enum):
+    """Indicates which team won the hole during the match."""
+
+    HOME = "Home"
+    AWAY = "Away"
+    TIE = "Tie"
+
+
+class MatchHoleResult(BaseModel):
+    """Container for results from a hole in a match."""
+
+    home_team_gross_score: int
+    home_team_net_score: int
+    home_team_handicap_strokes: int
+    away_team_gross_score: int
+    away_team_net_score: int
+    away_team_handicap_strokes: int
+    winner: MatchHoleWinner
+
+
 class MatchValidationRequest(BaseModel):
     home_team_rounds: List[RoundValidationRequest]
     away_team_rounds: List[RoundValidationRequest]
@@ -99,5 +111,5 @@ class MatchValidationResponse(BaseModel):
     away_team_rounds: List[RoundValidationResponse]
     home_team_score: float = 0.0
     away_team_score: float = 0.0
-    hole_results: List[MatchHoleResult] = []  # TODO: Expand with handicap strokes?
+    hole_results: List[MatchHoleResult] = []
     is_valid: bool = False

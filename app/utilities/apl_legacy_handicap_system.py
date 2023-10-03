@@ -1,6 +1,6 @@
 import numpy as np
 
-from app.models.match import MatchHoleResult
+from app.models.match import MatchHoleResult, MatchHoleWinner
 from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
@@ -112,21 +112,29 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             self.maximum_handicap_index,
         )  # truncate to nearest tenth
 
-    def determine_match_hole_result(
+    def compute_match_hole_result(
         self,
         home_team_gross_scores: list[int],
         home_team_handicap_strokes: int,
         away_team_gross_scores: list[int],
         away_team_handicap_strokes: int,
     ) -> MatchHoleResult:
-        home_team_net_score = sum(home_team_gross_scores) - home_team_handicap_strokes
-        away_team_net_score = sum(away_team_gross_scores) - away_team_handicap_strokes
-
-        if home_team_net_score < away_team_net_score:
-            return MatchHoleResult.HOME
-        elif away_team_net_score < home_team_net_score:
-            return MatchHoleResult.AWAY
-        return MatchHoleResult.TIE
+        result = MatchHoleResult(
+            home_team_gross_score=sum(home_team_gross_scores),
+            home_team_net_score=sum(home_team_gross_scores)
+            - home_team_handicap_strokes,
+            home_team_handicap_strokes=home_team_handicap_strokes,
+            away_team_gross_score=sum(away_team_gross_scores),
+            away_team_net_score=sum(away_team_gross_scores)
+            - away_team_handicap_strokes,
+            away_team_handicap_strokes=away_team_handicap_strokes,
+            winner=MatchHoleWinner.TIE,
+        )
+        if result.home_team_net_score < result.away_team_net_score:
+            result.winner = MatchHoleWinner.HOME
+        elif result.away_team_net_score < result.home_team_net_score:
+            result.winner = MatchHoleWinner.AWAY
+        return result
 
     @property
     def maximum_handicap_index(self) -> float:

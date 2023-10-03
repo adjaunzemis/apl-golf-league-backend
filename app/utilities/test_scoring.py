@@ -2,7 +2,7 @@ import pytest
 from datetime import date
 
 from ..models.round import RoundValidationRequest
-from ..models.match import MatchHoleResult, MatchValidationRequest
+from ..models.match import MatchHoleResult, MatchHoleWinner, MatchValidationRequest
 from .apl_handicap_system import APLHandicapSystem
 from . import scoring
 
@@ -93,7 +93,7 @@ def test_validate_round(
 
 
 @pytest.mark.parametrize(
-    "match_request_data, home_team_score, away_team_score, hole_results, match_is_valid",
+    "match_request_data, home_team_score, away_team_score, hole_results_data, match_is_valid",
     [
         # TODO: Add edge-case tests
         (
@@ -346,22 +346,98 @@ def test_validate_round(
             6.5,
             4.5,
             [
-                MatchHoleResult.HOME,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.HOME,
-                MatchHoleResult.TIE,
-                MatchHoleResult.TIE,
-                MatchHoleResult.TIE,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.HOME,
+                {
+                    "home_team_gross_score": 9,
+                    "home_team_net_score": 9,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 12,
+                    "away_team_net_score": 11,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.HOME,
+                },
+                {
+                    "home_team_gross_score": 10,
+                    "home_team_net_score": 10,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 10,
+                    "away_team_net_score": 9,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.AWAY,
+                },
+                {
+                    "home_team_gross_score": 12,
+                    "home_team_net_score": 12,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 14,
+                    "away_team_net_score": 13,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.HOME,
+                },
+                {
+                    "home_team_gross_score": 8,
+                    "home_team_net_score": 8,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 9,
+                    "away_team_net_score": 8,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.TIE,
+                },
+                {
+                    "home_team_gross_score": 8,
+                    "home_team_net_score": 8,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 9,
+                    "away_team_net_score": 8,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.TIE,
+                },
+                {
+                    "home_team_gross_score": 8,
+                    "home_team_net_score": 8,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 9,
+                    "away_team_net_score": 8,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.TIE,
+                },
+                {
+                    "home_team_gross_score": 11,
+                    "home_team_net_score": 11,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 10,
+                    "away_team_net_score": 9,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.AWAY,
+                },
+                {
+                    "home_team_gross_score": 8,
+                    "home_team_net_score": 8,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 8,
+                    "away_team_net_score": 7,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.AWAY,
+                },
+                {
+                    "home_team_gross_score": 11,
+                    "home_team_net_score": 11,
+                    "home_team_handicap_strokes": 0,
+                    "away_team_gross_score": 14,
+                    "away_team_net_score": 13,
+                    "away_team_handicap_strokes": 1,
+                    "winner": MatchHoleWinner.HOME,
+                },
             ],
             True,
         ),
     ],
 )
 def test_validate_match(
-    match_request_data, home_team_score, away_team_score, hole_results, match_is_valid
+    match_request_data: dict,
+    home_team_score: float,
+    away_team_score: float,
+    hole_results_data: dict,
+    match_is_valid: bool,
 ):
     match_request = MatchValidationRequest(**match_request_data)
     match_response = scoring.validate_match(match_request)
@@ -369,32 +445,71 @@ def test_validate_match(
     assert match_response.home_team_score == home_team_score
     assert match_response.away_team_score == away_team_score
 
+    hole_results = [MatchHoleResult(**r) for r in hole_results_data]
     for idx, hole_result in enumerate(match_response.hole_results):
-        assert hole_result == hole_results[idx]
+        expected_result = hole_results[idx]
+        assert (
+            hole_result.home_team_gross_score == expected_result.home_team_gross_score
+        )
+        assert hole_result.home_team_net_score == expected_result.home_team_net_score
+        assert (
+            hole_result.home_team_handicap_strokes
+            == expected_result.home_team_handicap_strokes
+        )
+        assert (
+            hole_result.away_team_gross_score == expected_result.away_team_gross_score
+        )
+        assert hole_result.away_team_net_score == expected_result.away_team_net_score
+        assert (
+            hole_result.away_team_handicap_strokes
+            == expected_result.away_team_handicap_strokes
+        )
+        assert hole_result.winner == expected_result.winner
 
     assert match_response.is_valid == match_is_valid
 
 
 @pytest.mark.parametrize(
-    "match_hole_results, home_net_score, away_net_score, date_played, expected_home_score, expected_away_score",
+    "hole_winners, home_net_scores, away_net_scores, date_played, expected_home_score, expected_away_score",
     [
-        ([MatchHoleResult.HOME] * 9, 70, 72, date.today(), 11.0, 0.0),
-        ([MatchHoleResult.AWAY] * 9, 72, 70, date.today(), 0.0, 11.0),
-        ([MatchHoleResult.TIE] * 9, 72, 72, date.today(), 5.5, 5.5),
+        (
+            [MatchHoleWinner.HOME] * 9,
+            [36, 27],
+            [36, 36],
+            date.today(),
+            11.0,
+            0.0,
+        ),
+        (
+            [MatchHoleWinner.AWAY] * 9,
+            [36, 36],
+            [36, 27],
+            date.today(),
+            0.0,
+            11.0,
+        ),
+        (
+            [MatchHoleWinner.TIE] * 9,
+            [36, 36],
+            [36, 36],
+            date.today(),
+            5.5,
+            5.5,
+        ),
         (
             [
-                MatchHoleResult.TIE,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.HOME,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.AWAY,
-                MatchHoleResult.HOME,
-                MatchHoleResult.HOME,
-                MatchHoleResult.HOME,
+                MatchHoleWinner.TIE,
+                MatchHoleWinner.AWAY,
+                MatchHoleWinner.AWAY,
+                MatchHoleWinner.HOME,
+                MatchHoleWinner.AWAY,
+                MatchHoleWinner.AWAY,
+                MatchHoleWinner.HOME,
+                MatchHoleWinner.HOME,
+                MatchHoleWinner.HOME,
             ],
-            82,
-            87,
+            [42, 40],
+            [43, 44],
             date(year=2023, month=5, day=3),
             6.5,
             4.5,
@@ -402,15 +517,18 @@ def test_validate_match(
     ],
 )
 def test_compute_match_score(
-    match_hole_results: list[MatchHoleResult],
-    home_net_score: int,
-    away_net_score: int,
+    hole_winners: list[MatchHoleWinner],
+    home_net_scores: list[int],
+    away_net_scores: list[int],
     date_played: date,
     expected_home_score: float,
     expected_away_score: float,
 ):
     (home_score, away_score) = scoring.compute_match_score(
-        match_hole_results, home_net_score, away_net_score, date_played
+        hole_winners=hole_winners,
+        home_net_scores=home_net_scores,
+        away_net_scores=away_net_scores,
+        date_played=date_played,
     )
     assert home_score == expected_home_score
     assert away_score == expected_away_score
