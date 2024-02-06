@@ -5,12 +5,12 @@ from fastapi import status
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from ..api import app
-from ..dependencies import get_sql_db_session
-from ..models.flight import Flight
-from ..models.division import Division
-from ..models.team import Team
-from ..models.user import User
+from app.api import app
+from app.dependencies import get_sql_db_session
+from app.models.flight import Flight
+from app.models.division import Division
+from app.models.team import Team
+from app.models.user import User
 
 
 @pytest.fixture(name="session")

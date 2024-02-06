@@ -6,11 +6,11 @@ from typing import Dict, List
 from datetime import date
 
 
-from ..api import app
-from ..dependencies import get_sql_db_session
-from ..models.round import Round, RoundValidationRequest, RoundValidationResponse
-from ..models.hole_result import HoleResult
-from ..utilities.apl_handicap_system import APLHandicapSystem
+from app.api import app
+from app.dependencies import get_sql_db_session
+from app.models.round import Round, RoundValidationRequest, RoundValidationResponse
+from app.models.hole_result import HoleResult
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 
 @pytest.fixture(name="session")

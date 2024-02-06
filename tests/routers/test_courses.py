@@ -3,12 +3,12 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from ..api import app
-from ..dependencies import get_sql_db_session
-from ..models.course import Course
-from ..models.track import Track
-from ..models.tee import Tee
-from ..models.hole import Hole
+from app.api import app
+from app.dependencies import get_sql_db_session
+from app.models.course import Course
+from app.models.track import Track
+from app.models.tee import Tee
+from app.models.hole import Hole
 
 
 @pytest.fixture(name="session")

@@ -3,9 +3,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from ..api import app
-from ..dependencies import get_sql_db_session
-from ..models.golfer import Golfer
+from app.api import app
+from app.dependencies import get_sql_db_session
+from app.models.golfer import Golfer
 
 
 @pytest.fixture(name="session")

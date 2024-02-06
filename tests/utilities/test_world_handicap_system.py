@@ -1,6 +1,6 @@
 import pytest
 
-from .world_handicap_system import WorldHandicapSystem
+from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
 @pytest.mark.parametrize(

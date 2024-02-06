@@ -1,6 +1,6 @@
 import pytest
 
-from .apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 @pytest.mark.parametrize(

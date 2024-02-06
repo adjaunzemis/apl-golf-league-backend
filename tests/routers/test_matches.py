@@ -3,10 +3,10 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from ..api import app
-from ..dependencies import get_sql_db_session
-from ..models.match import Match
-from ..models.match_round_link import MatchRoundLink
+from app.api import app
+from app.dependencies import get_sql_db_session
+from app.models.match import Match
+from app.models.match_round_link import MatchRoundLink
 
 
 @pytest.fixture(name="session")
