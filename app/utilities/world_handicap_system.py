@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 
-from .handicap_system import HandicapSystem
+from app.utilities.handicap_system import HandicapSystem
 
 
 class WorldHandicapSystem(HandicapSystem):

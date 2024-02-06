@@ -1,10 +1,10 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .golfer import Golfer
-from .flight_team_link import FlightTeamLink
-from .tournament_team_link import TournamentTeamLink
-from .team_golfer_link import TeamGolferLink
+from app.models.golfer import Golfer
+from app.models.flight_team_link import FlightTeamLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.team_golfer_link import TeamGolferLink
 
 
 class TeamBase(SQLModel):

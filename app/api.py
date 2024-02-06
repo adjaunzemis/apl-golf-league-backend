@@ -10,13 +10,13 @@ import logging
 
 from typing import List, Dict
 
-from .dependencies import (
+from app.dependencies import (
     create_sql_db_and_tables,
     create_nosql_db_and_collections,
     close_nosql_db,
     get_nosql_db_client,
 )
-from .routers import (
+from app.routers import (
     courses,
     golfers,
     teams,
@@ -30,8 +30,8 @@ from .routers import (
     payments,
     tasks,
 )
-from .utilities.custom_logger import CustomizeLogger
-from .utilities.notifications import EmailSchema, send_email
+from app.utilities.custom_logger import CustomizeLogger
+from app.utilities.notifications import EmailSchema, send_email
 
 description = """
 APL Golf League API

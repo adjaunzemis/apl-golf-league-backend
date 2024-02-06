@@ -4,8 +4,8 @@ from http import HTTPStatus
 from sqlmodel import SQLModel, Session, select
 
 
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.payment import (
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.payment import (
     LeagueDues,
     LeagueDuesPayment,
     LeagueDuesPaymentRead,
@@ -18,9 +18,9 @@ from ..models.payment import (
     TournamentEntryFeeType,
     PaymentMethod,
 )
-from ..models.user import User
-from ..models.golfer import Golfer
-from ..models.tournament import Tournament
+from app.models.user import User
+from app.models.golfer import Golfer
+from app.models.tournament import Tournament
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 

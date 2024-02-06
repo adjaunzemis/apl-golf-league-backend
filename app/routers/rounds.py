@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.round import (
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.round import (
     Round,
     RoundCreate,
     RoundData,
@@ -17,19 +17,19 @@ from ..models.round import (
     RoundValidationRequest,
     RoundValidationResponse,
 )
-from ..models.hole_result import (
+from app.models.hole_result import (
     HoleResult,
     HoleResultCreate,
     HoleResultUpdate,
     HoleResultRead,
     HoleResultReadWithHole,
 )
-from ..models.round_golfer_link import RoundGolferLink
-from ..models.tournament import Tournament
-from ..models.tournament_round_link import TournamentRoundLink
-from ..models.user import User
-from ..models.query_helpers import get_flight_rounds, get_tournament_rounds
-from ..utilities import scoring
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.tournament import Tournament
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.user import User
+from app.models.query_helpers import get_flight_rounds, get_tournament_rounds
+from app.utilities import scoring
 
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 

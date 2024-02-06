@@ -6,25 +6,25 @@ from sqlmodel import SQLModel, Session, select
 from http import HTTPStatus
 
 
-from .matches import RoundInput
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.tournament import (
+from app.routers.matches import RoundInput
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.tournament import (
     Tournament,
     TournamentCreate,
     TournamentRead,
 )
-from ..models.tournament_division_link import TournamentDivisionLink
-from ..models.tournament_round_link import TournamentRoundLink
-from ..models.tournament_team_link import TournamentTeamLink
-from ..models.round_golfer_link import RoundGolferLink
-from ..models.golfer import Golfer
-from ..models.team import Team
-from ..models.round import Round, RoundSummary, RoundType, ScoringType
-from ..models.tee import Tee
-from ..models.hole import Hole
-from ..models.hole_result import HoleResult
-from ..models.user import User
-from ..models.query_helpers import (
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.golfer import Golfer
+from app.models.team import Team
+from app.models.round import Round, RoundSummary, RoundType, ScoringType
+from app.models.tee import Tee
+from app.models.hole import Hole
+from app.models.hole_result import HoleResult
+from app.models.user import User
+from app.models.query_helpers import (
     TournamentData,
     TournamentInfoWithCount,
     get_round_summaries,
@@ -33,8 +33,8 @@ from ..models.query_helpers import (
     get_divisions_in_tournaments,
     get_teams_in_tournaments,
 )
-from ..utilities.apl_handicap_system import APLHandicapSystem
-from .utilities import upsert_division
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.routers.utilities import upsert_division
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 

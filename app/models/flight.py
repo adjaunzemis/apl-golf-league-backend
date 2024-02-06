@@ -2,11 +2,11 @@ from typing import List, Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
-from .course import Course
-from .division import Division, DivisionCreate
-from .team import Team
-from .flight_team_link import FlightTeamLink
-from .flight_division_link import FlightDivisionLink
+from app.models.course import Course
+from app.models.division import Division, DivisionCreate
+from app.models.team import Team
+from app.models.flight_team_link import FlightTeamLink
+from app.models.flight_division_link import FlightDivisionLink
 
 
 class FlightBase(SQLModel):

@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.officer import Officer, OfficerCreate, OfficerRead, OfficerUpdate
-from ..models.user import User
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.officer import Officer, OfficerCreate, OfficerRead, OfficerUpdate
+from app.models.user import User
 
 router = APIRouter(prefix="/officers", tags=["Officers"])
 

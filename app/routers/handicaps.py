@@ -8,20 +8,20 @@ from app.utilities.apl_handicap_system import APLHandicapSystem
 
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.query_helpers import (
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.query_helpers import (
     RoundSummary,
     HandicapIndexData,
     get_handicap_index_data,
     get_rounds_in_scoring_record,
 )
-from ..models.qualifying_score import (
+from app.models.qualifying_score import (
     QualifyingScore,
     QualifyingScoreCreate,
     QualifyingScoreRead,
 )
-from ..models.golfer import Golfer
-from ..models.user import User
+from app.models.golfer import Golfer
+from app.models.user import User
 
 router = APIRouter(prefix="/handicaps", tags=["Handicaps"])
 

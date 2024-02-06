@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .track import Track, TrackReadWithTees
+from app.models.track import Track, TrackReadWithTees
 
 
 class CourseBase(SQLModel):

@@ -2,7 +2,7 @@ from typing import List, Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 
-from .hole import Hole, HoleRead
+from app.models.hole import Hole, HoleRead
 
 
 class TeeGender(str, Enum):

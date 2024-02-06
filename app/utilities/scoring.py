@@ -1,16 +1,16 @@
 from datetime import datetime, date
 from typing import Union
 
-from ..models.hole_result import HoleResultValidationResponse
-from ..models.round import RoundValidationRequest, RoundValidationResponse
-from ..models.match import (
+from app.models.hole_result import HoleResultValidationResponse
+from app.models.round import RoundValidationRequest, RoundValidationResponse
+from app.models.match import (
     MatchHoleWinner,
     MatchValidationRequest,
     MatchValidationResponse,
     MatchHoleResult,
 )
-from .apl_handicap_system import APLHandicapSystem
-from .apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 def validate_round(round: RoundValidationRequest) -> RoundValidationResponse:

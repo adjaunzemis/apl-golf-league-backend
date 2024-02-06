@@ -2,7 +2,7 @@ from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 
-from .hole import Hole, HoleRead
+from app.models.hole import Hole, HoleRead
 
 
 class HoleResultBase(SQLModel):

@@ -3,16 +3,16 @@ from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 from enum import Enum
 
-from .flight import Flight, FlightRead
-from .team import Team, TeamRead
-from .round import (
+from app.models.flight import Flight, FlightRead
+from app.models.team import Team, TeamRead
+from app.models.round import (
     Round,
     RoundReadWithData,
     RoundData,
     RoundValidationRequest,
     RoundValidationResponse,
 )
-from .match_round_link import MatchRoundLink
+from app.models.match_round_link import MatchRoundLink
 
 
 class MatchBase(SQLModel):

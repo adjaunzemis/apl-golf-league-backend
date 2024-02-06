@@ -4,10 +4,10 @@ from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 from datetime import datetime, date
 
-from .tee import Tee, TeeGender, TeeRead
-from .golfer import Golfer, GolferRead
-from .round_golfer_link import RoundGolferLink
-from .hole_result import (
+from app.models.tee import Tee, TeeGender, TeeRead
+from app.models.golfer import Golfer, GolferRead
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.hole_result import (
     HoleResult,
     HoleResultReadWithHole,
     HoleResultData,
