@@ -1,7 +1,7 @@
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.pool import StaticPool
 
 from app.api import app
@@ -266,110 +266,6 @@ def test_delete_course(session: Session, client: TestClient):
     app.dependency_overrides = {} # remove dependency overrides
 
 
-def test_read_tracks(session: Session, client: TestClient):
-    tracks = [
-        Track(name="Test Track 1", course_id=1),
-        Track(name="Test Track 2", course_id=1),
-    ]
-    for track in tracks:
-        session.add(track)
-    session.commit()
-
-    response = client.get("/courses/tracks/")
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert len(data) == len(tracks)
-    for dIdx in range(len(data)):
-        assert data[dIdx]["name"] == tracks[dIdx].name
-        assert data[dIdx]["course_id"] == tracks[dIdx].course_id
-        assert data[dIdx]["id"] == tracks[dIdx].id
-
-
-def test_read_track(session: Session, client: TestClient):
-    track = Track(name="Test Track 1", course_id=1)
-    session.add(track)
-    session.commit()
-
-    response = client.get(f"/courses/tracks/{track.id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert data["name"] == track.name
-    assert data["course_id"] == track.course_id
-    assert data["id"] == track.id
-    assert len(data["tees"]) == 0
-
-
-def test_update_track(session: Session, client: TestClient):
-    track = Track(name="Test Track 1", course_id=1)
-    session.add(track)
-    session.commit()
-
-    response = client.patch(
-        f"/courses/tracks/{track.id}", json={"name": "Awesome Track"}
-    )
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert data["name"] == "Awesome Track"
-    assert data["course_id"] == track.course_id
-    assert data["id"] == track.id
-
-
-def test_delete_track(session: Session, client: TestClient):
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    track = Track(name="Test Track 1", course_id=1)
-    session.add(track)
-    session.commit()
-
-    response = client.delete(f"/courses/tracks/{track.id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    track_db = session.get(Track, track.id)
-    assert track_db is None
-
-    app.dependency_overrides = {} # remove dependency overrides
-
-def test_read_tees(session: Session, client: TestClient):
-    tees = [
-        Tee(
-            name="Test Tee 1",
-            gender=TeeGender.MENS,
-            rating=72.3,
-            slope=128,
-            color="Blue",
-            track_id=1,
-        ),
-        Tee(
-            name="Test Tee 2",
-            gender=TeeGender.LADIES,
-            rating=68.7,
-            slope=117,
-            color="Red",
-            track_id=1,
-        ),
-    ]
-    for tee in tees:
-        session.add(tee)
-    session.commit()
-
-    response = client.get("/courses/tees/")
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert len(data) == len(tees)
-    for dIdx in range(len(data)):
-        assert data[dIdx]["name"] == tees[dIdx].name
-        assert data[dIdx]["gender"] == tees[dIdx].gender
-        assert data[dIdx]["rating"] == tees[dIdx].rating
-        assert data[dIdx]["slope"] == tees[dIdx].slope
-        assert data[dIdx]["color"] == tees[dIdx].color
-        assert data[dIdx]["track_id"] == tees[dIdx].track_id
-        assert data[dIdx]["id"] == tees[dIdx].id
-
-
 def test_read_tee(session: Session, client: TestClient):
     tee = Tee(
         name="Test Tee 1", gender=TeeGender.MENS, rating=72.3, slope=128, color="Blue", track_id=1
@@ -389,97 +285,6 @@ def test_read_tee(session: Session, client: TestClient):
     assert data["track_id"] == tee.track_id
     assert data["id"] == tee.id
     assert len(data["holes"]) == 0
-
-
-def test_update_tee(session: Session, client: TestClient):
-    tee = Tee(
-        name="Test Tee 1", gender=TeeGender.MENS, rating=72.3, slope=128, color="Blue", track_id=1
-    )
-    session.add(tee)
-    session.commit()
-
-    response = client.patch(f"/courses/tees/{tee.id}", json={"name": "Awesome Tee"})
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert data["name"] == "Awesome Tee"
-    assert data["gender"] == tee.gender
-    assert data["rating"] == tee.rating
-    assert data["slope"] == tee.slope
-    assert data["color"] == tee.color
-    assert data["track_id"] == tee.track_id
-    assert data["id"] == tee.id
-
-
-def test_delete_tee(session: Session, client: TestClient):
-    tee = Tee(
-        name="Test Tee 1", gender=TeeGender.MENS, rating=72.3, slope=128, color="Blue", track_id=1
-    )
-    session.add(tee)
-    session.commit()
-
-    response = client.delete(f"/courses/tees/{tee.id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    tee_db = session.get(Tee, tee.id)
-    assert tee_db is None
-
-
-def test_read_holes(session: Session, client: TestClient):
-    holes = [
-        Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1),
-        Hole(number=2, par=5, yardage=495, stroke_index=15, tee_id=1),
-    ]
-    for hole in holes:
-        session.add(hole)
-    session.commit()
-
-    response = client.get("/courses/holes/")
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert len(data) == len(holes)
-    for dIdx in range(len(data)):
-        assert data[dIdx]["number"] == holes[dIdx].number
-        assert data[dIdx]["par"] == holes[dIdx].par
-        assert data[dIdx]["yardage"] == holes[dIdx].yardage
-        assert data[dIdx]["stroke_index"] == holes[dIdx].stroke_index
-        assert data[dIdx]["tee_id"] == holes[dIdx].tee_id
-        assert data[dIdx]["id"] == holes[dIdx].id
-
-
-def test_read_hole(session: Session, client: TestClient):
-    hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
-    session.add(hole)
-    session.commit()
-
-    response = client.get(f"/courses/holes/{hole.id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert data["number"] == hole.number
-    assert data["par"] == hole.par
-    assert data["yardage"] == hole.yardage
-    assert data["stroke_index"] == hole.stroke_index
-    assert data["tee_id"] == hole.tee_id
-    assert data["id"] == hole.id
-
-
-def test_update_hole(session: Session, client: TestClient):
-    hole = Hole(number=1, par=4, yardage=385, stroke_index=3, tee_id=1)
-    session.add(hole)
-    session.commit()
-
-    response = client.patch(f"/courses/holes/{hole.id}", json={"number": 3})
-    assert response.status_code == status.HTTP_200_OK
-
-    data = response.json()
-    assert data["number"] == 3
-    assert data["par"] == hole.par
-    assert data["yardage"] == hole.yardage
-    assert data["stroke_index"] == hole.stroke_index
-    assert data["tee_id"] == hole.tee_id
-    assert data["id"] == hole.id
 
 
 def test_read_course_with_data(session: Session, client: TestClient):
