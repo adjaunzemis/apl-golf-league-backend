@@ -12,10 +12,10 @@ from app.models.tee import Tee, TeeGender
 from app.models.hole import Hole
 from app.models.user import User
 
-async def override_get_current_user():
+
+async def override_get_current_user_admin():
     return User(username="test_user", is_admin=True, disabled=False)
 
-app.dependency_overrides[get_current_user] = override_get_current_user
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -68,7 +68,7 @@ def client_fixture(session: Session):
 def test_create_course(
     client: TestClient, name: str, year: int, address: str, phone: str, website: str
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user # force admin user
+    app.dependency_overrides[get_current_user] = override_get_current_user_admin
 
     response = client.post(
         "/courses/",
@@ -88,8 +88,9 @@ def test_create_course(
     assert data["phone"] == phone
     assert data["website"] == website
     assert data["id"] is not None
-    
-    app.dependency_overrides = {} # remove dependency overrides
+
+    app.dependency_overrides = {}  # remove dependency overrides
+
 
 def test_create_course_unauthorized(client: TestClient):
     response = client.post(
@@ -100,9 +101,10 @@ def test_create_course_unauthorized(client: TestClient):
             "address": "Test Street, Test City, ST 12345",
             "phone": "123-456-7890",
             "website": "google.com",
-        }
+        },
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
 
 @pytest.mark.parametrize(
     "name, year, address, phone, website",
@@ -120,8 +122,8 @@ def test_create_course_unauthorized(client: TestClient):
 def test_create_course_incomplete(
     client: TestClient, name: str, year: int, address: str, phone: str, website: str
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user # force admin user
-    
+    app.dependency_overrides[get_current_user] = override_get_current_user_admin
+
     response = client.post(
         "/courses/",
         json={
@@ -133,8 +135,8 @@ def test_create_course_incomplete(
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    
-    app.dependency_overrides = {} # remove dependency overrides
+
+    app.dependency_overrides = {}  # remove dependency overrides
 
 
 @pytest.mark.parametrize(
@@ -174,15 +176,15 @@ def test_create_course_incomplete(
 def test_create_course_invalid(
     client: TestClient, name: str, year: int, address: str, phone: str, website: str
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user # force admin user
+    app.dependency_overrides[get_current_user] = override_get_current_user_admin
 
     response = client.post(
         "/courses/",
         json={"name": name, "address": address, "phone": phone, "website": website},
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    
-    app.dependency_overrides = {} # remove dependency overrides
+
+    app.dependency_overrides = {}  # remove dependency overrides
 
 
 def test_read_courses(session: Session, client: TestClient):
@@ -245,7 +247,7 @@ def test_read_course(session: Session, client: TestClient):
 
 
 def test_delete_course(session: Session, client: TestClient):
-    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[get_current_user] = override_get_current_user_admin
 
     course = Course(
         name="Test Course 1",
@@ -262,13 +264,18 @@ def test_delete_course(session: Session, client: TestClient):
 
     course_db = session.get(Course, course.id)
     assert course_db is None
-    
-    app.dependency_overrides = {} # remove dependency overrides
+
+    app.dependency_overrides = {}  # remove dependency overrides
 
 
 def test_read_tee(session: Session, client: TestClient):
     tee = Tee(
-        name="Test Tee 1", gender=TeeGender.MENS, rating=72.3, slope=128, color="Blue", track_id=1
+        name="Test Tee 1",
+        gender=TeeGender.MENS,
+        rating=72.3,
+        slope=128,
+        color="Blue",
+        track_id=1,
     )
     session.add(tee)
     session.commit()
