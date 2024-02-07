@@ -7,7 +7,7 @@ from sqlmodel import SQLModel, Session, select
 
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.team import Team, TeamCreate, TeamUpdate, TeamRead
+from app.models.team import Team, TeamRead
 from app.models.team_golfer_link import TeamGolferLink, TeamRole
 from app.models.golfer import Golfer
 from app.models.flight import Flight
