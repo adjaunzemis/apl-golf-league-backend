@@ -62,7 +62,7 @@ def test_create_flight(
     assert data["course_id"] == course_id
     assert data["id"] is not None
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_create_flight_incomplete(
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -113,7 +113,7 @@ def test_create_flight_invalid(
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -204,7 +204,7 @@ def test_delete_flight(session: Session, client: TestClient):
     flight_db = session.get(Flight, flight.id)
     assert flight_db is None
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 def test_delete_flight_unauthorized(session: Session, client: TestClient):

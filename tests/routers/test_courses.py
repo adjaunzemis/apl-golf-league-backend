@@ -89,7 +89,7 @@ def test_create_course(
     assert data["website"] == website
     assert data["id"] is not None
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 def test_create_course_unauthorized(client: TestClient):
@@ -136,7 +136,7 @@ def test_create_course_incomplete(
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -184,7 +184,7 @@ def test_create_course_invalid(
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 def test_read_courses(session: Session, client: TestClient):
@@ -265,7 +265,7 @@ def test_delete_course(session: Session, client: TestClient):
     course_db = session.get(Course, course.id)
     assert course_db is None
 
-    app.dependency_overrides = {}  # remove dependency overrides
+    app.dependency_overrides.clear()
 
 
 def test_read_tee(session: Session, client: TestClient):
