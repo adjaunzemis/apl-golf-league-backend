@@ -1,41 +1,12 @@
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
-from app.api import app
-from app.dependencies import get_sql_db_session, get_current_user
 from app.models.course import Course
 from app.models.track import Track
 from app.models.tee import Tee, TeeGender
 from app.models.hole import Hole
-from app.models.user import User
-
-
-async def override_get_current_user_admin():
-    return User(username="test_user", is_admin=True, disabled=False)
-
-
-@pytest.fixture(name="session")
-def session_fixture():
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
-
-
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
-    def get_session_override():
-        return session
-
-    app.dependency_overrides[get_sql_db_session] = get_session_override
-    client = TestClient(app)
-    yield client
-    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -66,11 +37,14 @@ def client_fixture(session: Session):
     ],
 )
 def test_create_course(
-    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+    client_admin: TestClient,
+    name: str,
+    year: int,
+    address: str,
+    phone: str,
+    website: str,
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user_admin
-
-    response = client.post(
+    response = client_admin.post(
         "/courses/",
         json={
             "name": name,
@@ -89,11 +63,9 @@ def test_create_course(
     assert data["website"] == website
     assert data["id"] is not None
 
-    app.dependency_overrides.clear()
 
-
-def test_create_course_unauthorized(client: TestClient):
-    response = client.post(
+def test_create_course_unauthorized(client_unauthorized: TestClient):
+    response = client_unauthorized.post(
         "/courses/",
         json={
             "name": "Test Course",
@@ -120,11 +92,14 @@ def test_create_course_unauthorized(client: TestClient):
     ],
 )
 def test_create_course_incomplete(
-    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+    client_admin: TestClient,
+    name: str,
+    year: int,
+    address: str,
+    phone: str,
+    website: str,
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user_admin
-
-    response = client.post(
+    response = client_admin.post(
         "/courses/",
         json={
             "name": name,
@@ -135,8 +110,6 @@ def test_create_course_incomplete(
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
-    app.dependency_overrides.clear()
 
 
 @pytest.mark.parametrize(
@@ -174,20 +147,27 @@ def test_create_course_incomplete(
     ],
 )
 def test_create_course_invalid(
-    client: TestClient, name: str, year: int, address: str, phone: str, website: str
+    client_admin: TestClient,
+    name: str,
+    year: int,
+    address: str,
+    phone: str,
+    website: str,
 ):
-    app.dependency_overrides[get_current_user] = override_get_current_user_admin
-
-    response = client.post(
+    response = client_admin.post(
         "/courses/",
-        json={"name": name, "address": address, "phone": phone, "website": website},
+        json={
+            "name": name,
+            "year": year,
+            "address": address,
+            "phone": phone,
+            "website": website,
+        },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    app.dependency_overrides.clear()
 
-
-def test_read_courses(session: Session, client: TestClient):
+def test_read_courses(session: Session, client_unauthorized: TestClient):
     courses = [
         Course(
             name="Test Course 1",
@@ -208,7 +188,7 @@ def test_read_courses(session: Session, client: TestClient):
         session.add(course)
     session.commit()
 
-    response = client.get("/courses/")
+    response = client_unauthorized.get("/courses/")
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -222,7 +202,7 @@ def test_read_courses(session: Session, client: TestClient):
         assert data[dIdx]["id"] == courses[dIdx].id
 
 
-def test_read_course(session: Session, client: TestClient):
+def test_read_course(session: Session, client_unauthorized: TestClient):
     course = Course(
         name="Test Course 1",
         year=2021,
@@ -233,7 +213,7 @@ def test_read_course(session: Session, client: TestClient):
     session.add(course)
     session.commit()
 
-    response = client.get(f"/courses/{course.id}")
+    response = client_unauthorized.get(f"/courses/{course.id}")
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -246,9 +226,7 @@ def test_read_course(session: Session, client: TestClient):
     assert len(data["tracks"]) == 0
 
 
-def test_delete_course(session: Session, client: TestClient):
-    app.dependency_overrides[get_current_user] = override_get_current_user_admin
-
+def test_delete_course(session: Session, client_admin: TestClient):
     course = Course(
         name="Test Course 1",
         year=2021,
@@ -259,16 +237,14 @@ def test_delete_course(session: Session, client: TestClient):
     session.add(course)
     session.commit()
 
-    response = client.delete(f"/courses/{course.id}")
+    response = client_admin.delete(f"/courses/{course.id}")
     assert response.status_code == status.HTTP_200_OK
 
     course_db = session.get(Course, course.id)
     assert course_db is None
 
-    app.dependency_overrides.clear()
 
-
-def test_read_tee(session: Session, client: TestClient):
+def test_read_tee(session: Session, client_unauthorized: TestClient):
     tee = Tee(
         name="Test Tee 1",
         gender=TeeGender.MENS,
@@ -280,7 +256,7 @@ def test_read_tee(session: Session, client: TestClient):
     session.add(tee)
     session.commit()
 
-    response = client.get(f"/courses/tees/{tee.id}")
+    response = client_unauthorized.get(f"/courses/tees/{tee.id}")
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -294,7 +270,7 @@ def test_read_tee(session: Session, client: TestClient):
     assert len(data["holes"]) == 0
 
 
-def test_read_course_with_data(session: Session, client: TestClient):
+def test_read_course_with_data(session: Session, client_unauthorized: TestClient):
     course = Course(
         name="Test Course",
         year=2021,
@@ -335,7 +311,7 @@ def test_read_course_with_data(session: Session, client: TestClient):
         session.add(hole)
     session.commit()
 
-    response = client.get(f"/courses/{course.id}")
+    response = client_unauthorized.get(f"/courses/{course.id}")
     assert response.status_code == status.HTTP_200_OK
 
     course_data = response.json()
