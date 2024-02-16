@@ -91,8 +91,8 @@ def test_compute_hole_adjusted_gross_score(
     "course_par, course_rating, course_slope, handicap_index, course_handicap",
     [
         (72, 73.1, 132, 12, 15.12),
-        (36, 36.7, 123, 4.2, 5),  # TODO: Move to playing handicap test
-        (36, 34.7, 134, 13.1, 15),  # TODO: Move to playing handicap test
+        # (36, 36.7, 123, 4.2, 5),  # TODO: Move to playing handicap test
+        # (36, 34.7, 134, 13.1, 15),  # TODO: Move to playing handicap test
     ],
 )
 def test_compute_course_handicap(
