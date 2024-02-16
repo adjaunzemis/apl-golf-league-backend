@@ -8,6 +8,7 @@ from app.models.round import (
 )
 from app.utilities.apl_handicap_system import APLHandicapSystem
 
+
 @pytest.mark.parametrize(
     "round_request_data, hole_is_valid",
     [

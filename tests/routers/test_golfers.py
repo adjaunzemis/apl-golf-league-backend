@@ -14,7 +14,9 @@ from app.models.golfer import Golfer, GolferAffiliation
     ],
 )
 def test_create_golfer(client_unauthorized: TestClient, name: str, affiliation: str):
-    response = client_unauthorized.post("/golfers/", json={"name": name, "affiliation": affiliation})
+    response = client_unauthorized.post(
+        "/golfers/", json={"name": name, "affiliation": affiliation}
+    )
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -38,8 +40,12 @@ def test_create_golfer_incomplete(client_unauthorized: TestClient):
         ("Test Golfer", "BAD_AFFILIATION"),
     ],
 )
-def test_create_golfer_invalid(client_unauthorized: TestClient, name: str, affiliation: str):
-    response = client_unauthorized.post("/golfers/", json={"name": name, "affiliation": affiliation})
+def test_create_golfer_invalid(
+    client_unauthorized: TestClient, name: str, affiliation: str
+):
+    response = client_unauthorized.post(
+        "/golfers/", json={"name": name, "affiliation": affiliation}
+    )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
@@ -103,7 +109,9 @@ def test_update_golfer_unauthorized(session: Session, client_unauthorized: TestC
     session.add(golfer)
     session.commit()
 
-    response = client_unauthorized.patch(f"/golfers/{golfer.id}", json={"name": "New Golfer"})
+    response = client_unauthorized.patch(
+        f"/golfers/{golfer.id}", json={"name": "New Golfer"}
+    )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
