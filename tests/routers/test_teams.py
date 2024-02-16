@@ -1,11 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
-from app.api import app
-from app.dependencies import get_current_user, get_sql_db_session
 from app.models.division import Division
 from app.models.flight import Flight
 from app.models.flight_division_link import FlightDivisionLink
@@ -14,36 +11,10 @@ from app.models.payment import LeagueDues, LeagueDuesType
 from app.models.team import Team
 from app.models.team_golfer_link import TeamGolferLink, TeamRole
 from app.models.tee import TeeGender
-from app.models.user import User
 
 
-async def override_get_current_user_admin():
-    return User(username="test_user", is_admin=True, disabled=False)
-
-
-@pytest.fixture(name="session")
-def session_fixture():
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
-
-
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
-    def get_session_override():
-        return session
-
-    app.dependency_overrides[get_sql_db_session] = get_session_override
-    client = TestClient(app)
-    yield client
-    app.dependency_overrides.clear()
-
-
-def test_create_team_without_flight_or_tournament(client: TestClient):
-    response = client.post(
+def test_create_team_without_flight_or_tournament(client_unauthorized: TestClient):
+    response = client_unauthorized.post(
         "/teams/", json={"name": "Test Team Name", "golfer_data": []}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -67,7 +38,11 @@ def test_create_team_without_flight_or_tournament(client: TestClient):
     ],
 )
 def test_create_team_flight(
-    session: Session, client: TestClient, name: str, flight_id: int, golfer_data: list
+    session: Session,
+    client_unauthorized: TestClient,
+    name: str,
+    flight_id: int,
+    golfer_data: list,
 ):
     for g in golfer_data:
         session.add(Golfer(name=g["golfer_name"]))
@@ -77,7 +52,7 @@ def test_create_team_flight(
 
     session.commit()
 
-    response = client.post(
+    response = client_unauthorized.post(
         "/teams/",
         json={"name": name, "flight_id": flight_id, "golfer_data": golfer_data},
     )
@@ -92,9 +67,9 @@ def test_create_team_flight(
     "name, flight_id, golfer_data", [(None, 1, []), ("Test Team Name", 1, None)]
 )
 def test_create_team_flight_incomplete(
-    client: TestClient, name: str, flight_id: int, golfer_data: list
+    client_unauthorized: TestClient, name: str, flight_id: int, golfer_data: list
 ):
-    response = client.post(
+    response = client_unauthorized.post(
         "/teams/",
         json={"name": name, "flight_id": flight_id, "golfer_data": golfer_data},
     )
@@ -110,16 +85,16 @@ def test_create_team_flight_incomplete(
     ],
 )
 def test_create_team_flight_invalid(
-    client: TestClient, name: str, flight_id: int, golfer_data: list
+    client_unauthorized: TestClient, name: str, flight_id: int, golfer_data: list
 ):
-    response = client.post(
+    response = client_unauthorized.post(
         "/teams/",
         json={"name": name, "flight_id": flight_id, "golfer_data": golfer_data},
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_read_teams(session: Session, client: TestClient):
+def test_read_teams(session: Session, client_unauthorized: TestClient):
     golfers = [
         Golfer(name="Test Golfer 1", id=1),
         Golfer(name="Test Golfer 2", id=2),
@@ -149,7 +124,7 @@ def test_read_teams(session: Session, client: TestClient):
 
     session.commit()
 
-    response = client.get("/teams/")
+    response = client_unauthorized.get("/teams/")
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -159,7 +134,7 @@ def test_read_teams(session: Session, client: TestClient):
         assert data[dIdx]["id"] == teams[dIdx].id
 
 
-def test_read_team_flight(session: Session, client: TestClient):
+def test_read_team_flight(session: Session, client_unauthorized: TestClient):
     golfers = [
         Golfer(name="Test Golfer 1", id=1),
         Golfer(name="Test Golfer 2", id=2),
@@ -187,7 +162,7 @@ def test_read_team_flight(session: Session, client: TestClient):
 
     session.commit()
 
-    response = client.get(f"/teams/{team.id}")
+    response = client_unauthorized.get(f"/teams/{team.id}")
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
@@ -195,26 +170,22 @@ def test_read_team_flight(session: Session, client: TestClient):
     assert data["id"] == team.id
 
 
-def test_delete_team(session: Session, client: TestClient):
-    app.dependency_overrides[get_current_user] = override_get_current_user_admin
-
+def test_delete_team(session: Session, client_admin: TestClient):
     team = Team(name="Test Team 1", flight_id=1)
     session.add(team)
     session.commit()
 
-    response = client.delete(f"/teams/{team.id}")
+    response = client_admin.delete(f"/teams/{team.id}")
     assert response.status_code == status.HTTP_200_OK
 
     team_db = session.get(Team, team.id)
     assert team_db is None
 
-    app.dependency_overrides.clear()
 
-
-def test_delete_team_unauthorized(session: Session, client: TestClient):
+def test_delete_team_unauthorized(session: Session, client_unauthorized: TestClient):
     team = Team(name="Test Team 1", flight_id=1)
     session.add(team)
     session.commit()
 
-    response = client.delete(f"/teams/{team.id}")
+    response = client_unauthorized.delete(f"/teams/{team.id}")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
