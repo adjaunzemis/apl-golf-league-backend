@@ -115,7 +115,7 @@ def test_read_flights(session: Session, client_unauthorized: TestClient):
     session.commit()
 
     response = client_unauthorized.get("/flights/")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["num_flights"] == len(flights)

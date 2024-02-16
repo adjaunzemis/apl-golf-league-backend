@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import status
 from datetime import date
 
 from app.models.round import (
@@ -45,7 +46,7 @@ def test_validate_round(
 ):
     """Replicates `test_scoring.py::test_validate_round()` using API endpoint."""
     response = client_admin.post(f"/rounds/validate/", json=round_request_data)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     ahs = APLHandicapSystem()
     round_request = RoundValidationRequest(**round_request_data)
