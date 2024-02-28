@@ -69,3 +69,8 @@ class HoleResultValidationResponse(HoleResultValidationRequest):
     net_score: int
     max_gross_score: int
     is_valid: bool = False
+
+
+class HoleResultSubmissionResponse(HoleResultValidationResponse):
+    hole_result_id: int
+    hole_id: int
