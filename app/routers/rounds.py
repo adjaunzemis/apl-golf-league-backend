@@ -254,7 +254,7 @@ async def submit_round(
     holes_db = session.exec(select(Hole).where(Hole.tee_id == round.tee_id)).all()
     if len(holes_db) != len(round.holes):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Expected {len(round.holes)} holes, found {len(holes_db)} in database for tee (id={round.tee_id})",
         )
     holes_db = sorted(holes_db, key=lambda h: h.number)
@@ -264,7 +264,11 @@ async def submit_round(
         tee_id=round.tee_id,
         type=round.round_type,
         scoring_type=round.scoring_type,
-        date_played=round.date_played,
+        date_played=datetime(
+            year=round.date_played.year,
+            month=round.date_played.month,
+            day=round.date_played.day,
+        ),
         date_updated=datetime.today(),
     )
     session.add(round_db)
