@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from http import HTTPStatus
 from sqlmodel import Session, select
 from datetime import datetime
-from app.utilities.apl_handicap_system import APLHandicapSystem
 
+from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
+from app.database import handicap as db_handicap
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.query_helpers import (
     RoundSummary,
@@ -178,3 +179,17 @@ async def delete_qualifying_score(
     session.delete(qualifying_score_db)
     session.commit()
     return {"ok": True}
+
+
+@router.get("/{golfer_id}")
+async def get_golfer_handicap_index(
+    *, session: Session = Depends(get_sql_db_session), golfer_id: int
+):
+    handicap_history = db_handicap.get_handicap_history_for_golfer(
+        session=session, golfer_id=golfer_id
+    )
+    if len(handicap_history) == 0:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, "No handicap history found for golfer"
+        )
+    return handicap_history[-1].handicap_index
