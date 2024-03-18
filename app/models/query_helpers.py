@@ -5,6 +5,7 @@ from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
 from app.models.course import Course
+from app.models.handicap import HandicapIndex
 from app.models.track import Track
 from app.models.tee import Tee
 from app.models.hole import Hole
@@ -1524,3 +1525,15 @@ def get_golfer_year_joined(session: Session, golfer_id: int) -> int:
     if not oldest_round_date:
         return None
     return oldest_round_date.year
+
+
+def get_golfer_handicap_index(session: Session, golfer_id: int) -> float:
+    handicap = session.exec(
+        select(HandicapIndex.handicap_index)
+        .where(HandicapIndex.golfer_id == golfer_id)
+        .order_by(Round.date_played)
+        .limit(1)
+    ).one_or_none()
+    if handicap is None:
+        return None
+    return handicap.handicap_index
