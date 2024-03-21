@@ -21,6 +21,7 @@ class FlightBase(SQLModel):
     signup_stop_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     weeks: Optional[int] = None
+    tee_times: Optional[str] = None
     locked: Optional[bool] = False
 
 
@@ -48,6 +49,7 @@ class FlightUpdate(SQLModel):
     signup_stop_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     weeks: Optional[int] = None
+    tee_times: Optional[str] = None
     locked: Optional[bool] = None
 
 
