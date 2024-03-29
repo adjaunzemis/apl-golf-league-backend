@@ -508,9 +508,7 @@ def update_team_signups(
             session.delete(team_golfer_link_db)
             session.commit()
 
-            if (
-                team_data.flight_id
-            ):  # delete flight dues record if unpaid and golfer not on other flight teams
+            if team_data.flight_id:  # delete flight dues record if unpaid and golfer not on other flight teams
                 # TODO: Implement find/delete of unpaid and unneeded flight dues records
                 print(
                     f"WARNING: Flight dues payment record deleting not implemented yet!"

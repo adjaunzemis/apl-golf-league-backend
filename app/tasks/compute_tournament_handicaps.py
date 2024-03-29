@@ -81,7 +81,6 @@ if __name__ == "__main__":
     engine = create_engine(db_uri, echo=False)
 
     with Session(engine) as session:
-
         # Get tournament and course info
         tournament_db = session.exec(
             select(Tournament).where(Tournament.id == TOURNAMENT_ID)

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/officers", tags=["Officers"])
 async def read_officers(
     *,
     session: Session = Depends(get_sql_db_session),
-    year: int = Query(default=None, ge=2000)
+    year: int = Query(default=None, ge=2000),
 ):
     if year:  # filter to a certain year
         officer_ids = session.exec(select(Officer.id).where(Officer.year == year)).all()
@@ -28,7 +28,7 @@ async def create_officer(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    officer: OfficerCreate
+    officer: OfficerCreate,
 ):
     officer_db = Officer.from_orm(officer)
     session.add(officer_db)
@@ -53,7 +53,7 @@ async def update_officer(
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     officer_id: int,
-    officer: OfficerUpdate
+    officer: OfficerUpdate,
 ):
     officer_db = session.get(Officer, officer_id)
     if not officer_db:
@@ -72,7 +72,7 @@ async def delete_officer(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    officer_id: int
+    officer_id: int,
 ):
     officer_db = session.get(Officer, officer_id)
     if not officer_db:

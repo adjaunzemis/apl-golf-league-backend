@@ -23,7 +23,7 @@ async def read_golfers(
     *,
     session: Session = Depends(get_sql_db_session),
     offset: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, le=100)
+    limit: int = Query(default=100, le=100),
 ):
     # TODO: Process query parameters to further limit golfer results returned from database
     golfer_ids = session.exec(select(Golfer.id).offset(offset).limit(limit)).all()
@@ -56,7 +56,7 @@ async def read_golfer(
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
     min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
-    max_date: date = Query(default=date.today() + timedelta(days=1))
+    max_date: date = Query(default=date.today() + timedelta(days=1)),
 ):
     golfer_db = get_golfers(
         session=session,
@@ -79,7 +79,7 @@ async def update_golfer(
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     golfer_id: int,
-    golfer: GolferUpdate
+    golfer: GolferUpdate,
 ):
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
@@ -98,7 +98,7 @@ async def delete_golfer(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    golfer_id: int
+    golfer_id: int,
 ):
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
@@ -113,6 +113,6 @@ async def read_golfer_team_data(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
-    year: int = Query(default=None)
+    year: int = Query(default=None),
 ):
     return get_golfer_team_data(session=session, golfer_ids=(golfer_id,), year=year)

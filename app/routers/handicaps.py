@@ -39,7 +39,7 @@ async def get_scoring_record(
     min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
     max_date: date = Query(default=date.today() + timedelta(days=1)),
     limit: int = Query(default=10),
-    use_legacy_handicapping: bool = Query(default=False)
+    use_legacy_handicapping: bool = Query(default=False),
 ):
     return get_rounds_in_scoring_record(
         session=session,
@@ -60,7 +60,7 @@ async def get_handicap_index(
     max_date: date = Query(default=date.today() + timedelta(days=1)),
     limit: int = Query(default=10),
     include_rounds: bool = Query(default=False),
-    use_legacy_handicapping: bool = Query(default=False)
+    use_legacy_handicapping: bool = Query(default=False),
 ):
     return get_handicap_index_data(
         session=session,
@@ -111,7 +111,7 @@ async def create_qualifying_score(
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
     qualifying_score: QualifyingScoreCreate,
-    use_legacy_handicapping: bool = False
+    use_legacy_handicapping: bool = False,
 ):
     # TODO: Validate current user credentials
     # Validate and submit qualifying score data
@@ -168,7 +168,7 @@ async def delete_qualifying_score(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    qualifying_score_id: int
+    qualifying_score_id: int,
 ):
     # TODO: Validate current user credentials
     qualifying_score_db = session.get(QualifyingScore, qualifying_score_id)

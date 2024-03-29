@@ -19,7 +19,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def login(
     *,
     session: Session = Depends(get_sql_db_session),
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     user = authenticate_user(
         session=session, username=form_data.username, password=form_data.password
@@ -58,7 +58,7 @@ async def change_password(
     *,
     session: Session = Depends(get_sql_db_session),
     form_data: OAuth2PasswordRequestForm = Depends(),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     user = authenticate_user(
         session=session, username=form_data.username, password=form_data.password
