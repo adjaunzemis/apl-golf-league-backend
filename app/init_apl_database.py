@@ -647,9 +647,9 @@ def add_flights(session: Session, flights_file: str, custom_courses_file: str):
                         name=division_name,
                         gender=TeeGender.MENS,
                         primary_tee_id=primary_tee_db.id if primary_tee_db else None,
-                        secondary_tee_id=secondary_tee_db.id
-                        if secondary_tee_db
-                        else None,
+                        secondary_tee_id=(
+                            secondary_tee_db.id if secondary_tee_db else None
+                        ),
                     )
                     session.add(division_db)
                     session.commit()
