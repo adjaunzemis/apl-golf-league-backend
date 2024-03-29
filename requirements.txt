@@ -76,7 +76,7 @@ starlette==0.22.0
 toml==0.10.2
 tomli==2.0.1
 typing-extensions==3.10.0.2
-urllib3==1.26.7
+urllib3==1.26.18
 uvicorn==0.15.0
 virtualenv==20.17.1
 watchgod==0.8.2
