@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime

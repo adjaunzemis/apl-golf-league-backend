@@ -16,15 +16,6 @@ from models.team import Team
 from models.team_golfer_link import TeamGolferLink, TeamRole
 from models.flight_team_link import FlightTeamLink
 from models.match import Match
-from models.round import Round
-from models.round_golfer_link import RoundGolferLink
-from models.hole_result import HoleResult
-from models.match_round_link import MatchRoundLink
-from models.tournament import Tournament
-from models.tournament_division_link import TournamentDivisionLink
-from models.tournament_team_link import TournamentTeamLink
-from models.tournament_round_link import TournamentRoundLink
-from models.officer import Officer
 from models.payment import (
     LeagueDues,
     LeagueDuesType,

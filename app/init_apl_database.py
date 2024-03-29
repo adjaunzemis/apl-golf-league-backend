@@ -43,7 +43,6 @@ from models.match import Match
 from models.match_round_link import MatchRoundLink
 from models.officer import Officer, Committee
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
-from utilities.world_handicap_system import WorldHandicapSystem
 
 
 def initialize_golfers(session: Session):

@@ -27,7 +27,6 @@ from app.models.match_round_link import MatchRoundLink
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.qualifying_score import QualifyingScore
 
-from app.utilities.world_handicap_system import WorldHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 from app.utilities.apl_handicap_system import APLHandicapSystem
 

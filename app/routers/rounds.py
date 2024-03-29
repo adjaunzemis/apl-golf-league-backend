@@ -19,7 +19,6 @@ from app.models.round import (
     RoundReadWithData,
     RoundValidationRequest,
     RoundValidationResponse,
-    ScoringType,
 )
 from app.models.hole_result import (
     HoleResult,

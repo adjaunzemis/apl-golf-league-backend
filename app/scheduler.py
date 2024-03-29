@@ -2,12 +2,8 @@
 Task Scheduler
 """
 
-import datetime
 from rocketry import Rocketry
-from rocketry.conds import cron
 
-from app.dependencies import get_sql_db_session
-from app.tasks import update_golfer_handicaps
 
 app = Rocketry(execution="async")
 
