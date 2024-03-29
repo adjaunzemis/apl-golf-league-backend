@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from http import HTTPStatus
-from typing import List, Dict
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
