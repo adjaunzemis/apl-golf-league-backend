@@ -1,7 +1,7 @@
 # install python in the container
 FROM python:3.12
 
-# copy the local requirements.txt file to the 
+# copy the local requirements.txt file to the
 # /app/requirements.txt in the container
 # (the /app dir will be created)
 COPY ./requirements.txt /app/requirements.txt
