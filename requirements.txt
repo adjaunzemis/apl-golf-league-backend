@@ -9,7 +9,7 @@ blinker==1.5
 certifi==2023.7.22
 cffi==1.14.6
 cfgv==3.3.1
-charset-normalizer==2.0.6
+charset-normalizer==3.3.2
 click==8.0.1
 colorama==0.4.4
 coverage==7.4.1
