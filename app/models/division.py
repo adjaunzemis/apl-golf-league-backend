@@ -1,8 +1,9 @@
-from typing import List, Optional
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional
 
-from app.models.tee import TeeGender
+from sqlmodel import Field, Relationship, SQLModel
+
 from app.models.flight_division_link import FlightDivisionLink
+from app.models.tee import TeeGender
 from app.models.tournament_division_link import TournamentDivisionLink
 
 

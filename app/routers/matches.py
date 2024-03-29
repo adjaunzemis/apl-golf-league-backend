@@ -1,34 +1,35 @@
-from typing import List
 from datetime import datetime
+from http import HTTPStatus
+from typing import List
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select, SQLModel
-from http import HTTPStatus
+from sqlmodel import Session, SQLModel, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.flight import Flight
+from app.models.golfer import Golfer
+from app.models.hole import Hole
+from app.models.hole_result import HoleResult
 from app.models.match import (
     Match,
     MatchCreate,
-    MatchUpdate,
-    MatchRead,
     MatchData,
     MatchDataWithCount,
+    MatchRead,
+    MatchUpdate,
     MatchValidationRequest,
     MatchValidationResponse,
 )
 from app.models.match_round_link import MatchRoundLink
-from app.models.round_golfer_link import RoundGolferLink
-from app.models.round import Round, RoundType, ScoringType
-from app.models.flight import Flight
-from app.models.team import Team
-from app.models.golfer import Golfer
-from app.models.tee import Tee
-from app.models.hole import Hole
-from app.models.hole_result import HoleResult
-from app.models.user import User
 from app.models.query_helpers import get_matches
-from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.models.round import Round, RoundType, ScoringType
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.team import Team
+from app.models.tee import Tee
+from app.models.user import User
 from app.utilities import scoring
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
 

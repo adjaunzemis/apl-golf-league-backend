@@ -13,7 +13,7 @@ services:
         max-file: "3"
     ports:
       - '${APL_GOLF_LEAGUE_API_DATABASE_PORT_EXTERNAL?Variable not set}:${APL_GOLF_LEAGUE_API_DATABASE_PORT_INTERNAL?Variable not set}'
-    volumes: 
+    volumes:
       - ./database/postgresql/data:/var/lib/postgresql/data
       # copy scripts to create/fill tables (if not already initialized)
       - ./database/postgresql/aplgldb_backup_schema.sql:/docker-entrypoint-initdb.d/create_tables.sql

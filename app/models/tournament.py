@@ -1,11 +1,12 @@
-from typing import List, Optional
-from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
+from typing import List, Optional
+
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.course import Course
 from app.models.division import Division, DivisionCreate
-from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.team import Team
+from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.tournament_team_link import TournamentTeamLink
 
 

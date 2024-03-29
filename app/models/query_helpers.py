@@ -1,35 +1,34 @@
-from typing import List, Optional
-from datetime import datetime, timedelta
 from datetime import date as dt_date
-from sqlmodel import Session, select, SQLModel, desc
+from datetime import datetime, timedelta
+from typing import List, Optional
+
 from sqlalchemy.orm import aliased
+from sqlmodel import Session, SQLModel, desc, select
 
 from app.models.course import Course
-from app.models.handicap import HandicapIndex
-from app.models.track import Track
-from app.models.tee import Tee
-from app.models.hole import Hole
+from app.models.division import Division, DivisionData
 from app.models.flight import Flight
-from app.models.flight_team_link import FlightTeamLink
 from app.models.flight_division_link import FlightDivisionLink
-from app.models.tournament_round_link import TournamentRoundLink
-from app.models.tournament_team_link import TournamentTeamLink
-from app.models.tournament_division_link import TournamentDivisionLink
-from app.models.tournament import Tournament
+from app.models.flight_team_link import FlightTeamLink
+from app.models.golfer import Golfer, GolferStatistics
+from app.models.handicap import HandicapIndex
+from app.models.hole import Hole
+from app.models.hole_result import HoleResult, HoleResultData
+from app.models.match import Match, MatchData, MatchSummary
+from app.models.match_round_link import MatchRoundLink
+from app.models.qualifying_score import QualifyingScore
+from app.models.round import Round, RoundData, RoundSummary, ScoringType
+from app.models.round_golfer_link import RoundGolferLink
 from app.models.team import Team, TeamRead
 from app.models.team_golfer_link import TeamGolferLink
-from app.models.golfer import Golfer, GolferStatistics
-from app.models.division import Division, DivisionData
-from app.models.match import Match, MatchData, MatchSummary
-from app.models.round import Round, RoundData, RoundSummary, ScoringType
-from app.models.hole_result import HoleResult, HoleResultData
-from app.models.match_round_link import MatchRoundLink
-from app.models.round_golfer_link import RoundGolferLink
-from app.models.qualifying_score import QualifyingScore
-
-from app.utilities.world_handicap_system import WorldHandicapSystem
-from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.models.tee import Tee
+from app.models.tournament import Tournament
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.track import Track
 from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 # TODO: Move custom route data models elsewhere

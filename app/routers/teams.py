@@ -1,19 +1,15 @@
 import copy
 from http import HTTPStatus
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import SQLModel, Session, select
-
+from sqlmodel import Session, SQLModel, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.team import Team, TeamRead
-from app.models.team_golfer_link import TeamGolferLink, TeamRole
-from app.models.golfer import Golfer
 from app.models.flight import Flight
 from app.models.flight_team_link import FlightTeamLink
-from app.models.tournament import Tournament
-from app.models.tournament_team_link import TournamentTeamLink
+from app.models.golfer import Golfer
 from app.models.payment import (
     LeagueDues,
     LeagueDuesPayment,
@@ -21,13 +17,17 @@ from app.models.payment import (
     TournamentEntryFeePayment,
     TournamentEntryFeeType,
 )
-from app.models.user import User
 from app.models.query_helpers import (
     TeamWithMatchData,
     compute_golfer_statistics_for_matches,
     get_flight_team_golfers_for_teams,
     get_matches_for_teams,
 )
+from app.models.team import Team, TeamRead
+from app.models.team_golfer_link import TeamGolferLink, TeamRole
+from app.models.tournament import Tournament
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.user import User
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
@@ -508,9 +508,7 @@ def update_team_signups(
             session.delete(team_golfer_link_db)
             session.commit()
 
-            if (
-                team_data.flight_id
-            ):  # delete flight dues record if unpaid and golfer not on other flight teams
+            if team_data.flight_id:  # delete flight dues record if unpaid and golfer not on other flight teams
                 # TODO: Implement find/delete of unpaid and unneeded flight dues records
                 print(
                     f"WARNING: Flight dues payment record deleting not implemented yet!"

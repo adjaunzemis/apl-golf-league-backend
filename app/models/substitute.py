@@ -1,7 +1,8 @@
 from typing import Optional
-from sqlmodel import Relationship, SQLModel, Field
-from app.models.flight import Flight
 
+from sqlmodel import Field, Relationship, SQLModel
+
+from app.models.flight import Flight
 from app.models.golfer import Golfer
 
 

@@ -4,9 +4,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.models.course import Course
-from app.models.track import Track
-from app.models.tee import Tee, TeeGender
 from app.models.hole import Hole
+from app.models.tee import Tee, TeeGender
+from app.models.track import Track
 
 
 @pytest.mark.parametrize(

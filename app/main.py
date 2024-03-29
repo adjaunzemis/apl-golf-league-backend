@@ -1,4 +1,5 @@
 import asyncio
+
 import uvicorn
 
 from app.api import app as app_fastapi

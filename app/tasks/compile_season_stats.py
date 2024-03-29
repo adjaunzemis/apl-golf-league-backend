@@ -1,17 +1,18 @@
+from datetime import datetime, timedelta
 from typing import List
+
 import numpy as np
 import pandas as pd
 import pytz
-from datetime import datetime, timedelta
-from sqlmodel import Session, select, create_engine
 from dotenv import load_dotenv
+from sqlmodel import Session, create_engine, select
 
 from app.dependencies import get_settings
 from app.models.golfer import Golfer
 from app.models.round import RoundSummary, RoundType
 from app.tasks.update_golfer_handicaps import (
-    get_rounds_in_scoring_record,
     get_handicap_index_data,
+    get_rounds_in_scoring_record,
 )
 
 

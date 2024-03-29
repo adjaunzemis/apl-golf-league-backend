@@ -8,8 +8,9 @@ Andris Jaunzemis
 """
 
 import os
+from datetime import datetime, time, timedelta
+
 import pandas as pd
-from datetime import datetime, timedelta, time
 
 
 def parse_tournament_info_file(file: str, year: int):

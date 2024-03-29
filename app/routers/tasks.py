@@ -3,9 +3,10 @@ Scheduled Task Router
 """
 
 import datetime
+from typing import List, Optional
+
 import fastapi
 import pydantic
-from typing import List, Optional
 
 from app.scheduler import app as app_scheduler
 

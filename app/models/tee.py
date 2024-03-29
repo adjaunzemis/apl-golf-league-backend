@@ -1,6 +1,7 @@
-from typing import List, Optional
 from enum import Enum
-from sqlmodel import SQLModel, Field, Relationship
+from typing import List, Optional
+
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.hole import Hole, HoleRead
 

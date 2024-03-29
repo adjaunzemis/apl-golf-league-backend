@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 from typing import Optional
+
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer
 from app.models.round import Round

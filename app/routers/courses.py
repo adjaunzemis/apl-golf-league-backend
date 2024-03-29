@@ -1,8 +1,9 @@
-from typing import List, Optional
 from http import HTTPStatus
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.course import (
@@ -10,9 +11,9 @@ from app.models.course import (
     CourseRead,
     CourseReadWithTracks,
 )
-from app.models.track import Track, TrackRead, TrackReadWithTees
+from app.models.hole import Hole
 from app.models.tee import Tee, TeeGender, TeeRead, TeeReadWithHoles
-from app.models.hole import Hole, HoleRead
+from app.models.track import Track, TrackRead
 from app.models.user import User
 
 router = APIRouter(prefix="/courses", tags=["Courses"])

@@ -1,14 +1,13 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from http import HTTPStatus
 from sqlmodel import Session, select
-
 
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.flight import Flight, FlightCreate, FlightRead
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.match import MatchSummary
-from app.models.user import User
 from app.models.query_helpers import (
     FlightData,
     FlightInfoWithCount,
@@ -17,6 +16,7 @@ from app.models.query_helpers import (
     get_matches_for_teams,
     get_teams_in_flights,
 )
+from app.models.user import User
 from app.routers.utilities import upsert_division
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
