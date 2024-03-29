@@ -1,19 +1,20 @@
-from typing import List
 from datetime import date, timedelta
+from typing import List
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.golfer import Golfer, GolferCreate, GolferUpdate, GolferRead
-from app.models.user import User
+from app.models.golfer import Golfer, GolferCreate, GolferRead, GolferUpdate
 from app.models.query_helpers import (
     GolferData,
     GolferDataWithCount,
     GolferTeamData,
-    get_golfers,
     get_golfer_team_data,
+    get_golfers,
 )
+from app.models.user import User
 
 router = APIRouter(prefix="/golfers", tags=["Golfers"])
 

@@ -1,6 +1,7 @@
+from http import HTTPStatus
+
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session
-from http import HTTPStatus
 
 from app.models.division import Division, DivisionCreate, DivisionRead
 

@@ -4,7 +4,6 @@ Task Scheduler
 
 from rocketry import Rocketry
 
-
 app = Rocketry(execution="async")
 
 

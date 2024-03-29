@@ -14,34 +14,34 @@ Andris Jaunzemis
 """
 
 import os
-from dotenv import load_dotenv
+from datetime import datetime
+from typing import List
+
 import numpy as np
 import pandas as pd
-from typing import List
-from datetime import datetime
-from sqlmodel import Session, SQLModel, create_engine, select, desc
-
+from dotenv import load_dotenv
 from models.course import Course
-from models.track import Track
-from models.tee import Tee, TeeGender
-from models.hole import Hole
-from models.golfer import Golfer, GolferAffiliation
-from models.team import Team
-from models.team_golfer_link import TeamGolferLink, TeamRole
 from models.division import Division
 from models.flight import Flight
 from models.flight_division_link import FlightDivisionLink
 from models.flight_team_link import FlightTeamLink
-from models.tournament import Tournament
-from models.tournament_division_link import TournamentDivisionLink
-from models.tournament_team_link import TournamentTeamLink
-from models.tournament_round_link import TournamentRoundLink
-from models.round import Round, RoundType, ScoringType
+from models.golfer import Golfer, GolferAffiliation
+from models.hole import Hole
 from models.hole_result import HoleResult
-from models.round_golfer_link import RoundGolferLink
 from models.match import Match
 from models.match_round_link import MatchRoundLink
-from models.officer import Officer, Committee
+from models.officer import Committee, Officer
+from models.round import Round, RoundType, ScoringType
+from models.round_golfer_link import RoundGolferLink
+from models.team import Team
+from models.team_golfer_link import TeamGolferLink, TeamRole
+from models.tee import Tee, TeeGender
+from models.tournament import Tournament
+from models.tournament_division_link import TournamentDivisionLink
+from models.tournament_round_link import TournamentRoundLink
+from models.tournament_team_link import TournamentTeamLink
+from models.track import Track
+from sqlmodel import Session, SQLModel, create_engine, desc, select
 from utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 

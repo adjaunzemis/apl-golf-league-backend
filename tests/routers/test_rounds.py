@@ -1,9 +1,10 @@
 from datetime import date
-from fastapi.testclient import TestClient
-from fastapi import status
-import pytest
-from sqlmodel import Session, select
 from typing import Union
+
+import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 
 from app.models.golfer import Golfer, GolferAffiliation
 from app.models.hole import Hole

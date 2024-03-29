@@ -1,7 +1,8 @@
-from typing import Optional
-from enum import Enum
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+from enum import Enum
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class GolferAffiliation(str, Enum):

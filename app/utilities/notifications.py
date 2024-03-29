@@ -1,5 +1,6 @@
-from typing import List, Dict, Any
 from functools import lru_cache
+from typing import Any, Dict, List
+
 from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import BaseModel, EmailStr

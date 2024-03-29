@@ -1,4 +1,5 @@
 from typing import List
+
 import numpy as np
 
 from app.utilities.handicap_system import HandicapSystem

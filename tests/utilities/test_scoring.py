@@ -1,10 +1,11 @@
-import pytest
 from datetime import date
 
-from app.models.round import RoundValidationRequest
+import pytest
+
 from app.models.match import MatchHoleResult, MatchHoleWinner, MatchValidationRequest
-from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.models.round import RoundValidationRequest
 from app.utilities import scoring
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 
 @pytest.mark.parametrize(

@@ -4,21 +4,21 @@ Validate entries in database, check for missing links or inconsistencies
 """
 
 import os
-from dotenv import load_dotenv
-from sqlmodel import SQLModel, Session, create_engine, select
 
-from models.golfer import Golfer
-from models.flight import Flight
+from dotenv import load_dotenv
 from models.division import Division
+from models.flight import Flight
 from models.flight_division_link import FlightDivisionLink
-from models.team import Team
-from models.team_golfer_link import TeamGolferLink
 from models.flight_team_link import FlightTeamLink
+from models.golfer import Golfer
 from models.payment import (
-    LeagueDuesType,
     LeagueDuesPayment,
+    LeagueDuesType,
     PaymentMethod,
 )
+from models.team import Team
+from models.team_golfer_link import TeamGolferLink
+from sqlmodel import Session, SQLModel, create_engine, select
 
 
 def check_flight_dues_payment_entry(

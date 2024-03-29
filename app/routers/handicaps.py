@@ -1,28 +1,27 @@
-from typing import List
-from datetime import date, timedelta
-from fastapi import APIRouter, Depends, Query, HTTPException
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
-from sqlmodel import Session, select
-from datetime import datetime
+from typing import List
 
-from app.utilities.apl_handicap_system import APLHandicapSystem
-from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlmodel import Session, select
 
 from app.database import handicap as db_handicap
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.query_helpers import (
-    RoundSummary,
-    HandicapIndexData,
-    get_handicap_index_data,
-    get_rounds_in_scoring_record,
-)
+from app.models.golfer import Golfer
 from app.models.qualifying_score import (
     QualifyingScore,
     QualifyingScoreCreate,
     QualifyingScoreRead,
 )
-from app.models.golfer import Golfer
+from app.models.query_helpers import (
+    HandicapIndexData,
+    RoundSummary,
+    get_handicap_index_data,
+    get_rounds_in_scoring_record,
+)
 from app.models.user import User
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(prefix="/handicaps", tags=["Handicaps"])
 

@@ -3,12 +3,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
 from app.dependencies import (
-    change_user_password,
-    get_settings,
-    get_sql_db_session,
     authenticate_user,
+    change_user_password,
     create_access_token,
     get_current_active_user,
+    get_settings,
+    get_sql_db_session,
 )
 from app.models.user import User, UserRead, UserWithToken
 

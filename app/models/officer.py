@@ -1,6 +1,7 @@
-from typing import Optional
 from enum import Enum
-from sqlmodel import SQLModel, Field
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class Committee(str, Enum):

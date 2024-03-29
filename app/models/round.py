@@ -1,20 +1,21 @@
-from typing import List, Optional, Union
+from datetime import date, datetime
 from enum import Enum
-from sqlmodel import SQLModel, Field, Relationship
-from pydantic import BaseModel
-from datetime import datetime, date
+from typing import List, Optional, Union
 
-from app.models.tee import Tee, TeeGender, TeeRead
+from pydantic import BaseModel
+from sqlmodel import Field, Relationship, SQLModel
+
 from app.models.golfer import Golfer, GolferRead
-from app.models.round_golfer_link import RoundGolferLink
 from app.models.hole_result import (
     HoleResult,
-    HoleResultReadWithHole,
     HoleResultData,
+    HoleResultReadWithHole,
     HoleResultSubmissionResponse,
     HoleResultValidationRequest,
     HoleResultValidationResponse,
 )
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.tee import Tee, TeeGender, TeeRead
 
 
 class RoundType(str, Enum):

@@ -4,12 +4,12 @@ Finalized flight setup after team sign-ups
 """
 
 from functools import lru_cache
-from sqlmodel import SQLModel, Session, create_engine, select
-from pydantic import BaseSettings
 
 from models.flight import Flight
 from models.flight_team_link import FlightTeamLink
 from models.match import Match
+from pydantic import BaseSettings
+from sqlmodel import Session, SQLModel, create_engine, select
 
 
 class Settings(BaseSettings):

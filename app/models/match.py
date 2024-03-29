@@ -1,18 +1,19 @@
-from typing import List, Optional
-from sqlmodel import SQLModel, Field, Relationship
-from pydantic import BaseModel
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.flight import Flight, FlightRead
-from app.models.team import Team, TeamRead
+from app.models.match_round_link import MatchRoundLink
 from app.models.round import (
     Round,
-    RoundReadWithData,
     RoundData,
+    RoundReadWithData,
     RoundValidationRequest,
     RoundValidationResponse,
 )
-from app.models.match_round_link import MatchRoundLink
+from app.models.team import Team, TeamRead
 
 
 class MatchBase(SQLModel):

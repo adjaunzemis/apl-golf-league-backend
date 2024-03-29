@@ -2,33 +2,33 @@
 FastAPI Application
 """
 
-from fastapi import Depends, FastAPI, Request, BackgroundTasks, status
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
-from pymongo import MongoClient
 import logging
+from typing import Dict, List
 
-from typing import List, Dict
+from fastapi import BackgroundTasks, Depends, FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
+from starlette.responses import JSONResponse
 
 from app.dependencies import (
-    create_sql_db_and_tables,
-    create_nosql_db_and_collections,
     close_nosql_db,
+    create_nosql_db_and_collections,
+    create_sql_db_and_tables,
     get_nosql_db_client,
 )
 from app.routers import (
     courses,
-    golfers,
-    teams,
     flights,
-    tournaments,
-    rounds,
-    matches,
+    golfers,
     handicaps,
+    matches,
     officers,
-    users,
     payments,
+    rounds,
     tasks,
+    teams,
+    tournaments,
+    users,
 )
 from app.utilities.custom_logger import CustomizeLogger
 from app.utilities.notifications import EmailSchema, send_email

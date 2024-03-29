@@ -1,18 +1,19 @@
-from typing import List, Optional
-from datetime import datetime, timedelta
 from datetime import date as dt_date
-from sqlmodel import SQLModel, Session, select, desc, create_engine
+from datetime import datetime, timedelta
+from typing import List, Optional
+
+from sqlmodel import Session, SQLModel, create_engine, desc, select
 
 from app.dependencies import get_settings
 from app.models.course import Course
-from app.models.track import Track
-from app.models.tee import Tee
-from app.models.hole import Hole
 from app.models.golfer import Golfer
-from app.models.round import Round, RoundSummary, ScoringType, RoundType
-from app.models.round_golfer_link import RoundGolferLink
+from app.models.hole import Hole
 from app.models.hole_result import HoleResult, HoleResultData
 from app.models.qualifying_score import QualifyingScore
+from app.models.round import Round, RoundSummary, RoundType, ScoringType
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.tee import Tee
+from app.models.track import Track
 from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 

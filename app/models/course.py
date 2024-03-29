@@ -1,5 +1,6 @@
 from typing import List, Optional
-from sqlmodel import SQLModel, Field, Relationship
+
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.track import Track, TrackReadWithTees
 

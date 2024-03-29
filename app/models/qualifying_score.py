@@ -1,7 +1,8 @@
-from typing import Optional
-from enum import Enum
-from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
+from enum import Enum
+from typing import Optional
+
+from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer
 from app.models.tee import TeeGender

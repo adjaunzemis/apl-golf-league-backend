@@ -1,10 +1,11 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Body
 from http import HTTPStatus
-from sqlmodel import SQLModel, Session, select
+from typing import List, Optional
 
+from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlmodel import Session, SQLModel, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.golfer import Golfer
 from app.models.payment import (
     LeagueDues,
     LeagueDuesPayment,
@@ -12,15 +13,14 @@ from app.models.payment import (
     LeagueDuesPaymentUpdate,
     LeagueDuesRead,
     LeagueDuesType,
+    PaymentMethod,
     TournamentEntryFeePayment,
     TournamentEntryFeePaymentRead,
     TournamentEntryFeePaymentUpdate,
     TournamentEntryFeeType,
-    PaymentMethod,
 )
-from app.models.user import User
-from app.models.golfer import Golfer
 from app.models.tournament import Tournament
+from app.models.user import User
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 

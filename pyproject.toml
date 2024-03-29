@@ -2,4 +2,4 @@
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["F401"]
+select = ["F401", "I"]

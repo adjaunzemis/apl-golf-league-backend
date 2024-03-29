@@ -1,7 +1,8 @@
-import pytest
-from sqlmodel import Session
 from datetime import datetime, timedelta
 from random import random
+
+import pytest
+from sqlmodel import Session
 
 from app.database import handicap as db_handicap
 from app.models.handicap import HandicapIndex

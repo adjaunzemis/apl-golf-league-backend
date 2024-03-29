@@ -1,13 +1,28 @@
-from typing import List
 from datetime import datetime
+from http import HTTPStatus
+from typing import List
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import SQLModel, Session, select
-from http import HTTPStatus
+from sqlmodel import Session, SQLModel, select
 
-
-from app.routers.matches import RoundInput
 from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.golfer import Golfer
+from app.models.hole import Hole
+from app.models.hole_result import HoleResult
+from app.models.query_helpers import (
+    TournamentData,
+    TournamentInfoWithCount,
+    get_divisions_in_tournaments,
+    get_round_summaries,
+    get_rounds_for_tournament,
+    get_teams_in_tournaments,
+    get_tournaments,
+)
+from app.models.round import Round, RoundSummary, RoundType, ScoringType
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.team import Team
+from app.models.tee import Tee
 from app.models.tournament import (
     Tournament,
     TournamentCreate,
@@ -16,25 +31,10 @@ from app.models.tournament import (
 from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.tournament_round_link import TournamentRoundLink
 from app.models.tournament_team_link import TournamentTeamLink
-from app.models.round_golfer_link import RoundGolferLink
-from app.models.golfer import Golfer
-from app.models.team import Team
-from app.models.round import Round, RoundSummary, RoundType, ScoringType
-from app.models.tee import Tee
-from app.models.hole import Hole
-from app.models.hole_result import HoleResult
 from app.models.user import User
-from app.models.query_helpers import (
-    TournamentData,
-    TournamentInfoWithCount,
-    get_round_summaries,
-    get_rounds_for_tournament,
-    get_tournaments,
-    get_divisions_in_tournaments,
-    get_teams_in_tournaments,
-)
-from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.routers.matches import RoundInput
 from app.routers.utilities import upsert_division
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
