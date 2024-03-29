@@ -31,6 +31,7 @@ from app.utilities.world_handicap_system import WorldHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 from app.utilities.apl_handicap_system import APLHandicapSystem
 
+
 # TODO: Move custom route data models elsewhere
 class HandicapIndexData(SQLModel):
     active_date: str
@@ -236,19 +237,21 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
             secretary=flight.secretary,
             secretary_email=flight.secretary_email,
             secretary_phone=flight.secretary_phone,
-            signup_start_date=flight.signup_start_date.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if flight.signup_start_date
-            else None,
-            signup_stop_date=flight.signup_stop_date.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if flight.signup_stop_date
-            else None,
-            start_date=flight.start_date.astimezone().replace(microsecond=0).isoformat()
-            if flight.start_date
-            else None,
+            signup_start_date=(
+                flight.signup_start_date.astimezone().replace(microsecond=0).isoformat()
+                if flight.signup_start_date
+                else None
+            ),
+            signup_stop_date=(
+                flight.signup_stop_date.astimezone().replace(microsecond=0).isoformat()
+                if flight.signup_stop_date
+                else None
+            ),
+            start_date=(
+                flight.start_date.astimezone().replace(microsecond=0).isoformat()
+                if flight.start_date
+                else None
+            ),
             weeks=flight.weeks,
             tee_times=flight.tee_times,
             locked=flight.locked,
@@ -289,23 +292,29 @@ def get_tournaments(
             id=tournament.id,
             year=tournament.year,
             name=tournament.name,
-            date=tournament.date.astimezone().replace(microsecond=0).isoformat()
-            if tournament.date
-            else None,
+            date=(
+                tournament.date.astimezone().replace(microsecond=0).isoformat()
+                if tournament.date
+                else None
+            ),
             logo_url=tournament.logo_url,
             secretary=tournament.secretary,
             secretary_email=tournament.secretary_email,
             secretary_phone=tournament.secretary_phone,
-            signup_start_date=tournament.signup_start_date.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if tournament.signup_start_date
-            else None,
-            signup_stop_date=tournament.signup_stop_date.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if tournament.signup_stop_date
-            else None,
+            signup_start_date=(
+                tournament.signup_start_date.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if tournament.signup_start_date
+                else None
+            ),
+            signup_stop_date=(
+                tournament.signup_stop_date.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if tournament.signup_stop_date
+                else None
+            ),
             members_entry_fee=tournament.members_entry_fee,
             non_members_entry_fee=tournament.non_members_entry_fee,
             course_id=course.id,
@@ -690,11 +699,13 @@ def get_golfer_team_data(
             role=team_golfer_link.role,
             year=flight.year,
             handicap_index=golfer.handicap_index,
-            handicap_index_updated=golfer.handicap_index_updated.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if golfer.handicap_index_updated
-            else None,
+            handicap_index_updated=(
+                golfer.handicap_index_updated.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if golfer.handicap_index_updated
+                else None
+            ),
         )
         for team_golfer_link, team, golfer, division, flight in flight_team_data
     ]
@@ -713,11 +724,13 @@ def get_golfer_team_data(
                 role=team_golfer_link.role,
                 year=tournament.year,
                 handicap_index=golfer.handicap_index,
-                handicap_index_updated=golfer.handicap_index_updated.astimezone()
-                .replace(microsecond=0)
-                .isoformat()
-                if golfer.handicap_index_updated
-                else None,
+                handicap_index_updated=(
+                    golfer.handicap_index_updated.astimezone()
+                    .replace(microsecond=0)
+                    .isoformat()
+                    if golfer.handicap_index_updated
+                    else None
+                ),
             )
             for team_golfer_link, team, golfer, division, tournament in tournament_team_data
         ]
@@ -769,11 +782,13 @@ def get_flight_team_golfers_for_teams(
             role=team_golfer_link.role,
             year=flight.year,
             handicap_index=golfer.handicap_index,
-            handicap_index_updated=golfer.handicap_index_updated.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if golfer.handicap_index_updated
-            else None,
+            handicap_index_updated=(
+                golfer.handicap_index_updated.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if golfer.handicap_index_updated
+                else None
+            ),
         )
         for team_golfer_link, team, golfer, division, flight in query_data
     ]
@@ -828,11 +843,13 @@ def get_tournament_team_golfers_for_teams(
             role=team_golfer_link.role,
             year=tournament.year,
             handicap_index=golfer.handicap_index,
-            handicap_index_updated=golfer.handicap_index_updated.astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-            if golfer.handicap_index_updated
-            else None,
+            handicap_index_updated=(
+                golfer.handicap_index_updated.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if golfer.handicap_index_updated
+                else None
+            ),
         )
         for team_golfer_link, team, golfer, division, tournament in query_data
     ]
@@ -1372,30 +1389,46 @@ def get_rounds_in_scoring_record(
                     date_played=qualifying_score_db.date_played,
                     date_updated=qualifying_score_db.date_updated,
                     course_name=f"Qualifying Score: {qualifying_score_db.course_name if qualifying_score_db.course_name is not None else qualifying_score_db.type}",
-                    track_name=qualifying_score_db.track_name
-                    if qualifying_score_db.track_name is not None
-                    else None,
-                    tee_name=qualifying_score_db.tee_name
-                    if qualifying_score_db.tee_name is not None
-                    else None,
-                    tee_gender=qualifying_score_db.tee_gender
-                    if qualifying_score_db.tee_gender is not None
-                    else None,
-                    tee_par=qualifying_score_db.tee_par
-                    if qualifying_score_db.tee_par is not None
-                    else None,
-                    tee_rating=qualifying_score_db.tee_rating
-                    if qualifying_score_db.tee_rating is not None
-                    else None,
-                    tee_slope=qualifying_score_db.tee_slope
-                    if qualifying_score_db.tee_slope is not None
-                    else None,
-                    gross_score=qualifying_score_db.gross_score
-                    if qualifying_score_db.gross_score is not None
-                    else None,
-                    adjusted_gross_score=qualifying_score_db.adjusted_gross_score
-                    if qualifying_score_db.adjusted_gross_score is not None
-                    else None,
+                    track_name=(
+                        qualifying_score_db.track_name
+                        if qualifying_score_db.track_name is not None
+                        else None
+                    ),
+                    tee_name=(
+                        qualifying_score_db.tee_name
+                        if qualifying_score_db.tee_name is not None
+                        else None
+                    ),
+                    tee_gender=(
+                        qualifying_score_db.tee_gender
+                        if qualifying_score_db.tee_gender is not None
+                        else None
+                    ),
+                    tee_par=(
+                        qualifying_score_db.tee_par
+                        if qualifying_score_db.tee_par is not None
+                        else None
+                    ),
+                    tee_rating=(
+                        qualifying_score_db.tee_rating
+                        if qualifying_score_db.tee_rating is not None
+                        else None
+                    ),
+                    tee_slope=(
+                        qualifying_score_db.tee_slope
+                        if qualifying_score_db.tee_slope is not None
+                        else None
+                    ),
+                    gross_score=(
+                        qualifying_score_db.gross_score
+                        if qualifying_score_db.gross_score is not None
+                        else None
+                    ),
+                    adjusted_gross_score=(
+                        qualifying_score_db.adjusted_gross_score
+                        if qualifying_score_db.adjusted_gross_score is not None
+                        else None
+                    ),
                     score_differential=qualifying_score_db.score_differential,
                 )
             )

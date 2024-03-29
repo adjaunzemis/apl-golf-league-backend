@@ -55,7 +55,7 @@ async def get_scoring_record(
 async def get_handicap_index(
     *,
     session: Session = Depends(get_sql_db_session),
-    golfer_id: int = Query(default=None),
+    golfer_id: int,
     min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
     max_date: date = Query(default=date.today() + timedelta(days=1)),
     limit: int = Query(default=10),

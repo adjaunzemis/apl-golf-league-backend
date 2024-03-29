@@ -206,30 +206,46 @@ def get_rounds_in_scoring_record(
                     date_played=qualifying_score_db.date_played,
                     date_updated=qualifying_score_db.date_updated,
                     course_name=f"Qualifying Score: {qualifying_score_db.course_name if qualifying_score_db.course_name is not None else qualifying_score_db.type}",
-                    track_name=qualifying_score_db.track_name
-                    if qualifying_score_db.track_name is not None
-                    else None,
-                    tee_name=qualifying_score_db.tee_name
-                    if qualifying_score_db.tee_name is not None
-                    else None,
-                    tee_gender=qualifying_score_db.tee_gender
-                    if qualifying_score_db.tee_gender is not None
-                    else None,
-                    tee_par=qualifying_score_db.tee_par
-                    if qualifying_score_db.tee_par is not None
-                    else None,
-                    tee_rating=qualifying_score_db.tee_rating
-                    if qualifying_score_db.tee_rating is not None
-                    else None,
-                    tee_slope=qualifying_score_db.tee_slope
-                    if qualifying_score_db.tee_slope is not None
-                    else None,
-                    gross_score=qualifying_score_db.gross_score
-                    if qualifying_score_db.gross_score is not None
-                    else None,
-                    adjusted_gross_score=qualifying_score_db.adjusted_gross_score
-                    if qualifying_score_db.adjusted_gross_score is not None
-                    else None,
+                    track_name=(
+                        qualifying_score_db.track_name
+                        if qualifying_score_db.track_name is not None
+                        else None
+                    ),
+                    tee_name=(
+                        qualifying_score_db.tee_name
+                        if qualifying_score_db.tee_name is not None
+                        else None
+                    ),
+                    tee_gender=(
+                        qualifying_score_db.tee_gender
+                        if qualifying_score_db.tee_gender is not None
+                        else None
+                    ),
+                    tee_par=(
+                        qualifying_score_db.tee_par
+                        if qualifying_score_db.tee_par is not None
+                        else None
+                    ),
+                    tee_rating=(
+                        qualifying_score_db.tee_rating
+                        if qualifying_score_db.tee_rating is not None
+                        else None
+                    ),
+                    tee_slope=(
+                        qualifying_score_db.tee_slope
+                        if qualifying_score_db.tee_slope is not None
+                        else None
+                    ),
+                    gross_score=(
+                        qualifying_score_db.gross_score
+                        if qualifying_score_db.gross_score is not None
+                        else None
+                    ),
+                    adjusted_gross_score=(
+                        qualifying_score_db.adjusted_gross_score
+                        if qualifying_score_db.adjusted_gross_score is not None
+                        else None
+                    ),
                     score_differential=qualifying_score_db.score_differential,
                 )
             )
@@ -435,7 +451,7 @@ def recalculate_hole_results(
     ).all()
     print(f"Analyzing {len(round_data)} rounds")
     round_error_counter = 0
-    for (round_db, round_golfer_link_db, golfer_db) in round_data:
+    for round_db, round_golfer_link_db, golfer_db in round_data:
         hole_results_db = session.exec(
             select(HoleResult).where(HoleResult.round_id == round_db.id)
         ).all()

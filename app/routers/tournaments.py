@@ -221,9 +221,11 @@ async def post_tournament_rounds(
             round_db = Round(
                 tee_id=tee_db.id,
                 type=RoundType.TOURNAMENT,
-                scoring_type=ScoringType.INDIVIDUAL
-                if tournament_db.individual
-                else ScoringType.GROUP,
+                scoring_type=(
+                    ScoringType.INDIVIDUAL
+                    if tournament_db.individual
+                    else ScoringType.GROUP
+                ),
                 date_played=tournament_input.date_played,
                 date_updated=datetime.today(),
             )

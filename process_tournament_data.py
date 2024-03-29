@@ -227,9 +227,11 @@ def parse_tournament_results_file(file: str):
                                 "category": category,
                                 "hole": int(line_parts[0]),
                                 "name": " ".join(line_parts[1:3]),
-                                "details": None
-                                if len(line_parts) < 4
-                                else " ".join(line_parts[3:]),
+                                "details": (
+                                    None
+                                    if len(line_parts) < 4
+                                    else " ".join(line_parts[3:])
+                                ),
                             }
                         )
                     else:
