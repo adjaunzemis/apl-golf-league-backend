@@ -4,31 +4,32 @@ from datetime import date as dt_date
 from sqlmodel import Session, select, SQLModel, desc
 from sqlalchemy.orm import aliased
 
-from .course import Course
-from .track import Track
-from .tee import Tee
-from .hole import Hole
-from .flight import Flight
-from .flight_team_link import FlightTeamLink
-from .flight_division_link import FlightDivisionLink
-from .tournament_round_link import TournamentRoundLink
-from .tournament_team_link import TournamentTeamLink
-from .tournament_division_link import TournamentDivisionLink
-from .tournament import Tournament
-from .team import Team, TeamRead
-from .team_golfer_link import TeamGolferLink
-from .golfer import Golfer, GolferStatistics
-from .division import Division, DivisionData
-from .match import Match, MatchData, MatchSummary
-from .round import Round, RoundData, RoundSummary, ScoringType
-from .hole_result import HoleResult, HoleResultData
-from .match_round_link import MatchRoundLink
-from .round_golfer_link import RoundGolferLink
-from .qualifying_score import QualifyingScore
+from app.models.course import Course
+from app.models.handicap import HandicapIndex
+from app.models.track import Track
+from app.models.tee import Tee
+from app.models.hole import Hole
+from app.models.flight import Flight
+from app.models.flight_team_link import FlightTeamLink
+from app.models.flight_division_link import FlightDivisionLink
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.tournament import Tournament
+from app.models.team import Team, TeamRead
+from app.models.team_golfer_link import TeamGolferLink
+from app.models.golfer import Golfer, GolferStatistics
+from app.models.division import Division, DivisionData
+from app.models.match import Match, MatchData, MatchSummary
+from app.models.round import Round, RoundData, RoundSummary, ScoringType
+from app.models.hole_result import HoleResult, HoleResultData
+from app.models.match_round_link import MatchRoundLink
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.qualifying_score import QualifyingScore
 
-from ..utilities.world_handicap_system import WorldHandicapSystem
-from ..utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
-from ..utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.world_handicap_system import WorldHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.apl_handicap_system import APLHandicapSystem
 
 # TODO: Move custom route data models elsewhere
 class HandicapIndexData(SQLModel):
@@ -123,6 +124,7 @@ class FlightData(SQLModel):
     signup_stop_date: str = None
     start_date: str = None
     weeks: int = None
+    tee_times: Optional[str] = None
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
@@ -248,6 +250,7 @@ def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
             if flight.start_date
             else None,
             weeks=flight.weeks,
+            tee_times=flight.tee_times,
             locked=flight.locked,
             course_id=flight_courses_db[idx].id if flight_courses_db[idx] else None,
             course=flight_courses_db[idx].name if flight_courses_db[idx] else None,
@@ -1524,3 +1527,15 @@ def get_golfer_year_joined(session: Session, golfer_id: int) -> int:
     if not oldest_round_date:
         return None
     return oldest_round_date.year
+
+
+def get_golfer_handicap_index(session: Session, golfer_id: int) -> float:
+    handicap = session.exec(
+        select(HandicapIndex.handicap_index)
+        .where(HandicapIndex.golfer_id == golfer_id)
+        .order_by(Round.date_played)
+        .limit(1)
+    ).one_or_none()
+    if handicap is None:
+        return None
+    return handicap.handicap_index

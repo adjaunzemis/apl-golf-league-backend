@@ -2,11 +2,11 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
-from .course import Course
-from .division import Division, DivisionCreate
-from .tournament_division_link import TournamentDivisionLink
-from .team import Team
-from .tournament_team_link import TournamentTeamLink
+from app.models.course import Course
+from app.models.division import Division, DivisionCreate
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.team import Team
+from app.models.tournament_team_link import TournamentTeamLink
 
 
 class TournamentBase(SQLModel):

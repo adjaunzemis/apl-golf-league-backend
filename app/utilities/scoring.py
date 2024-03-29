@@ -1,19 +1,35 @@
-from typing import List, Union
 from datetime import datetime, date
+from typing import Union
 
-from ..models.hole_result import HoleResultValidationResponse
-from ..models.round import RoundValidationRequest, RoundValidationResponse
-from ..models.match import (
+from app.models.hole_result import HoleResultValidationResponse
+from app.models.round import RoundValidationRequest, RoundValidationResponse
+from app.models.match import (
+    MatchHoleWinner,
     MatchValidationRequest,
     MatchValidationResponse,
-    MatchTeamDesignator,
     MatchHoleResult,
 )
-from .apl_handicap_system import APLHandicapSystem
-from .apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 def validate_round(round: RoundValidationRequest) -> RoundValidationResponse:
+    """Determines whether a given round is valid under the relevant handicap system.
+
+    Checks whether the gross score is strictly positive and less than the max allowed.
+    Aggregates per-hole validity into round validity.
+
+    Parameters
+    ----------
+    round: RoundValidationRequest
+        round data to be validated
+
+    Returns
+    -------
+    response: RoundValidationResponse
+        round data with validation
+
+    """
     # Determine handicapping system by year
     # TODO: Make a utility/factory for this
     if round.date_played.year >= 2022:
@@ -64,6 +80,23 @@ def validate_round(round: RoundValidationRequest) -> RoundValidationResponse:
 
 
 def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
+    """Determines whether a given match is valid under the relevant handicap system.
+
+    Validates each round.
+    Determines per-hole winning team and each team's match score.
+    Aggregates per-round validity into match validity.
+
+    Parameters
+    ----------
+    match: MatchValidationRequest
+        match data to be validated
+
+    Returns
+    -------
+    response: MatchValidationResponse
+        match data with validation
+
+    """
     # Determine handicapping system by year
     # TODO: Make a utility/factory for this
     date_played = match.home_team_rounds[0].date_played
@@ -73,17 +106,13 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
         ahs = APLLegacyHandicapSystem()
 
     # Validate rounds
-    home_team_round_responses: List[RoundValidationResponse] = []
+    home_team_round_responses: list[RoundValidationResponse] = []
     for home_team_round in match.home_team_rounds:
         home_team_round_responses.append(validate_round(home_team_round))
 
-    away_team_round_responses: List[RoundValidationResponse] = []
+    away_team_round_responses: list[RoundValidationResponse] = []
     for away_team_round in match.away_team_rounds:
         away_team_round_responses.append(validate_round(away_team_round))
-
-    # TODO: Calculate hole-by-hole team handicaps
-    team_receiving_handicap_strokes = MatchTeamDesignator.HOME  # TODO: Implement
-    team_handicap_strokes_received = [0 for idx in range(9)]  # TODO: Implement
 
     # Initialize match response, check for match validity
     match_response = MatchValidationResponse(
@@ -96,43 +125,55 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
 
     if match_response.is_valid:
         # Compute match hole-by-hole results and team net scores
-        match_hole_results: List[MatchHoleResult] = []
-        home_team_net_score = 0.0
-        away_team_net_score = 0.0
+        match_hole_results: list[MatchHoleResult] = []
+
+        home_team_course_handicaps = [
+            r.course_handicap for r in match_response.home_team_rounds
+        ]
+        away_team_course_handicaps = [
+            r.course_handicap for r in match_response.away_team_rounds
+        ]
+
         for hole_idx in range(len(match_response.home_team_rounds[0].holes)):
             home_team_gross_scores = [
-                round.holes[hole_idx].gross_score
-                for round in match_response.home_team_rounds
+                r.holes[hole_idx].gross_score for r in match_response.home_team_rounds
             ]
             away_team_gross_scores = [
-                round.holes[hole_idx].gross_score
-                for round in match_response.away_team_rounds
+                r.holes[hole_idx].gross_score for r in match_response.away_team_rounds
             ]
-            match_hole_results.append(
-                ahs.determine_match_hole_result(
-                    home_team_gross_scores,
-                    away_team_gross_scores,
-                    team_receiving_handicap_strokes,
-                    team_handicap_strokes_received[hole_idx],
-                )
+
+            (
+                home_team_handicap_strokes,
+                away_team_handicap_strokes,
+            ) = ahs.compute_match_team_hole_handicap_strokes(
+                stroke_index=match_response.home_team_rounds[0]
+                .holes[hole_idx]
+                .stroke_index,
+                team_course_handicaps=home_team_course_handicaps,
+                opponent_course_handicaps=away_team_course_handicaps,
             )
 
-            home_team_net_score += sum(
-                [
-                    round.holes[hole_idx].net_score
-                    for round in match_response.home_team_rounds
-                ]
-            )
-            away_team_net_score += sum(
-                [
-                    round.holes[hole_idx].net_score
-                    for round in match_response.away_team_rounds
-                ]
+            match_hole_results.append(
+                ahs.compute_match_hole_result(
+                    home_team_gross_scores=home_team_gross_scores,
+                    home_team_handicap_strokes=home_team_handicap_strokes,
+                    away_team_gross_scores=away_team_gross_scores,
+                    away_team_handicap_strokes=away_team_handicap_strokes,
+                )
             )
 
         # Compute match score
         (home_score, away_score) = compute_match_score(
-            match_hole_results, home_team_net_score, away_team_net_score, date_played
+            hole_winners=[r.winner for r in match_hole_results],
+            home_net_scores=[
+                sum([h.net_score for h in r.holes])
+                for r in match_response.home_team_rounds
+            ],
+            away_net_scores=[
+                sum([h.net_score for h in r.holes])
+                for r in match_response.away_team_rounds
+            ],
+            date_played=date_played,
         )
         match_response.home_team_score = home_score
         match_response.away_team_score = away_score
@@ -143,12 +184,23 @@ def validate_match(match: MatchValidationRequest) -> MatchValidationResponse:
 
 
 def compute_match_score(
-    match_hole_results: List[MatchTeamDesignator],
-    home_net_score: int,
-    away_net_score: int,
+    hole_winners: list[MatchHoleWinner],
+    home_net_scores: list[int],
+    away_net_scores: list[int],
     date_played: Union[datetime, date],
 ):
-    """Computes match score based on hole-by-hole winners and team net scores.
+    """Computes match score based on hole-by-hole winners and player net scores.
+
+    Parameters
+    ----------
+    hole_winners: list[MatchHoleWinner]
+        winning team for each hole of the match
+    home_net_scores: list[int]
+        total net score for each round for the home team
+    away_net_scores: list[int]
+        total net score for each round for the away team
+    date_played: datetime | date
+        date that the match was played
 
     Returns
     -------
@@ -170,11 +222,11 @@ def compute_match_score(
     away_score = 0.0
 
     # Add points based on hole-by-hole results
-    for match_hole_result in match_hole_results:
-        if match_hole_result == MatchTeamDesignator.HOME:
+    for winner in hole_winners:
+        if winner == MatchHoleWinner.HOME:
             home_score += ahs.match_points_for_winning_hole
             away_score += ahs.match_points_for_losing_hole
-        elif match_hole_result == MatchTeamDesignator.AWAY:
+        elif winner == MatchHoleWinner.AWAY:
             home_score += ahs.match_points_for_losing_hole
             away_score += ahs.match_points_for_winning_hole
         else:
@@ -182,10 +234,12 @@ def compute_match_score(
             away_score += ahs.match_points_for_tying_hole
 
     # Add points based on team net results
-    if home_net_score < away_net_score:
+    home_team_net_score = sum(home_net_scores)
+    away_team_net_score = sum(away_net_scores)
+    if home_team_net_score < away_team_net_score:
         home_score += ahs.match_points_for_winning_total_net_score
         away_score += ahs.match_points_for_losing_total_net_score
-    elif away_net_score < home_net_score:
+    elif away_team_net_score < home_team_net_score:
         home_score += ahs.match_points_for_losing_total_net_score
         away_score += ahs.match_points_for_winning_total_net_score
     else:

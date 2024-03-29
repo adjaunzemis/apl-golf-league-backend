@@ -2,7 +2,7 @@ from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 
-from .hole import Hole, HoleRead
+from app.models.hole import Hole, HoleRead
 
 
 class HoleResultBase(SQLModel):
@@ -69,3 +69,8 @@ class HoleResultValidationResponse(HoleResultValidationRequest):
     net_score: int
     max_gross_score: int
     is_valid: bool = False
+
+
+class HoleResultSubmissionResponse(HoleResultValidationResponse):
+    hole_result_id: int
+    hole_id: int

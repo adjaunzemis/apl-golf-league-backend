@@ -3,29 +3,16 @@ from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 from enum import Enum
 
-from .flight import Flight, FlightRead
-from .team import Team, TeamRead
-from .round import (
+from app.models.flight import Flight, FlightRead
+from app.models.team import Team, TeamRead
+from app.models.round import (
     Round,
     RoundReadWithData,
     RoundData,
     RoundValidationRequest,
     RoundValidationResponse,
 )
-from .match_round_link import MatchRoundLink
-
-
-class MatchTeamDesignator(str, Enum):
-    HOME = "Home"
-    AWAY = "Away"
-
-
-class MatchHoleResult(str, Enum):
-    """Indicates which team won the hole during the match."""
-
-    HOME = "Home"
-    AWAY = "Away"
-    TIE = "Tie"
+from app.models.match_round_link import MatchRoundLink
 
 
 class MatchBase(SQLModel):
@@ -92,6 +79,26 @@ class MatchData(MatchSummary):
 class MatchDataWithCount(SQLModel):
     num_matches: int
     matches: List[MatchData]
+
+
+class MatchHoleWinner(str, Enum):
+    """Indicates which team won the hole during the match."""
+
+    HOME = "Home"
+    AWAY = "Away"
+    TIE = "Tie"
+
+
+class MatchHoleResult(BaseModel):
+    """Container for results from a hole in a match."""
+
+    home_team_gross_score: int
+    home_team_net_score: int
+    home_team_handicap_strokes: int
+    away_team_gross_score: int
+    away_team_net_score: int
+    away_team_handicap_strokes: int
+    winner: MatchHoleWinner
 
 
 class MatchValidationRequest(BaseModel):

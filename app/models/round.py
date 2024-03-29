@@ -4,13 +4,14 @@ from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
 from datetime import datetime, date
 
-from .tee import Tee, TeeGender, TeeRead
-from .golfer import Golfer, GolferRead
-from .round_golfer_link import RoundGolferLink
-from .hole_result import (
+from app.models.tee import Tee, TeeGender, TeeRead
+from app.models.golfer import Golfer, GolferRead
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.hole_result import (
     HoleResult,
     HoleResultReadWithHole,
     HoleResultData,
+    HoleResultSubmissionResponse,
     HoleResultValidationRequest,
     HoleResultValidationResponse,
 )
@@ -128,4 +129,23 @@ class RoundValidationResponse(BaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
     holes: List[HoleResultValidationResponse] = []
+    is_valid: bool = False
+
+
+class RoundSubmissionRequest(RoundValidationRequest):
+    golfer_id: int
+    tee_id: int
+    round_type: RoundType
+    scoring_type: ScoringType
+
+
+class RoundSubmissionResponse(BaseModel):
+    round_id: int
+    golfer_id: int
+    tee_id: int
+    round_type: RoundType
+    scoring_type: ScoringType
+    date_played: Union[datetime, date]
+    course_handicap: int
+    holes: List[HoleResultSubmissionResponse] = []
     is_valid: bool = False

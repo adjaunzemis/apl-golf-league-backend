@@ -1,9 +1,9 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .tee import TeeGender
-from .flight_division_link import FlightDivisionLink
-from .tournament_division_link import TournamentDivisionLink
+from app.models.tee import TeeGender
+from app.models.flight_division_link import FlightDivisionLink
+from app.models.tournament_division_link import TournamentDivisionLink
 
 
 class DivisionBase(SQLModel):

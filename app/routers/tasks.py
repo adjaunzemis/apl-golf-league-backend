@@ -7,7 +7,7 @@ import fastapi
 import pydantic
 from typing import List, Optional
 
-from ..scheduler import app as app_scheduler
+from app.scheduler import app as app_scheduler
 
 session = app_scheduler.session
 

@@ -1,6 +1,6 @@
 import pytest
 
-from .apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 @pytest.mark.parametrize(
@@ -91,8 +91,8 @@ def test_compute_hole_adjusted_gross_score(
     "course_par, course_rating, course_slope, handicap_index, course_handicap",
     [
         (72, 73.1, 132, 12, 15.12),
-        (36, 36.7, 123, 4.2, 5),  # TODO: Move to playing handicap test
-        (36, 34.7, 134, 13.1, 15),  # TODO: Move to playing handicap test
+        # (36, 36.7, 123, 4.2, 5),  # TODO: Move to playing handicap test
+        # (36, 34.7, 134, 13.1, 15),  # TODO: Move to playing handicap test
     ],
 )
 def test_compute_course_handicap(
@@ -141,6 +141,17 @@ def test_compute_score_differential(
     [
         ([4.5, 5.6, 3.4, 8.7, 6.8, 10.2, 4.3, 8.8, 6.2, 4.8], 4.3),
         ([13.4, 16.7, 21.2, 13.9], 13.1),
+        ([13.4], 12.8),
+        ([13.4, 16.7], 12.8),
+        ([13.4, 16.7, 12.5], 12.0),
+        ([13.4, 16.7, 12.5, 13.0], 12.2),
+        ([13.4, 16.7, 12.5, 13.0, 14.4], 12.2),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9], 11.9),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9, 12.9], 11.9),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9, 12.9, 14.4], 12.0),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9, 12.9, 14.4, 14.2], 12.0),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9, 12.9, 14.4, 14.2, 9.7], 11.5),
+        ([13.4, 16.7, 12.5, 13.0, 14.4, 11.9, 12.9, 14.4, 14.2, 9.7, 13.2], 11.5),
     ],
 )
 def test_compoute_handicap_index(records, handicap_index):

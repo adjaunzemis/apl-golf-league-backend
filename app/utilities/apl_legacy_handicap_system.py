@@ -1,8 +1,6 @@
-from typing import List
 import numpy as np
 
-from app.models.match import MatchHoleResult, MatchTeamDesignator
-
+from app.models.match import MatchHoleResult, MatchHoleWinner
 from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
@@ -50,7 +48,53 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             stroke_index=stroke_index, course_handicap=course_handicap * 2
         )
 
-    def compute_handicap_index(self, record: List[float]) -> float:
+    def compute_match_team_hole_handicap_strokes(
+        self,
+        stroke_index: int,
+        team_course_handicaps: list[int],
+        opponent_course_handicaps: list[int],
+    ) -> tuple[int, int]:
+        """Computes number of strokes a team receives on a hole for a match.
+
+        Considers course handicaps for both teams and stroke index for the hole.
+
+        Parameters
+        ----------
+        stroke_index: int
+            hole stroke index
+        team_course_handicaps: list[int]
+            course handicaps for players on this team
+        opponent_course_handicaps: list[int]
+            course handicaps for players on the opposing team
+
+        Returns
+        -------
+        team_handicap_strokes: int
+            number of handicap strokes received by this team on this hole
+        opponent_handicap_strokes: int
+            number of handicap strokes received by the opposing team on this hole
+
+        """
+        team_handicap = sum(team_course_handicaps)
+        opponent_handicap = sum(opponent_course_handicaps)
+
+        team_handicap_strokes = 0
+        if team_handicap > opponent_handicap:
+            team_handicap_strokes = self.compute_hole_handicap_strokes(
+                stroke_index=stroke_index,
+                course_handicap=team_handicap - opponent_handicap,
+            )
+
+        opponent_handicap_strokes = 0
+        if opponent_handicap > team_handicap:
+            opponent_handicap_strokes = self.compute_hole_handicap_strokes(
+                stroke_index=stroke_index,
+                course_handicap=opponent_handicap - team_handicap,
+            )
+
+        return (team_handicap_strokes, opponent_handicap_strokes)
+
+    def compute_handicap_index(self, record: list[float]) -> float:
         # Reference: APL Golf League Handicapping
         record_sorted = np.sort(record)
         if len(record) < 4:
@@ -68,28 +112,29 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             self.maximum_handicap_index,
         )  # truncate to nearest tenth
 
-    def determine_match_hole_result(
-        home_team_gross_scores: List[int],
-        away_team_gross_scores: List[int],
-        team_receiving_handicap_strokes: MatchTeamDesignator,
-        team_handicap_strokes_received: int,
+    def compute_match_hole_result(
+        self,
+        home_team_gross_scores: list[int],
+        home_team_handicap_strokes: int,
+        away_team_gross_scores: list[int],
+        away_team_handicap_strokes: int,
     ) -> MatchHoleResult:
-        if team_receiving_handicap_strokes == MatchTeamDesignator.HOME:
-            home_team_net_score = (
-                sum(home_team_gross_scores) - team_handicap_strokes_received
-            )
-            away_team_net_score = sum(away_team_gross_scores)
-        else:
-            away_team_net_score = sum(away_team_gross_scores)
-            away_team_net_score = (
-                sum(away_team_gross_scores) - team_handicap_strokes_received
-            )
-
-        if home_team_net_score < away_team_net_score:
-            return MatchHoleResult.HOME
-        elif away_team_net_score < home_team_net_score:
-            return MatchHoleResult.AWAY
-        return MatchHoleResult.TIE
+        result = MatchHoleResult(
+            home_team_gross_score=sum(home_team_gross_scores),
+            home_team_net_score=sum(home_team_gross_scores)
+            - home_team_handicap_strokes,
+            home_team_handicap_strokes=home_team_handicap_strokes,
+            away_team_gross_score=sum(away_team_gross_scores),
+            away_team_net_score=sum(away_team_gross_scores)
+            - away_team_handicap_strokes,
+            away_team_handicap_strokes=away_team_handicap_strokes,
+            winner=MatchHoleWinner.TIE,
+        )
+        if result.home_team_net_score < result.away_team_net_score:
+            result.winner = MatchHoleWinner.HOME
+        elif result.away_team_net_score < result.home_team_net_score:
+            result.winner = MatchHoleWinner.AWAY
+        return result
 
     @property
     def maximum_handicap_index(self) -> float:
@@ -114,7 +159,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
 
     @property
     def match_points_for_tying_total_net_score(self) -> float:
-        return 0.0
+        return 1.0
 
     @property
     def match_points_for_losing_total_net_score(self) -> float:

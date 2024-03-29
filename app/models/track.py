@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
-from .tee import Tee, TeeReadWithHoles
+from app.models.tee import Tee, TeeReadWithHoles
 
 
 class TrackBase(SQLModel):

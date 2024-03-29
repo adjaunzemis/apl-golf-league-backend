@@ -1,11 +1,12 @@
 import pytest
 
-from .world_handicap_system import WorldHandicapSystem
+from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
 @pytest.mark.parametrize(
     "par, stroke_index, course_handicap, max_score",
     [
+        (4, 7, None, 9),
         (4, 7, 60, 9),
         (4, 7, 52, 9),
         (4, 7, 42, 8),

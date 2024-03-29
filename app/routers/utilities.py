@@ -2,7 +2,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session
 from http import HTTPStatus
 
-from ..models.division import Division, DivisionCreate, DivisionRead
+from app.models.division import Division, DivisionCreate, DivisionRead
 
 
 def upsert_division(*, session: Session, division_data: DivisionCreate) -> DivisionRead:

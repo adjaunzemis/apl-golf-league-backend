@@ -8,8 +8,8 @@ from pymongo import MongoClient
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from .models.user import User
-from .config import Settings
+from app.models.user import User
+from app.config import Settings
 
 
 @lru_cache()

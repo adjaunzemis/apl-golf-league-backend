@@ -4,17 +4,16 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select, SQLModel
 
-from ..dependencies import get_current_active_user, get_sql_db_session
-from ..models.course import (
+from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.course import (
     Course,
-    CourseUpdate,
     CourseRead,
     CourseReadWithTracks,
 )
-from ..models.track import Track, TrackRead, TrackReadWithTees
-from ..models.tee import Tee, TeeGender, TeeRead, TeeReadWithHoles
-from ..models.hole import Hole, HoleRead
-from ..models.user import User
+from app.models.track import Track, TrackRead, TrackReadWithTees
+from app.models.tee import Tee, TeeGender, TeeRead, TeeReadWithHoles
+from app.models.hole import Hole, HoleRead
+from app.models.user import User
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 

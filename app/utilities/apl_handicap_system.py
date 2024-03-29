@@ -1,8 +1,5 @@
-from typing import List
-import numpy as np
-
-from .apl_legacy_handicap_system import APLLegacyHandicapSystem
-from .world_handicap_system import WorldHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+from app.utilities.world_handicap_system import WorldHandicapSystem
 
 
 class APLHandicapSystem(APLLegacyHandicapSystem):

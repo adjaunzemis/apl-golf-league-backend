@@ -3,8 +3,8 @@ from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
-from .golfer import Golfer
-from .tee import TeeGender
+from app.models.golfer import Golfer
+from app.models.tee import TeeGender
 
 
 class QualifyingScoreType(str, Enum):
