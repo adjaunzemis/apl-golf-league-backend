@@ -145,3 +145,6 @@ logs/
 
 # Database files
 /database/
+
+# Scripts data
+scripts/handicap_data
