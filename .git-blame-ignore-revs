@@ -3,3 +3,6 @@
 
 # 2023-01-17: Formatted entire repo using black
 c41b2e983c2c8ee340dc3fb6f8ad15ee607f3672
+
+# 2024-03-29: Updated pre-commit hooks and ruff format/lint rules
+178a541b3f8bf2f84c0879992bb3a0b1f6b539de
