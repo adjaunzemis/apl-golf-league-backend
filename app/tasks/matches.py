@@ -6,7 +6,11 @@ from app.models.match import Match
 
 
 def initialize_matches_for_flight(
-    *, session: Session, flight_id: int, dry_run: bool = False
+    *,
+    session: Session,
+    flight_id: int,
+    bye_weeks_by_team: dict[int, int] | None = None,
+    dry_run: bool = False,
 ):
     flight_db = session.get(Flight, flight_id)
     if flight_db is None:
@@ -183,7 +187,41 @@ def initialize_matches_for_flight(
             f"No pre-defined {flight_db.weeks}-week matchup matrix for {len(team_ids)} teams"
         )
 
-    # TODO: Account for bye week preferences (if possible)
+    # Account for bye week preferences (if possible)
+    if bye_weeks_by_team is not None:
+        for team_id, bye_week in bye_weeks_by_team.items():
+            if team_id not in team_ids:
+                raise ValueError(
+                    f"Team id '{team_id}' not valid for flight id '{flight_id}'"
+                )
+            print(f"Team '{team_id}' requested bye week '{bye_week}'")
+
+            team_idx = next(
+                idx for idx in range(len(team_ids)) if team_ids[idx] == team_id
+            )
+
+            week_matchups = matchup_matrix[bye_week - 1]
+            team_idxs_with_bye = [
+                idx for idx in range(len(week_matchups)) if week_matchups[idx] is None
+            ]
+
+            if len(team_idxs_with_bye) == 0:
+                raise ValueError(
+                    f"Unable to meet requested bye week for team '{team_id}' - no byes on week '{bye_week}'!"
+                )
+
+            if team_idx in team_idxs_with_bye:
+                print(f"Team '{team_id}' already has bye on week '{bye_week}'!")
+                continue
+
+            # TODO: Improve bye week request clashing checks and multiple bye team options
+            # Right now this just forces the first swap!
+            old_team_id = team_ids[team_idxs_with_bye[0]]
+            team_ids[team_idxs_with_bye[0]] = team_id
+            team_ids[team_idx] = old_team_id
+            print(
+                f"Swapped teams '{team_id}' and '{old_team_id}' to meet bye week '{bye_week}' request"
+            )
 
     # Create matches and add to database
     for week_idx in range(len(matchup_matrix)):
