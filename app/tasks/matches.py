@@ -1,35 +1,8 @@
 from sqlmodel import Session, select
 
-from app.models.course import Course
-from app.models.division import Division
 from app.models.flight import Flight
-from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import Golfer, GolferAffiliation
-from app.models.hole import Hole
-from app.models.hole_result import HoleResult
 from app.models.match import Match
-from app.models.match_round_link import MatchRoundLink
-from app.models.officer import Officer
-from app.models.payment import (
-    LeagueDues,
-    LeagueDuesPayment,
-    LeagueDuesType,
-    PaymentMethod,
-    TournamentEntryFeePayment,
-    TournamentEntryFeeType,
-)
-from app.models.round import Round
-from app.models.round_golfer_link import RoundGolferLink
-from app.models.team import Team
-from app.models.team_golfer_link import TeamGolferLink, TeamRole
-from app.models.tee import Tee, TeeGender
-from app.models.tournament import Tournament
-from app.models.tournament_division_link import TournamentDivisionLink
-from app.models.tournament_round_link import TournamentRoundLink
-from app.models.tournament_team_link import TournamentTeamLink
-from app.models.track import Track
-from app.models.user import User
 
 
 def initialize_matches_for_flight(
