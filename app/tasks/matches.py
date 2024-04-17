@@ -1,7 +1,4 @@
-from functools import lru_cache
-
-from pydantic import BaseSettings
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, select
 
 from app.models.course import Course
 from app.models.division import Division
@@ -35,38 +32,17 @@ from app.models.track import Track
 from app.models.user import User
 
 
-class Settings(BaseSettings):
-    apl_golf_league_api_url: str
-    apl_golf_league_api_database_connector: str
-    apl_golf_league_api_database_user: str
-    apl_golf_league_api_database_password: str
-    apl_golf_league_api_database_url: str
-    apl_golf_league_api_database_port_external: int
-    apl_golf_league_api_database_port_internal: int
-    apl_golf_league_api_database_name: str
-    apl_golf_league_api_database_echo: bool = True
-    apl_golf_league_api_access_token_secret_key: str
-    apl_golf_league_api_access_token_algorithm: str
-    apl_golf_league_api_access_token_expire_minutes: int = 120
-    mail_username: str
-    mail_password: str
-    mail_from_address: str
-    mail_from_name: str
-    mail_server: str
-    mail_port: int
-
-    class Config:
-        env_file = ".env"
-
-
-@lru_cache()
-def get_settings():
-    return Settings()
-
-
-def add_scheduled_matches(
-    *, session: Session, flight_db: Flight, dry_run: bool = False
+def initialize_matches_for_flight(
+    *, session: Session, flight_id: int, dry_run: bool = False
 ):
+    flight_db = session.get(Flight, flight_id)
+    if flight_db is None:
+        raise ValueError(f"Unable to find flight with id={flight_id}")
+
+    print(f"Initializing matches for flight id={flight_id}")
+    if dry_run:
+        print(f"NOTE: Dry-run, won't commit changes to database!")
+
     flight_team_links_db = session.exec(
         select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_db.id)
     ).all()
@@ -234,6 +210,9 @@ def add_scheduled_matches(
             f"No pre-defined {flight_db.weeks}-week matchup matrix for {len(team_ids)} teams"
         )
 
+    # TODO: Account for bye week preferences (if possible)
+
+    # Create matches and add to database
     for week_idx in range(len(matchup_matrix)):
         week = week_idx + 1
         for team_idx in range(len(team_ids)):
@@ -266,34 +245,3 @@ def add_scheduled_matches(
                         )
                         session.add(match_db)
                         session.commit()
-
-
-if __name__ == "__main__":
-    # TODO: Make this a runnable task
-
-    YEAR = 2024
-    DRY_RUN = True
-
-    settings = get_settings()
-    DB_URL = "localhost"  # settings.apl_golf_league_api_database_url
-
-    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{settings.apl_golf_league_api_database_port_external}/{settings.apl_golf_league_api_database_name}"
-    print(f"Initializing flight schedules...")
-
-    engine = create_engine(db_uri, echo=False)
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        # For each flight:
-        flights_db = session.exec(select(Flight).where(Flight.year == YEAR)).all()
-        for flight_db in flights_db:
-            print(f"Flight: {flight_db.name} ({flight_db.year})")
-            # Initialize schedule with matches
-            try:
-                add_scheduled_matches(
-                    session=session, flight_db=flight_db, dry_run=DRY_RUN
-                )
-            except Exception as e:
-                print(f"ERROR: Unable to add scheduled matches - {e}")
-
-    print("Flight schedule initialization complete!")

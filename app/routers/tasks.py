@@ -65,13 +65,27 @@ async def get_task(task_name: str = fastapi.Path(..., description="Task name")):
 
 
 @router.post("/run")
-async def run_task(task_name: str = fastapi.Query(..., description="Task name to run")):
-    try:
-        task = session[task_name]
-        task.run()
-        return {"detail": f"Executing task: '{task_name}'"}
-    except KeyError:
+async def run_task(
+    request: fastapi.Request,
+    task_name: str = fastapi.Query(..., description="Task name to run"),
+):
+    if task_name not in session:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid task name: '{task_name}'",
         )
+    task = session[task_name]
+
+    task_params = {}
+    for param, value in request.query_params.items():
+        if param == "task_name":
+            continue
+        if param not in task.parameters:
+            raise fastapi.HTTPException(
+                status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid parameter '{param}' for task '{task_name}'",
+            )
+        task_params[param] = value
+
+    task.run(**task_params)
+    return {"detail": f"Executing task: '{task_name}'"}

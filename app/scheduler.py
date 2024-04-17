@@ -3,8 +3,20 @@ Task Scheduler
 """
 
 from rocketry import Rocketry
+from sqlmodel import Session
+
+from app.dependencies import get_sql_db_engine
+from app.tasks.matches import initialize_matches_for_flight
 
 app = Rocketry(execution="async")
+
+
+@app.task(parameters={"flight_id": -1, "dry_run": False})
+async def initialize_flight_schedule(flight_id: int, dry_run: bool):
+    with Session(get_sql_db_engine()) as session:
+        initialize_matches_for_flight(
+            session=session, flight_id=flight_id, dry_run=dry_run
+        )
 
 
 # @app.task(cron("0 23 * * 0"))
