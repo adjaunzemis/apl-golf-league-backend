@@ -5,4 +5,4 @@ target-version = "py312"
 select = ["F401", "I"]
 
 [tool.ruff.lint.per-file-ignores]
-"app/tasks/**.py" = ["E401"]
+"app/tasks/initialize_flight_schedules.py" = ["F401"]
