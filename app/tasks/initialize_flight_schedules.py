@@ -1,15 +1,38 @@
-"""
-Finalized flight setup after team sign-ups
-
-"""
-
 from functools import lru_cache
 
-from models.flight import Flight
-from models.flight_team_link import FlightTeamLink
-from models.match import Match
 from pydantic import BaseSettings
 from sqlmodel import Session, SQLModel, create_engine, select
+
+from app.models.course import Course
+from app.models.division import Division
+from app.models.flight import Flight
+from app.models.flight_division_link import FlightDivisionLink
+from app.models.flight_team_link import FlightTeamLink
+from app.models.golfer import Golfer, GolferAffiliation
+from app.models.hole import Hole
+from app.models.hole_result import HoleResult
+from app.models.match import Match
+from app.models.match_round_link import MatchRoundLink
+from app.models.officer import Officer
+from app.models.payment import (
+    LeagueDues,
+    LeagueDuesPayment,
+    LeagueDuesType,
+    PaymentMethod,
+    TournamentEntryFeePayment,
+    TournamentEntryFeeType,
+)
+from app.models.round import Round
+from app.models.round_golfer_link import RoundGolferLink
+from app.models.team import Team
+from app.models.team_golfer_link import TeamGolferLink, TeamRole
+from app.models.tee import Tee, TeeGender
+from app.models.tournament import Tournament
+from app.models.tournament_division_link import TournamentDivisionLink
+from app.models.tournament_round_link import TournamentRoundLink
+from app.models.tournament_team_link import TournamentTeamLink
+from app.models.track import Track
+from app.models.user import User
 
 
 class Settings(BaseSettings):
@@ -185,6 +208,27 @@ def add_scheduled_matches(
             [5, 4, 10, 2, 1, 9, 8, 7, 6, 3],  # week 17
             [4, 3, 2, 1, 9, 8, 10, 6, 5, 7],  # week 18
         ]
+    elif (flight_db.weeks == 18) and (len(team_ids) == 11):
+        matchup_matrix = [  # 11 teams, 18 weeks
+            [11, 10, 9, 8, 7, None, 5, 4, 3, 2, 1],  # week 1
+            [None, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2],  # week 2
+            [2, 1, 11, 10, 9, 8, None, 6, 5, 4, 3],  # week 3
+            [3, None, 1, 11, 10, 9, 8, 7, 6, 5, 4],  # week 4
+            [4, 3, 2, 1, 11, 10, 9, None, 7, 6, 5],  # week 5
+            [5, 4, None, 2, 1, 11, 10, 9, 8, 7, 6],  # week 6
+            [6, 5, 4, 3, 2, 1, 11, 10, None, 8, 7],  # week 7
+            [7, 6, 5, None, 3, 2, 1, 11, 10, 9, 8],  # week 8
+            [8, 7, 6, 5, 4, 3, 2, 1, 11, None, 9],  # week 9
+            [9, 8, 7, 6, None, 4, 3, 2, 1, 11, 10],  # week 10
+            [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, None],  # week 11
+            [11, 10, 9, 8, 7, None, 5, 4, 3, 2, 1],  # week 12
+            [None, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2],  # week 13
+            [2, 1, 11, None, 9, 8, None, 6, 5, None, 3],  # week 14
+            [3, None, 1, 11, 10, 9, 8, 7, 6, 5, 4],  # week 15
+            [4, 3, 2, 1, None, 10, 9, None, 7, 6, None],  # week 16
+            [5, 4, None, 2, 1, 11, 10, 9, 8, 7, 6],  # week 17
+            [6, 5, 4, 3, 2, 1, 11, 10, None, 8, 7],  # week 18
+        ]
     else:
         raise ValueError(
             f"No pre-defined {flight_db.weeks}-week matchup matrix for {len(team_ids)} teams"
@@ -225,22 +269,18 @@ def add_scheduled_matches(
 
 
 if __name__ == "__main__":
-    YEAR = 2023
-    DRY_RUN = False
+    # TODO: Make this a runnable task
+
+    YEAR = 2024
+    DRY_RUN = True
 
     settings = get_settings()
+    DB_URL = "localhost"  # settings.apl_golf_league_api_database_url
 
-    DB_URL = "localhost"  # TODO: replace with external database url!
-    DB_PORT = (
-        settings.apl_golf_league_api_database_port_external
-    )  # NOTE: using external port, not running from inside container
-    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{settings.apl_golf_league_api_database_port_external}/{settings.apl_golf_league_api_database_name}"
+    print(f"Initializing flight schedules...")
 
-    print(
-        f"Finalizing flight setup in database: {settings.apl_golf_league_api_database_url}"
-    )
     engine = create_engine(db_uri, echo=False)
-
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
@@ -256,4 +296,4 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"ERROR: Unable to add scheduled matches - {e}")
 
-    print("Done!")
+    print("Flight schedule initialization complete!")
