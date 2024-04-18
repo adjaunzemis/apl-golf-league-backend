@@ -19,7 +19,7 @@
                     {% for update in updates -%}
                         <tr style="border-bottom: 1px solid #dddddd">
                             <td style="padding: 5px 2px">{{ update["golfer_name"] }} (id={{ update["golfer_id"] }})</td>
-                            <td style="padding: 5px 2px">{{ update["index_prior"] }} -> {{ update["index_new"] }}</td>
+                            <td style="padding: 5px 2px">{{ update["index_prior"] }} &#x2192; {{ update["index_new"] }}</td>
                             <td style="padding: 5px 2px">{{ update["reasons"] }}</td>
                         </tr>
                     {% endfor %}
