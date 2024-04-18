@@ -2,6 +2,7 @@ import datetime
 import json
 
 from rocketry import Rocketry
+from rocketry.conds import cron
 from sqlmodel import Session, select
 
 from app.dependencies import get_sql_db_engine
@@ -34,8 +35,9 @@ async def initialize_flight_schedule(
 
 
 @app.task(
-    parameters={"golfer_id": None, "force_update": False, "dry_run": False}
-)  # TODO: Set cron schedule to "0 23 * * 0" (at 23:00 on Sunday)
+    cron("0 23 * * 0"),
+    parameters={"golfer_id": None, "force_update": False, "dry_run": False},
+)
 async def run_handicap_update(golfer_id: int | None, force_update: bool, dry_run: bool):
     # TODO: Allow input of date range
     date_today = datetime.date.today()
