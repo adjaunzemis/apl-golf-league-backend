@@ -149,7 +149,7 @@ async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
 async def test_email(
     *, email: EmailSchema, background_tasks: BackgroundTasks
 ) -> JSONResponse:
-    send_email(email, "email.html", background_tasks)
+    send_email(email, "handicap_update_report.html", background_tasks)
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"message": "Email has been sent"}
     )
