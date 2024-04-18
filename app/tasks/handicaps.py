@@ -384,6 +384,7 @@ def update_golfer_handicaps(
     else:
         golfers_db = session.exec(select(Golfer).order_by(Golfer.id)).all()
 
+    updates_info: list[dict] = []
     for golfer_db in golfers_db:
         prior_handicap_index_data = get_handicap_index_data(
             session=session,
@@ -410,10 +411,8 @@ def update_golfer_handicaps(
         if current_handicap_index is None and new_handicap_index is None:
             continue
 
-        update_start = datetime.now()
         update_required = False
         update_reasons = []
-        updates_info: list[dict] = []
         if force_update:
             update_required = True
             update_reasons.append("forced")
@@ -423,9 +422,7 @@ def update_golfer_handicaps(
             update_reasons.append("golfer handicap index mismatch")
 
         for pending_round in prior_handicap_index_data.pending_rounds:
-            if (current_handicap_index != new_handicap_index) or (  # TODO: duplicated?
-                pending_round in new_handicap_index_data.active_rounds
-            ):
+            if pending_round in new_handicap_index_data.active_rounds:
                 update_required = True
                 update_reasons.append("pending rounds")
                 break
