@@ -10,7 +10,7 @@ from sqlmodel import Session, create_engine, select
 from app.dependencies import get_settings
 from app.models.golfer import Golfer
 from app.models.round import RoundSummary, RoundType
-from app.tasks.update_golfer_handicaps import (
+from app.tasks.handicaps import (
     get_handicap_index_data,
     get_rounds_in_scoring_record,
 )

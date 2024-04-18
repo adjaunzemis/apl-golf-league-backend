@@ -16,7 +16,7 @@ def initialize_matches_for_flight(
     if flight_db is None:
         raise ValueError(f"Unable to find flight with id={flight_id}")
 
-    print(f"Initializing matches for flight id={flight_id}")
+    print(f"Initializing matches for flight: '{flight_db.name} ({flight_db.year})'")
     if dry_run:
         print(f"NOTE: Dry-run, won't commit changes to database!")
 
@@ -33,6 +33,14 @@ def initialize_matches_for_flight(
         )
 
     team_ids = [link.team_id for link in flight_team_links_db]
+
+    existing_matches = session.exec(
+        select(Match).where(Match.flight_id == flight_id)
+    ).all()
+    if len(existing_matches) > 0:
+        raise ValueError(
+            f"Matches already exist for flight: '{flight_db.name} ({flight_db.year})' (id={flight_id})"
+        )
 
     # TODO: Implement other team-number/week-number schedules as needed
     if (flight_db.weeks == 18) and (len(team_ids) == 5):
@@ -256,3 +264,7 @@ def initialize_matches_for_flight(
                         )
                         session.add(match_db)
                         session.commit()
+
+    print(
+        f"Completed match initialization for flight: '{flight_db.name} ({flight_db.year})'"
+    )

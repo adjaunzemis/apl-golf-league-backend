@@ -2,9 +2,8 @@ from datetime import date as dt_date
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from sqlmodel import Session, SQLModel, create_engine, desc, select
+from sqlmodel import Session, SQLModel, desc, select
 
-from app.dependencies import get_settings
 from app.models.course import Course
 from app.models.golfer import Golfer
 from app.models.hole import Hole
@@ -331,8 +330,11 @@ def get_handicap_index_data(
 def update_golfer_handicaps(
     *,
     session: Session,
-    old_max_date: datetime,
-    new_max_date: datetime,
+    prior_end_date: dt_date,
+    new_end_date: dt_date,
+    min_date: dt_date | None = None,
+    golfer_id: int | None = None,
+    force_update: bool = False,
     dry_run: bool = False,
 ):
     """
@@ -342,23 +344,52 @@ def update_golfer_handicaps(
     ----------
     session : Session
         database session
-    limit : integer
-        maximum number of rounds allowed for handicap consideration
+    prior_end_date : datetime
+        end date of prior handicap update
+    new_end_date : datetime
+        end date for current handicap update
+    min_date: datetime | None
+        earliest allowed date for rounds in scoring record
+        Default: None, uses default (last three calendar years)
+    golfer_id: int | None
+        specific golfer to update handicap index
+        Default: None, all golfers
+    force_update: bool, optional
+        if true, updates handicap index regardless of mismatches or pending rounds
+        Default: False
     dry_run : bool, optional
         if true, does not commit changes to database records
         Default: False
 
     """
-    print(f"Updating golfer handicap index data")
-    golfers_db = session.exec(select(Golfer)).all()
+    print(
+        f"Starting handicap update: prior={prior_end_date}, new={new_end_date}, force_update={force_update}"
+    )
+    if dry_run:
+        print(f"NOTE: Dry-run, won't commit changes to database!")
+
+    if min_date is None:
+        min_date = datetime(datetime.today().year - 3, 1, 1).date()
+    print(f"Minimum date for rounds in handicap consideration: {min_date}")
+
+    if golfer_id is not None:
+        golfer_db = session.exec(
+            select(Golfer).where(Golfer.id == golfer_id)
+        ).one_or_none()
+        if golfer_db is None:
+            raise ValueError(
+                f"Unable to find golfer with id= {golfer_id} for handicap update"
+            )
+        golfers_db = [golfer_db]
+    else:
+        golfers_db = session.exec(select(Golfer).order_by(Golfer.id)).all()
+
     for golfer_db in golfers_db:
-        update_required = False
-        update_reasons = []
-        old_handicap_index_data = get_handicap_index_data(
+        prior_handicap_index_data = get_handicap_index_data(
             session=session,
             golfer_id=golfer_db.id,
-            min_date=datetime(datetime.today().year - 2, 1, 1).date(),
-            max_date=old_max_date.date(),
+            min_date=min_date,
+            max_date=prior_end_date,
             limit=10,
             include_rounds=True,
             use_legacy_handicapping=False,
@@ -366,35 +397,51 @@ def update_golfer_handicaps(
         new_handicap_index_data = get_handicap_index_data(
             session=session,
             golfer_id=golfer_db.id,
-            min_date=datetime(datetime.today().year - 2, 1, 1).date(),
-            max_date=new_max_date.date(),
+            min_date=min_date,
+            max_date=new_end_date,
             limit=10,
             include_rounds=True,
             use_legacy_handicapping=False,
         )
-        old_handicap_index = golfer_db.handicap_index
+
+        current_handicap_index = golfer_db.handicap_index
         new_handicap_index = new_handicap_index_data.active_handicap_index
-        if new_handicap_index != old_handicap_index:
+
+        if current_handicap_index is None and new_handicap_index is None:
+            continue
+
+        update_required = False
+        update_reasons = []
+        if force_update:
+            update_required = True
+            update_reasons.append("forced")
+
+        if new_handicap_index != current_handicap_index:
             update_required = True
             update_reasons.append("golfer handicap index mismatch")
-        for pending_round in old_handicap_index_data.pending_rounds:
-            if (old_handicap_index != new_handicap_index) or (
+
+        for pending_round in prior_handicap_index_data.pending_rounds:
+            if (current_handicap_index != new_handicap_index) or (  # TODO: duplicated?
                 pending_round in new_handicap_index_data.active_rounds
             ):
                 update_required = True
                 update_reasons.append("pending rounds")
                 break
+
         if update_required:
             print(
-                f"Updating handicap index for golfer '{golfer_db.name}' ({old_handicap_index}) from {old_handicap_index_data.active_handicap_index} to {new_handicap_index} : "
+                f"Updating handicap index for '{golfer_db.name}' (id={golfer_db.id}): db={current_handicap_index}, prior={prior_handicap_index_data.active_handicap_index}, new={new_handicap_index} : "
                 + ", ".join(update_reasons)
             )
             golfer_db.handicap_index = new_handicap_index
             golfer_db.handicap_index_updated = datetime.now()
             if not dry_run:
                 session.add(golfer_db)
+
     if not dry_run:
         session.commit()  # update all handicaps at once
+
+    print(f"Completed handicap update!")
 
 
 def recalculate_hole_results(
@@ -476,38 +523,3 @@ def recalculate_hole_results(
                     session.commit()
                     session.refresh(round_db)
     print(f"Corrected errors in {round_error_counter} rounds")
-
-
-if __name__ == "__main__":
-    # TODO: Make this a runnable task
-
-    DRY_RUN = False
-
-    OLD_MAX_DATE = datetime(2023, 7, 31)  # TODO: un-hardcode date
-    NEW_MAX_DATE = datetime(2023, 8, 7)  # TODO: un-hardcode date
-
-    settings = get_settings()
-
-    DB_URL = "localhost"  # TODO: replace with external database url!
-    DB_PORT = (
-        settings.apl_golf_league_api_database_port_external
-    )  # NOTE: using external port, not running from inside container
-    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
-
-    print(
-        f"Updating golfer handicaps in database: {settings.apl_golf_league_api_database_url}"
-    )
-    print(f"Handicap update date range: {OLD_MAX_DATE} - {NEW_MAX_DATE}")
-    engine = create_engine(db_uri, echo=False)
-
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        # recalculate_hole_results(session=session, year=2023)
-        update_golfer_handicaps(
-            session=session,
-            old_max_date=OLD_MAX_DATE,
-            new_max_date=NEW_MAX_DATE,
-            dry_run=DRY_RUN,
-        )
-        print("Done!")
