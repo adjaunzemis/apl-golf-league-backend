@@ -63,7 +63,7 @@ async def run_handicap_update(golfer_id: int | None, force_update: bool, dry_run
             .where(Officer.role == "Handicapper")
         ).all()
 
-    if len(handicappers) > 0:
+    if not dry_run and len(handicappers) > 0:
         print("Sending handicap update report to handicappers...")
         email = EmailSchema(
             subject=f"[APL Golf League] Handicap Update Report - {update_start.date().isoformat()}",
