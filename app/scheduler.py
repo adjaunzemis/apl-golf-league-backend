@@ -57,21 +57,17 @@ async def run_handicap_update(golfer_id: int | None, force_update: bool, dry_run
             force_update=force_update,
             dry_run=dry_run,
         )
-        webmasters = session.exec(
+        handicappers = session.exec(
             select(Officer)
             .where(Officer.year == update_start.year)
             .where(Officer.role == "Handicapper")
         ).all()
 
-    if len(webmasters) > 0:
-        print("Sending handicap update report to webmasters...")
+    if len(handicappers) > 0:
+        print("Sending handicap update report to handicappers...")
         email = EmailSchema(
             subject=f"[APL Golf League] Handicap Update Report - {update_start.date().isoformat()}",
-            to_addresses=[
-                webmaster.email
-                for webmaster in webmasters
-                if webmaster.email is not None
-            ],
+            to_addresses=[hc.email for hc in handicappers if hc.email is not None],
             body={
                 "update_date": update_start.replace(microsecond=0).isoformat(),
                 "updates": updates_info,
