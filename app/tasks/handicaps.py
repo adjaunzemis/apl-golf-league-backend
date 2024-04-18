@@ -410,8 +410,10 @@ def update_golfer_handicaps(
         if current_handicap_index is None and new_handicap_index is None:
             continue
 
+        update_start = datetime.now()
         update_required = False
         update_reasons = []
+        updates_info: list[dict] = []
         if force_update:
             update_required = True
             update_reasons.append("forced")
@@ -433,6 +435,15 @@ def update_golfer_handicaps(
                 f"Updating handicap index for '{golfer_db.name}' (id={golfer_db.id}): db={current_handicap_index}, prior={prior_handicap_index_data.active_handicap_index}, new={new_handicap_index} : "
                 + ", ".join(update_reasons)
             )
+            updates_info.append(
+                {
+                    "golfer_name": golfer_db.name,
+                    "golfer_id": golfer_db.id,
+                    "index_prior": current_handicap_index,
+                    "index_new": new_handicap_index,
+                    "reasons": ", ".join(update_reasons),
+                }
+            )
             golfer_db.handicap_index = new_handicap_index
             golfer_db.handicap_index_updated = datetime.now()
             if not dry_run:
@@ -442,6 +453,7 @@ def update_golfer_handicaps(
         session.commit()  # update all handicaps at once
 
     print(f"Completed handicap update!")
+    return updates_info
 
 
 def recalculate_hole_results(

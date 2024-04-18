@@ -2,11 +2,13 @@ import datetime
 import json
 
 from rocketry import Rocketry
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.dependencies import get_sql_db_engine
+from app.models.officer import Officer
 from app.tasks.handicaps import update_golfer_handicaps
 from app.tasks.matches import initialize_matches_for_flight
+from app.utilities.notifications import EmailSchema, send_email
 
 app = Rocketry(execution="async")
 
@@ -43,8 +45,9 @@ async def run_handicap_update(golfer_id: int | None, force_update: bool, dry_run
     date_monday_current = date_sunday_current + datetime.timedelta(days=1)
     date_monday_previous = date_monday_current - datetime.timedelta(days=7)
 
+    update_start = datetime.datetime.now()
     with Session(get_sql_db_engine()) as session:
-        update_golfer_handicaps(
+        updates_info = update_golfer_handicaps(
             session=session,
             golfer_id=golfer_id,
             prior_end_date=date_monday_previous,
@@ -52,6 +55,27 @@ async def run_handicap_update(golfer_id: int | None, force_update: bool, dry_run
             force_update=force_update,
             dry_run=dry_run,
         )
+        webmasters = session.exec(
+            select(Officer)
+            .where(Officer.year == update_start.year)
+            .where(Officer.role == "Handicapper")
+        ).all()
+
+    if len(webmasters) > 0:
+        print("Sending handicap update report to webmasters...")
+        email = EmailSchema(
+            subject=f"[APL Golf League] Handicap Update Report - {update_start.date().isoformat()}",
+            to_addresses=[
+                webmaster.email
+                for webmaster in webmasters
+                if webmaster.email is not None
+            ],
+            body={
+                "update_date": update_start.replace(microsecond=0).isoformat(),
+                "updates": updates_info,
+            },
+        )
+        await send_email(email=email, template_name="handicap_update_report.html")
 
 
 if __name__ == "__main__":

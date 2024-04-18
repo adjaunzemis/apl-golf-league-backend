@@ -24,14 +24,16 @@ def get_email_config() -> ConnectionConfig:
         MAIL_FROM_NAME=settings.mail_from_name,
         MAIL_SERVER=settings.mail_server,
         MAIL_PORT=settings.mail_port,
-        TEMPLATE_FOLDER="./app/templates/",
+        TEMPLATE_FOLDER="app/templates/",
         MAIL_STARTTLS=True,
         MAIL_SSL_TLS=False,
     )
 
 
-def send_email(
-    email: EmailSchema, template_name: str, background_tasks: BackgroundTasks
+async def send_email(
+    email: EmailSchema,
+    template_name: str,
+    background_tasks: BackgroundTasks | None = None,
 ):
     message = MessageSchema(
         subject=email.dict().get("subject"),
@@ -40,4 +42,8 @@ def send_email(
         subtype=MessageType.html,
     )
     fm = FastMail(get_email_config())
-    background_tasks.add_task(fm.send_message, message, template_name=template_name)
+
+    if background_tasks is None:
+        await fm.send_message(message=message, template_name=template_name)
+    else:
+        background_tasks.add_task(fm.send_message, message, template_name=template_name)
