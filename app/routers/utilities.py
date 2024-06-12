@@ -9,7 +9,7 @@ from app.models.division import Division, DivisionCreate, DivisionRead
 def upsert_division(*, session: Session, division_data: DivisionCreate) -> DivisionRead:
     """Updates/inserts a division data record."""
     if division_data.id is None:  # create new division
-        division_db = Division.from_orm(division_data)
+        division_db = Division.model_validate(division_data)
     else:  # update existing division
         division_db = session.get(Division, division_data.id)
         if not division_db:

@@ -92,7 +92,7 @@ async def create_match(
     current_user: User = Depends(get_current_active_user),
     match: MatchCreate,
 ):
-    match_db = Match.from_orm(match)
+    match_db = Match.model_validate(match)
     session.add(match_db)
     session.commit()
     session.refresh(match_db)

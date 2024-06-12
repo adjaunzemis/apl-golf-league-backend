@@ -102,7 +102,7 @@ async def create_round(
     current_user: User = Depends(get_current_active_user),
     round: RoundCreate,
 ):
-    round_db = Round.from_orm(round)
+    round_db = Round.model_validate(round)
     session.add(round_db)
     session.commit()
     session.refresh(round_db)
@@ -170,7 +170,7 @@ async def create_hole_result(
     current_user: User = Depends(get_current_active_user),
     hole_result: HoleResultCreate,
 ):
-    hole_result_db = HoleResult.from_orm(hole_result)
+    hole_result_db = HoleResult.model_validate(hole_result)
     session.add(hole_result_db)
     session.commit()
     session.refresh(hole_result_db)

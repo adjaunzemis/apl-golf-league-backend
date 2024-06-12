@@ -31,7 +31,7 @@ async def create_officer(
     current_user: User = Depends(get_current_active_user),
     officer: OfficerCreate,
 ):
-    officer_db = Officer.from_orm(officer)
+    officer_db = Officer.model_validate(officer)
     session.add(officer_db)
     session.commit()
     session.refresh(officer_db)

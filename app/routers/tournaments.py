@@ -286,7 +286,7 @@ def upsert_tournament(
 ) -> TournamentRead:
     """Updates/inserts a tournament data record."""
     if tournament_data.id is None:  # create new tournament
-        tournament_db = Tournament.from_orm(tournament_data)
+        tournament_db = Tournament.model_validate(tournament_data)
     else:  # update existing tournament
         tournament_db = session.get(Tournament, tournament_data.id)
         if not tournament_db:

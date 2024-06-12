@@ -44,7 +44,7 @@ async def read_all_golfers(*, session: Session = Depends(get_sql_db_session)):
 async def create_golfer(
     *, session: Session = Depends(get_sql_db_session), golfer: GolferCreate
 ):
-    golfer_db = Golfer.from_orm(golfer)
+    golfer_db = Golfer.model_validate(golfer)
     session.add(golfer_db)
     session.commit()
     session.refresh(golfer_db)
