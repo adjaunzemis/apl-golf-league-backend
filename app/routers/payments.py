@@ -233,7 +233,7 @@ async def update_league_dues_payment(
     payment_db = session.get(LeagueDuesPayment, payment_id)
     if not payment_db:
         raise HTTPException(status_code=404, detail="Payment not found")
-    payment_data = payment.dict(exclude_unset=True)
+    payment_data = payment.model_dump(exclude_unset=True)
     for key, value in payment_data.items():
         setattr(payment_db, key, value)
     session.add(payment_db)
@@ -385,7 +385,7 @@ async def update_tournament_entry_fee_payment(
     payment_db = session.get(TournamentEntryFeePayment, payment_id)
     if not payment_db:
         raise HTTPException(status_code=404, detail="Payment not found")
-    payment_data = payment.dict(exclude_unset=True)
+    payment_data = payment.model_dump(exclude_unset=True)
     for key, value in payment_data.items():
         setattr(payment_db, key, value)
     session.add(payment_db)

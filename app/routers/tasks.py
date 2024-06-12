@@ -43,7 +43,7 @@ def serialize_task(task: Task):
         start_cond=str(task.start_cond),
         end_cond=str(task.end_cond),
         is_running=task.is_running,
-        **task.dict(exclude={"start_cond", "end_cond"}),
+        **task.model_dump(exclude={"start_cond", "end_cond"}),
     )
 
 

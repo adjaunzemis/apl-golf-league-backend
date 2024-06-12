@@ -121,7 +121,7 @@ async def create_qualifying_score(
         raise HTTPException(
             HTTPStatus.NOT_FOUND, "Qualifying score data invalid, no such golfer"
         )
-    qualifying_score_db = QualifyingScore.from_orm(qualifying_score)
+    qualifying_score_db = QualifyingScore.model_validate(qualifying_score)
     session.add(qualifying_score_db)
     session.commit()
     session.refresh(qualifying_score_db)

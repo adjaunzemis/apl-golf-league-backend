@@ -44,7 +44,7 @@ async def read_all_golfers(*, session: Session = Depends(get_sql_db_session)):
 async def create_golfer(
     *, session: Session = Depends(get_sql_db_session), golfer: GolferCreate
 ):
-    golfer_db = Golfer.from_orm(golfer)
+    golfer_db = Golfer.model_validate(golfer)
     session.add(golfer_db)
     session.commit()
     session.refresh(golfer_db)
@@ -85,7 +85,7 @@ async def update_golfer(
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
         raise HTTPException(status_code=404, detail="Golfer not found")
-    golfer_data = golfer.dict(exclude_unset=True)
+    golfer_data = golfer.model_dump(exclude_unset=True)
     for key, value in golfer_data.items():
         setattr(golfer_db, key, value)
     session.add(golfer_db)

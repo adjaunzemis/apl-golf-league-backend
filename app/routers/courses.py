@@ -206,7 +206,7 @@ def validate_course_data(
 def upsert_course(*, session: Session, course_data: CourseData) -> CourseRead:
     """Updates/inserts a course data record."""
     if course_data.id is None:  # create new course
-        course_db = Course.from_orm(course_data)
+        course_db = Course.model_validate(course_data)
     else:  # update existing course
         course_db = session.get(Course, course_data.id)
         if not course_db:
@@ -214,7 +214,7 @@ def upsert_course(*, session: Session, course_data: CourseData) -> CourseRead:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Course (id={course_data.id}) not found",
             )
-        course_dict = course_data.dict(exclude_unset=True)
+        course_dict = course_data.model_dump(exclude_unset=True)
         for key, value in course_dict.items():
             if key != "tracks":
                 setattr(course_db, key, value)
@@ -234,7 +234,7 @@ def upsert_track(
 ) -> TrackRead:
     """Updates/inserts a track data record."""
     if track_data.id is None:  # create new track
-        track_db = Track.from_orm(track_data)
+        track_db = Track.model_validate(track_data)
     else:  # update existing track
         track_db = session.get(Track, track_data.id)
         if not track_db:
@@ -242,7 +242,7 @@ def upsert_track(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Track (id={track_data.id}) not found",
             )
-        track_dict = track_data.dict(exclude_unset=True)
+        track_dict = track_data.model_dump(exclude_unset=True)
         for key, value in track_dict.items():
             if key != "tees":
                 setattr(track_db, key, value)
@@ -261,7 +261,7 @@ def upsert_track(
 def upsert_tee(*, session: Session, tee_data: TeeData, track_id: int) -> TeeRead:
     """Updates/inserts a tee data record."""
     if tee_data.id is None:  # create new tee
-        tee_db = Tee.from_orm(tee_data)
+        tee_db = Tee.model_validate(tee_data)
     else:  # update existing tee
         tee_db = session.get(Tee, tee_data.id)
         if not tee_db:
@@ -269,7 +269,7 @@ def upsert_tee(*, session: Session, tee_data: TeeData, track_id: int) -> TeeRead
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tee (id={tee_data.id}) not found",
             )
-        tee_dict = tee_data.dict(exclude_unset=True)
+        tee_dict = tee_data.model_dump(exclude_unset=True)
         for key, value in tee_dict.items():
             if key != "holes":
                 setattr(tee_db, key, value)
@@ -288,7 +288,7 @@ def upsert_tee(*, session: Session, tee_data: TeeData, track_id: int) -> TeeRead
 def upsert_hole(*, session: Session, hole_data: HoleData, tee_id: int) -> TeeRead:
     """Updates/inserts a hole data record."""
     if hole_data.id is None:  # create new hole
-        hole_db = Hole.from_orm(hole_data)
+        hole_db = Hole.model_validate(hole_data)
     else:  # update existing hole
         hole_db = session.get(Hole, hole_data.id)
         if not hole_db:
@@ -296,7 +296,7 @@ def upsert_hole(*, session: Session, hole_data: HoleData, tee_id: int) -> TeeRea
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Hole (id={hole_data.id}) not found",
             )
-        track_dict = hole_data.dict(exclude_unset=True)
+        track_dict = hole_data.model_dump(exclude_unset=True)
         for key, value in track_dict.items():
             setattr(hole_db, key, value)
     setattr(hole_db, "tee_id", tee_id)

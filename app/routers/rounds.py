@@ -102,7 +102,7 @@ async def create_round(
     current_user: User = Depends(get_current_active_user),
     round: RoundCreate,
 ):
-    round_db = Round.from_orm(round)
+    round_db = Round.model_validate(round)
     session.add(round_db)
     session.commit()
     session.refresh(round_db)
@@ -128,7 +128,7 @@ async def update_round(
     round_db = session.get(Round, round_id)
     if not round_db:
         raise HTTPException(status_code=404, detail="Round not found")
-    round_data = round.dict(exclude_unset=True)
+    round_data = round.model_dump(exclude_unset=True)
     for key, value in round_data.items():
         setattr(round_db, key, value)
     session.add(round_db)
@@ -170,7 +170,7 @@ async def create_hole_result(
     current_user: User = Depends(get_current_active_user),
     hole_result: HoleResultCreate,
 ):
-    hole_result_db = HoleResult.from_orm(hole_result)
+    hole_result_db = HoleResult.model_validate(hole_result)
     session.add(hole_result_db)
     session.commit()
     session.refresh(hole_result_db)
@@ -198,7 +198,7 @@ async def update_hole_result(
     hole_result_db = session.get(HoleResult, hole_result_id)
     if not hole_result_db:
         raise HTTPException(status_code=404, detail="Hole result not found")
-    round_data = hole_result.dict(exclude_unset=True)
+    round_data = hole_result.model_dump(exclude_unset=True)
     for key, value in round_data.items():
         setattr(hole_result_db, key, value)
     session.add(hole_result_db)

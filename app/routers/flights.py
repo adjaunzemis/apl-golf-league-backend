@@ -137,7 +137,7 @@ async def delete_flight(
 def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
     """Updates/inserts a flight data record."""
     if flight_data.id is None:  # create new flight
-        flight_db = Flight.from_orm(flight_data)
+        flight_db = Flight.model_validate(flight_data)
     else:  # update existing flight
         flight_db = session.get(Flight, flight_data.id)
         if not flight_db:
@@ -145,7 +145,7 @@ def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Flight (id={flight_data.id}) not found",
             )
-        flight_dict = flight_data.dict(exclude_unset=True)
+        flight_dict = flight_data.model_dump(exclude_unset=True)
         for key, value in flight_dict.items():
             if key != "divisions":
                 setattr(flight_db, key, value)

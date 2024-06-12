@@ -286,7 +286,7 @@ def upsert_tournament(
 ) -> TournamentRead:
     """Updates/inserts a tournament data record."""
     if tournament_data.id is None:  # create new tournament
-        tournament_db = Tournament.from_orm(tournament_data)
+        tournament_db = Tournament.model_validate(tournament_data)
     else:  # update existing tournament
         tournament_db = session.get(Tournament, tournament_data.id)
         if not tournament_db:
@@ -294,7 +294,7 @@ def upsert_tournament(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tournament (id={tournament_data.id}) not found",
             )
-        tournament_dict = tournament_data.dict(exclude_unset=True)
+        tournament_dict = tournament_data.model_dump(exclude_unset=True)
         for key, value in tournament_dict.items():
             if key != "divisions":
                 setattr(tournament_db, key, value)
