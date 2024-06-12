@@ -85,7 +85,7 @@ async def update_golfer(
     golfer_db = session.get(Golfer, golfer_id)
     if not golfer_db:
         raise HTTPException(status_code=404, detail="Golfer not found")
-    golfer_data = golfer.dict(exclude_unset=True)
+    golfer_data = golfer.model_dump(exclude_unset=True)
     for key, value in golfer_data.items():
         setattr(golfer_db, key, value)
     session.add(golfer_db)

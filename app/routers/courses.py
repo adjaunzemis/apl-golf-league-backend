@@ -214,7 +214,7 @@ def upsert_course(*, session: Session, course_data: CourseData) -> CourseRead:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Course (id={course_data.id}) not found",
             )
-        course_dict = course_data.dict(exclude_unset=True)
+        course_dict = course_data.model_dump(exclude_unset=True)
         for key, value in course_dict.items():
             if key != "tracks":
                 setattr(course_db, key, value)
@@ -242,7 +242,7 @@ def upsert_track(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Track (id={track_data.id}) not found",
             )
-        track_dict = track_data.dict(exclude_unset=True)
+        track_dict = track_data.model_dump(exclude_unset=True)
         for key, value in track_dict.items():
             if key != "tees":
                 setattr(track_db, key, value)
@@ -269,7 +269,7 @@ def upsert_tee(*, session: Session, tee_data: TeeData, track_id: int) -> TeeRead
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tee (id={tee_data.id}) not found",
             )
-        tee_dict = tee_data.dict(exclude_unset=True)
+        tee_dict = tee_data.model_dump(exclude_unset=True)
         for key, value in tee_dict.items():
             if key != "holes":
                 setattr(tee_db, key, value)
@@ -296,7 +296,7 @@ def upsert_hole(*, session: Session, hole_data: HoleData, tee_id: int) -> TeeRea
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Hole (id={hole_data.id}) not found",
             )
-        track_dict = hole_data.dict(exclude_unset=True)
+        track_dict = hole_data.model_dump(exclude_unset=True)
         for key, value in track_dict.items():
             setattr(hole_db, key, value)
     setattr(hole_db, "tee_id", tee_id)

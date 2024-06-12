@@ -118,7 +118,7 @@ async def update_match(
     match_db = session.get(Match, match_id)
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
-    match_data = match.dict(exclude_unset=True)
+    match_data = match.model_dump(exclude_unset=True)
     for key, value in match_data.items():
         setattr(match_db, key, value)
     session.add(match_db)

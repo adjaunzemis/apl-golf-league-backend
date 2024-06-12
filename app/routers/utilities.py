@@ -17,7 +17,7 @@ def upsert_division(*, session: Session, division_data: DivisionCreate) -> Divis
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Division (id={division_data.id}) not found",
             )
-        division_dict = division_data.dict(exclude_unset=True)
+        division_dict = division_data.model_dump(exclude_unset=True)
         for key, value in division_dict.items():
             setattr(division_db, key, value)
     session.add(division_db)

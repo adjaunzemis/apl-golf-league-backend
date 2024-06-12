@@ -59,7 +59,7 @@ async def update_officer(
     officer_db = session.get(Officer, officer_id)
     if not officer_db:
         raise HTTPException(status_code=404, detail="Officer not found")
-    officer_data = officer.dict(exclude_unset=True)
+    officer_data = officer.model_dump(exclude_unset=True)
     for key, value in officer_data.items():
         setattr(officer_db, key, value)
     session.add(officer_db)

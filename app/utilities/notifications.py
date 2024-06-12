@@ -36,9 +36,9 @@ async def send_email(
     background_tasks: BackgroundTasks | None = None,
 ):
     message = MessageSchema(
-        subject=email.dict().get("subject"),
-        recipients=email.dict().get("to_addresses"),
-        template_body=email.dict().get("body"),
+        subject=email.model_dump().get("subject"),
+        recipients=email.model_dump().get("to_addresses"),
+        template_body=email.model_dump().get("body"),
         subtype=MessageType.html,
     )
     fm = FastMail(get_email_config())

@@ -294,7 +294,7 @@ def upsert_tournament(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tournament (id={tournament_data.id}) not found",
             )
-        tournament_dict = tournament_data.dict(exclude_unset=True)
+        tournament_dict = tournament_data.model_dump(exclude_unset=True)
         for key, value in tournament_dict.items():
             if key != "divisions":
                 setattr(tournament_db, key, value)
