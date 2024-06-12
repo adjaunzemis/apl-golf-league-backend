@@ -175,7 +175,7 @@ def get_rounds_in_scoring_record(
         qualifying_scores_db = session.exec(
             select(QualifyingScore)
             .where(QualifyingScore.golfer_id == golfer_id)
-            .where(QualifyingScore.year == max_date.year)
+            .where(QualifyingScore.year >= min_date.year)
         ).all()
         for qualifying_score_db in qualifying_scores_db:
             round_summaries.append(
