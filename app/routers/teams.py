@@ -253,7 +253,9 @@ def validate_team_signup_data(
             detail=f"Team '{team_data.name}' contains duplicate golfer sign-ups",
         )
 
-    # Check if the given golfers already exist on other teams in this flight/tournament and if one captain was designated
+    # Check if:
+    # - golfers already exist on other teams in this flight/tournament (non-substitute)
+    # - exactly one captain was designated.
     if team_data.flight_id is not None:
         existing_golfer_ids = get_golfer_ids_for_flight(
             session=session,
@@ -299,6 +301,7 @@ def get_golfer_ids_for_flight(
                 onclause=FlightTeamLink.team_id == TeamGolferLink.team_id,
             )
             .where(FlightTeamLink.flight_id == flight_id)
+            .where(TeamGolferLink.role != TeamRole.SUBSTITUTE)
         ).all()
     else:
         return session.exec(
@@ -310,6 +313,7 @@ def get_golfer_ids_for_flight(
             )
             .where(FlightTeamLink.flight_id == flight_id)
             .where(TeamGolferLink.team_id != exclude_team_id)
+            .where(TeamGolferLink.role != TeamRole.SUBSTITUTE)
         ).all()
 
 
