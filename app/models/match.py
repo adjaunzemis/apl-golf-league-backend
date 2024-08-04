@@ -8,8 +8,8 @@ from app.models.flight import Flight, FlightRead
 from app.models.match_round_link import MatchRoundLink
 from app.models.round import (
     Round,
-    RoundData,
     RoundReadWithData,
+    RoundResults,
     RoundValidationRequest,
     RoundValidationResponse,
 )
@@ -74,7 +74,7 @@ class MatchSummary(SQLModel):
 
 
 class MatchData(MatchSummary):
-    rounds: Optional[List[RoundData]] = []
+    rounds: Optional[List[RoundResults]] = []
 
 
 class MatchDataWithCount(SQLModel):

@@ -20,9 +20,9 @@ from app.models.query_helpers import get_flight_rounds, get_tournament_rounds
 from app.models.round import (
     Round,
     RoundCreate,
-    RoundData,
     RoundRead,
     RoundReadWithData,
+    RoundResults,
     RoundSubmissionRequest,
     RoundSubmissionResponse,
     RoundType,
@@ -39,7 +39,7 @@ from app.utilities import scoring
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 
 
-@router.get("/", response_model=List[RoundData])
+@router.get("/", response_model=List[RoundResults])
 async def read_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
