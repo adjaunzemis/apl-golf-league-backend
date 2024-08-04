@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from sqlmodel import Session
 
-from app.database import round as db_round
+from app.database import rounds as db_round
 from app.models.round import Round, RoundType, ScoringType
 
 
