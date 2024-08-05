@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from sqlmodel import Session
 
-from app.database import rounds as db_round
+from app.database import rounds as db_rounds
 from app.models.round import Round, RoundType, ScoringType
 
 
@@ -25,7 +25,7 @@ def test_get_rounds_by_id(session: Session, num_rounds: int, query_ids: list[int
         rounds.append(rnd)
 
     # Get rounds from database
-    rounds_db = db_round.get_rounds_by_id(session=session, ids=query_ids)
+    rounds_db = db_rounds.get_rounds_by_id(session=session, round_ids=query_ids)
 
     # Assert returned rounds are correct based on query
     for round_db in rounds_db:
