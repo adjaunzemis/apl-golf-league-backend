@@ -65,7 +65,8 @@ if __name__ == "__main__":
     # TOURNAMENT_ID = 29  # Maryland National (2023) TODO: un-hardcode id
     # TOURNAMENT_ID = 32  # Musket Ridge (2024) TODO: un-hardcode id
     # TOURNAMENT_ID = 33  # Lake Presidential (2024) TODO: un-hardcode id
-    TOURNAMENT_ID = 34  # Eagle's Nest (2024) TODO: un-hardcode id
+    # TOURNAMENT_ID = 34  # Eagle's Nest (2024) TODO: un-hardcode id
+    TOURNAMENT_ID = 35  # Montgomery CC (2024) TODO: un-hardcode id
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
@@ -73,8 +74,7 @@ if __name__ == "__main__":
 
     settings = get_settings()
 
-    # DB_URL = "localhost"  # TODO: replace with external database url!
-    DB_URL = "aplgolfapi.jaunzenet.com"
+    DB_URL = settings.apl_golf_league_api_url
     DB_PORT = (
         settings.apl_golf_league_api_database_port_external
     )  # NOTE: using external port, not running from inside container
