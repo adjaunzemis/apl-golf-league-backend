@@ -28,10 +28,8 @@ jobs:
       - name: Check formatting
         uses: pre-commit/action@v3.0.1
 
-
   run-tests:
     runs-on: ubuntu-latest
-    needs: check-formatting
 
     permissions:
       contents: read
