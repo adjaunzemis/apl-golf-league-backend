@@ -42,11 +42,13 @@ services:
       - mongodb-private
 
   api:
-    build: ./
+    image: apl-golf-league-backend:latest
     restart: always
     depends_on:
       - postgresql
       - mongodb
+    env_file:
+      - ".env"
     volumes:
       - ./logs:/logs
     labels:
