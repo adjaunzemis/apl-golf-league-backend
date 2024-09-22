@@ -4,7 +4,8 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.tee import TeeGender
-from app.models.tournament_division_link import TournamentDivisionLink
+
+# from app.models.tournament import Tournament
 
 
 class DivisionBase(SQLModel):
@@ -19,9 +20,9 @@ class Division(DivisionBase, table=True):
     flight: Optional["Flight"] = Relationship(
         link_model=FlightDivisionLink, sa_relationship_kwargs={"viewonly": True}
     )
-    tournament: Optional["Tournament"] = Relationship(
-        link_model=TournamentDivisionLink, sa_relationship_kwargs={"viewonly": True}
-    )
+    # tournament: Optional["Tournament"] = Relationship(
+    #     link_model=TournamentDivisionLink, sa_relationship_kwargs={"viewonly": True}
+    # )
 
 
 class DivisionCreate(DivisionBase):

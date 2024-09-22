@@ -83,7 +83,7 @@ def compile_season_statistics(*, session: Session, year: int):
     """ """
     print(f"Compiling season statistics for {year}")
 
-    SEASON_START_DATE = datetime(year, 4, 24, tzinfo=pytz.UTC)  # TODO: un-hardcode
+    SEASON_START_DATE = datetime(year, 4, 1, tzinfo=pytz.UTC)  # TODO: un-hardcode
     PLAYOFFS_START_DATE = datetime(year, 9, 4, tzinfo=pytz.UTC)  # TODO: un-hardcode
     rounds = {}
     stats = {}
@@ -249,14 +249,14 @@ if __name__ == "__main__":
 
     settings = get_settings()
 
-    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_URL = settings.apl_golf_league_api_url
     DB_PORT = (
         settings.apl_golf_league_api_database_port_external
     )  # NOTE: using external port, not running from inside container
     db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
     engine = create_engine(db_uri, echo=False)
-    YEAR = 2023  # TODO: un-hardcode year for analysis
+    YEAR = 2024  # TODO: un-hardcode year for analysis
 
     with Session(engine) as session:
         compile_season_statistics(session=session, year=YEAR)

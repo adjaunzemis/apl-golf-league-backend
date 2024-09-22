@@ -5,7 +5,6 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
 from app.models.team_golfer_link import TeamGolferLink
-from app.models.tournament_team_link import TournamentTeamLink
 
 
 class TeamBase(SQLModel):
@@ -17,9 +16,9 @@ class Team(TeamBase, table=True):
     flight: Optional["Flight"] = Relationship(
         link_model=FlightTeamLink, sa_relationship_kwargs={"viewonly": True}
     )
-    tournament: Optional["Tournament"] = Relationship(
-        link_model=TournamentTeamLink, sa_relationship_kwargs={"viewonly": True}
-    )
+    # tournament: Optional["Tournament"] = Relationship(
+    #     link_model=TournamentTeamLink, sa_relationship_kwargs={"viewonly": True}
+    # )
     golfers: List[Golfer] = Relationship(link_model=TeamGolferLink)
 
 
