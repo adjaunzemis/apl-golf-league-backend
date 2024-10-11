@@ -3,7 +3,6 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     apl_golf_league_api_url: str
-    apl_golf_league_api_database_connector: str
     apl_golf_league_api_database_user: str
     apl_golf_league_api_database_password: str
     apl_golf_league_api_database_url: str

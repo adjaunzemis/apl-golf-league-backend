@@ -79,7 +79,7 @@ if __name__ == "__main__":
     DB_PORT = (
         settings.apl_golf_league_api_database_port_external
     )  # NOTE: using external port, not running from inside container
-    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+    db_uri = f"postgresql://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
     print(
         f"Computing tournament (id={TOURNAMENT_ID}) handicaps in database: {settings.apl_golf_league_api_database_url}"
