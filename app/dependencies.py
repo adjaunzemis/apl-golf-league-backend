@@ -24,8 +24,19 @@ def get_settings():
 @lru_cache()
 def get_sql_db_engine() -> Engine:
     settings = get_settings()
-    db_uri = f"postgresql://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{settings.apl_golf_league_api_database_url}:{settings.apl_golf_league_api_database_port_internal}/{settings.apl_golf_league_api_database_name}"
-    return create_engine(db_uri, echo=settings.apl_golf_league_api_database_echo)
+    db_uri = (
+        "postgresql://"
+        f"{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}"
+        f"@{settings.apl_golf_league_api_database_url}:{settings.apl_golf_league_api_database_port_internal}"
+        f"/{settings.apl_golf_league_api_database_name}"
+    )
+    return create_engine(
+        db_uri,
+        connect_args={
+            "options": f"-c search_path={settings.apl_golf_league_api_database_schema}"
+        },
+        echo=settings.apl_golf_league_api_database_echo,
+    )
 
 
 def create_sql_db_and_tables() -> None:
