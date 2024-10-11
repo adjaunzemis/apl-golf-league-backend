@@ -66,7 +66,8 @@ if __name__ == "__main__":
     # TOURNAMENT_ID = 32  # Musket Ridge (2024) TODO: un-hardcode id
     # TOURNAMENT_ID = 33  # Lake Presidential (2024) TODO: un-hardcode id
     # TOURNAMENT_ID = 34  # Eagle's Nest (2024) TODO: un-hardcode id
-    TOURNAMENT_ID = 35  # Montgomery CC (2024) TODO: un-hardcode id
+    # TOURNAMENT_ID = 35  # Montgomery CC (2024) TODO: un-hardcode id
+    TOURNAMENT_ID = 36  # PB Dye (2024) TODO: un-hardcode id
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
