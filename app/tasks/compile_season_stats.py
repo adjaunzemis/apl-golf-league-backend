@@ -253,7 +253,7 @@ if __name__ == "__main__":
     DB_PORT = (
         settings.apl_golf_league_api_database_port_external
     )  # NOTE: using external port, not running from inside container
-    db_uri = f"{settings.apl_golf_league_api_database_connector}://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
+    db_uri = f"postgresql://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
     engine = create_engine(db_uri, echo=False)
     YEAR = 2023  # TODO: un-hardcode year for analysis
