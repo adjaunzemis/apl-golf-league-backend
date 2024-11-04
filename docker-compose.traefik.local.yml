@@ -1,0 +1,16 @@
+services:
+  traefik:
+    env_file:
+      - .env.local
+    labels:
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.traefik-dashboard.entrypoints=http
+      - traefik.http.routers.traefik-dashboard.tls=false
+
+volumes:
+  traefik-public-certificates:
+    external: false
+
+networks:
+  traefik-public:
+    external: false
