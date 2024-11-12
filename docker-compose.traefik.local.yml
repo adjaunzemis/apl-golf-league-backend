@@ -8,9 +8,5 @@ services:
       - traefik.http.routers.traefik-dashboard.tls=false
 
 volumes:
-  traefik-public-certificates:
-    external: false
-
-networks:
-  traefik-public:
+  jaunzenet-traefik-certificates:
     external: false

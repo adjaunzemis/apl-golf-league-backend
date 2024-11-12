@@ -10,7 +10,7 @@ services:
     restart: always
     labels:
       - traefik.enable=true
-      - traefik.docker.network=traefik-public
+      - traefik.docker.network=jaunzenet-traefik
       - traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_HOST_URL?Variable not set}`)
       - traefik.http.routers.traefik-dashboard.entrypoints=https
       - traefik.http.routers.traefik-dashboard.tls=true
@@ -21,7 +21,7 @@ services:
       - traefik.http.routers.traefik-dashboard-http.middlewares=https-redirect
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-public-certificates:/certificates
+      - jaunzenet-traefik-certificates:/certificates
     command:
       - --api.dashboard=true
       - --api.insecure=${TRAEFIK_API_INSECURE:-false}
@@ -37,11 +37,11 @@ services:
       - --log
       - --api
     networks:
-      - traefik-public
+      - jaunzenet-traefik
 
 volumes:
-  traefik-public-certificates:
+  jaunzenet-traefik-certificates:
 
 networks:
-  traefik-public:
+  jaunzenet-traefik:
     external: true
