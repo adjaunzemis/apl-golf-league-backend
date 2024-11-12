@@ -1,0 +1,6 @@
+services:
+  aplgolfapi:
+    env_file:
+      - .env.production
+    environment:
+      APL_GOLF_LEAGUE_API_URL: ${APL_GOLF_LEAGUE_API_URL}

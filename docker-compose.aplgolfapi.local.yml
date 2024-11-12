@@ -1,0 +1,7 @@
+services:
+  aplgolfapi:
+    env_file:
+      - .env.local
+    labels:
+      - traefik.http.routers.aplgolfapi-http.rule=Host(`aplgolfapi.localhost`)
+      - traefik.http.routers.aplgolfapi-https.rule=Host(`aplgolfapi.localhost`)
