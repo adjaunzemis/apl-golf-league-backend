@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy.orm import aliased
-from sqlmodel import Session, SQLModel, desc, select
+from sqlmodel import Session, SQLModel, desc, or_, select
 
 from app.models.course import Course
 from app.models.division import Division, DivisionData
@@ -928,7 +928,7 @@ def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchDa
     """
     match_ids = session.exec(
         select(Match.id).where(
-            (Match.home_team_id.in_(team_ids)) | (Match.away_team_id.in_(team_ids))
+            or_(Match.home_team_id.in_(team_ids)), (Match.away_team_id.in_(team_ids))
         )
     ).all()
     return get_matches(session=session, match_ids=match_ids)
@@ -962,13 +962,17 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
         .join(Match, onclause=Match.id == MatchRoundLink.match_id)
         .join(
             TeamGolferLink,
-            (
+            onclause=(
                 (TeamGolferLink.golfer_id == Golfer.id)
-                & (TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id)))
+                & (
+                    TeamGolferLink.team_id
+                    == Match.home_team_id | TeamGolferLink.team_id
+                    == Match.away_team_id
+                )
             ),
         )
         .join(Team, onclause=Team.id == TeamGolferLink.team_id)
-        .where(Round.id.in_(round_ids))
+        .where(Round.id in round_ids)
     )
     round_data = [
         RoundData(

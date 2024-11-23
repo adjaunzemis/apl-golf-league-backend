@@ -5,6 +5,8 @@ from sqlmodel import Session
 
 from app.models.course import Course
 from app.models.flight import Flight
+from app.models.flight_team_link import FlightTeamLink
+from app.models.team import Team
 
 
 @pytest.mark.parametrize(
@@ -120,7 +122,7 @@ def test_read_flights(session: Session, client_unauthorized: TestClient):
     data = response.json()
     assert data["num_flights"] == len(flights)
     assert len(data["flights"]) == len(flights)
-    print(data)
+
     for dIdx in range(len(data["flights"])):
         assert data["flights"][dIdx]["name"] == flights[dIdx].name
         assert data["flights"][dIdx]["year"] == flights[dIdx].year
@@ -136,10 +138,19 @@ def test_read_flights(session: Session, client_unauthorized: TestClient):
 
 
 def test_read_flight(session: Session, client_unauthorized: TestClient):
-    course = Course(name="Test Course 1", year=2021, course_id=1)
+    course = Course(name="Test Course 1", year=2021)
     session.add(course)
-    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
+    session.commit()
+    session.refresh(course)
+    flight = Flight(name="Test Flight 1", year=2021, course_id=course.id)
     session.add(flight)
+    team = Team(name="Test Team 1")
+    session.add(team)
+    session.commit()
+    session.refresh(team)
+    session.refresh(flight)
+    flightteamlink = FlightTeamLink(flight_id=flight.id, team_id=team.id)
+    session.add(flightteamlink)
     session.commit()
 
     response = client_unauthorized.get(f"/flights/{flight.id}")
@@ -151,7 +162,7 @@ def test_read_flight(session: Session, client_unauthorized: TestClient):
     assert data["course_id"] == flight.course_id
     assert data["id"] == flight.id
     assert len(data["divisions"]) == 0
-    assert len(data["teams"]) == 0
+    assert len(data["teams"]) == 1
 
 
 def test_delete_flight(session: Session, client_admin: TestClient):
