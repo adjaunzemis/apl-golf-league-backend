@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer, GolferRead

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.hole import Hole, HoleRead

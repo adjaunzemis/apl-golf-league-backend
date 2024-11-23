@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic import BaseModel, EmailStr
+from pydantic.v1 import BaseModel, EmailStr
 
 from app.dependencies import get_settings
 
