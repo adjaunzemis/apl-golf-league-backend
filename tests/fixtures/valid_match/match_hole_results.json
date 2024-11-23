@@ -1,0 +1,83 @@
+[
+    {
+        "home_team_gross_score": 9,
+        "home_team_net_score": 9,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 12,
+        "away_team_net_score": 11,
+        "away_team_handicap_strokes": 1,
+        "winner": "Home"
+    },
+    {
+        "home_team_gross_score": 10,
+        "home_team_net_score": 10,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 10,
+        "away_team_net_score": 9,
+        "away_team_handicap_strokes": 1,
+        "winner": "Away"
+    },
+    {
+        "home_team_gross_score": 12,
+        "home_team_net_score": 12,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 14,
+        "away_team_net_score": 13,
+        "away_team_handicap_strokes": 1,
+        "winner": "Home"
+    },
+    {
+        "home_team_gross_score": 8,
+        "home_team_net_score": 8,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 9,
+        "away_team_net_score": 8,
+        "away_team_handicap_strokes": 1,
+        "winner": "Tie"
+    },
+    {
+        "home_team_gross_score": 8,
+        "home_team_net_score": 8,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 9,
+        "away_team_net_score": 8,
+        "away_team_handicap_strokes": 1,
+        "winner": "Tie"
+    },
+    {
+        "home_team_gross_score": 8,
+        "home_team_net_score": 8,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 9,
+        "away_team_net_score": 8,
+        "away_team_handicap_strokes": 1,
+        "winner": "Tie"
+    },
+    {
+        "home_team_gross_score": 11,
+        "home_team_net_score": 11,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 10,
+        "away_team_net_score": 9,
+        "away_team_handicap_strokes": 1,
+        "winner": "Away"
+    },
+    {
+        "home_team_gross_score": 8,
+        "home_team_net_score": 8,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 8,
+        "away_team_net_score": 7,
+        "away_team_handicap_strokes": 1,
+        "winner": "Away"
+    },
+    {
+        "home_team_gross_score": 11,
+        "home_team_net_score": 11,
+        "home_team_handicap_strokes": 0,
+        "away_team_gross_score": 14,
+        "away_team_net_score": 13,
+        "away_team_handicap_strokes": 1,
+        "winner": "Home"
+    }
+]
