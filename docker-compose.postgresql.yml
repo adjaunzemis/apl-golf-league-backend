@@ -21,4 +21,4 @@ services:
 
 networks:
   jaunzenet-postgresql:
-    external: false
+    external: true

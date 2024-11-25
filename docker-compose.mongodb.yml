@@ -21,4 +21,4 @@ services:
 
 networks:
   jaunzenet-mongodb:
-    external: false
+    external: true

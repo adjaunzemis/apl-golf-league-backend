@@ -1,6 +1,32 @@
 services:
   aplgolfapi:
+    image: apl-golf-league:${TAG:-latest}
+    container_name: aplgolfapi-production
+    restart: always
     env_file:
       - .env.production
-    environment:
-      APL_GOLF_LEAGUE_API_URL: ${APL_GOLF_LEAGUE_API_URL}
+    volumes:
+      - ./logs/aplgolfapi-production:/logs
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=jaunzenet-traefik
+      - traefik.http.services.aplgolfapi-production.loadbalancer.server.port=80
+      - traefik.http.routers.aplgolfapi-production-http.entrypoints=http
+      - traefik.http.routers.aplgolfapi-production-https.entrypoints=https
+      - traefik.http.routers.aplgolfapi-production-http.rule=Host(`${APL_GOLF_LEAGUE_API_URL?Variable not set}`)
+      - traefik.http.routers.aplgolfapi-production-https.rule=Host(`${APL_GOLF_LEAGUE_API_URL?Variable not set}`)
+      - traefik.http.routers.aplgolfapi-production-https.tls=true
+      - traefik.http.routers.aplgolfapi-production-https.tls.certresolver=le
+      - traefik.http.routers.aplgolfapi-production-http.middlewares=https-redirect
+    networks:
+      - jaunzenet-traefik
+      - jaunzenet-postgresql
+      - jaunzenet-mongodb
+
+networks:
+  jaunzenet-traefik:
+    external: true
+  jaunzenet-postgresql:
+    external: true
+  jaunzenet-mongodb:
+    external: true
