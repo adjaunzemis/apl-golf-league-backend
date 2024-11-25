@@ -1,0 +1,32 @@
+services:
+  aplgolfapi:
+    image: apl-golf-league:${TAG:-latest}
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    env_file:
+      - ${DOCKER_ENV_FILE}
+    volumes:
+      - ./logs/${CONTAINER_NAME}:/logs
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=jaunzenet-traefik
+      - traefik.http.services.${TRAEFIK_SERVICE_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-http.entrypoints=http
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-http.rule=Host(`${APL_GOLF_LEAGUE_API_URL}`)
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-http.middlewares=https-redirect
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-https.entrypoints=https
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-https.rule=Host(`${APL_GOLF_LEAGUE_API_URL}`)
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-https.tls=true
+      - traefik.http.routers.${TRAEFIK_SERVICE_NAME}-https.tls.certresolver=le
+    networks:
+      - jaunzenet-traefik
+      - jaunzenet-postgresql
+      - jaunzenet-mongodb
+
+networks:
+  jaunzenet-traefik:
+    external: true
+  jaunzenet-postgresql:
+    external: true
+  jaunzenet-mongodb:
+    external: true
