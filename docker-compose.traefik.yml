@@ -3,7 +3,7 @@ services:
     image: traefik:v2.3
     container_name: traefik
     env_file:
-      - .env
+      - ${DOCKER_ENV_FILE?Variable not set}
     ports:
       - "80:80"
       - "443:443"
@@ -12,8 +12,8 @@ services:
       - traefik.enable=true
       - traefik.docker.network=jaunzenet-traefik
       - traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_HOST_URL?Variable not set}`)
-      - traefik.http.routers.traefik-dashboard.entrypoints=https
-      - traefik.http.routers.traefik-dashboard.tls=true
+      - traefik.http.routers.traefik-dashboard.entrypoints=${TRAEFIK_ENTRYPOINTS?Variable not set}
+      - traefik.http.routers.traefik-dashboard.tls=${TRAEFIK_TLS?Variable not set}
       - traefik.http.routers.traefik-dashboard.tls.certresolver=le
       - traefik.http.routers.traefik-dashboard.service=api@internal
       - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
@@ -24,7 +24,7 @@ services:
       - jaunzenet-traefik-certificates:/certificates
     command:
       - --api.dashboard=true
-      - --api.insecure=${TRAEFIK_API_INSECURE:-false}
+      - --api.insecure=false
       - --entrypoints.http.address=:80
       - --entrypoints.https.address=:443
       - --providers.docker=true
