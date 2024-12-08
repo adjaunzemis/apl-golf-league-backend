@@ -40,7 +40,7 @@ APL Golf League API
 app = FastAPI(
     title="APL Golf League",
     description=description,
-    version="0.4.0",
+    version="0.5.0",
     contact={
         "name": "Andris Jaunzemis",
         "email": "adjaunzemis@gmail.com",
