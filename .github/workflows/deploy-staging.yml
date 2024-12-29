@@ -118,5 +118,7 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME}}
           key: ${{ secrets.SERVER_KEY }}
           script: |
-            whoami
             docker ps
+
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
