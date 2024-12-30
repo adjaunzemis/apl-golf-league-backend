@@ -71,8 +71,6 @@ jobs:
         id: get_tag
         run: echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      # TODO: Update in-code version to match tag
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -97,6 +95,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ github.ref_name }}
 
   deploy-production:
     runs-on: ubuntu-latest
