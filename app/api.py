@@ -3,6 +3,8 @@ FastAPI Application
 """
 
 import logging
+import tomllib
+from functools import lru_cache
 from typing import Dict, List
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Request, status
@@ -33,17 +35,26 @@ from app.routers import (
 from app.utilities.custom_logger import CustomizeLogger
 from app.utilities.notifications import EmailSchema, send_email
 
-description = """
-APL Golf League API
-"""
+
+@lru_cache
+def _get_project_info():
+    with open("pyproject.toml", "rb") as f:
+        data = tomllib.load(f)
+    return {
+        "name": data.get("project", {}).get("name", "Unknown"),
+        "version": data.get("project", {}).get("version", "Unknown"),
+        "description": data.get("project", {}).get("description", "Unknown"),
+        "authors": data.get("project", {}).get("authors", []),
+    }
+
 
 app = FastAPI(
-    title="APL Golf League",
-    description=description,
-    version="0.5.0",
+    title=_get_project_info()["name"],
+    description=_get_project_info()["description"],
+    version=_get_project_info()["version"],
     contact={
-        "name": "Andris Jaunzemis",
-        "email": "adjaunzemis@gmail.com",
+        "name": _get_project_info()["authors"][0]["name"],
+        "email": _get_project_info()["authors"][0]["email"],
     },
 )
 
