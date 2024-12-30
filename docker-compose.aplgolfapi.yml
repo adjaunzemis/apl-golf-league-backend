@@ -1,6 +1,6 @@
 services:
   aplgolfapi:
-    image: apl-golf-league:${TAG:-latest}
+    image: ${IMAGE_NAME?Variable not set}:{$IMAGE_TAG?Variable not set}
     container_name: ${CONTAINER_NAME?Variable not set}
     restart: always
     env_file:

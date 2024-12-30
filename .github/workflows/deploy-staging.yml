@@ -119,10 +119,15 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}]
 
-            echo Updating image tag in staging environment: ${{ github.ref_name }}
-            export APL_GOLF_LEAGUE_API_TAG_STAGING=${{ github.ref_name }}
+            if grep -q "^IMAGE_TAG=" ".env.staging"; then
+                sed -i.bak "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ github.ref_name }}/" ".env.staging"
+                echo "Updated IMAGE_TAG to ${{ github.ref_name }} in .env.staging"
+            else
+                echo "IMAGE_TAG not found in .env.staging. Adding it with value ${{ github.ref_name }}"
+                echo "IMAGE_TAG=${{ github.ref_name }}" >> ".env.staging"
+            fi
 
             echo Deploying to staging environment...
             ~/apl-golf-league-backend/deploy-staging.sh
