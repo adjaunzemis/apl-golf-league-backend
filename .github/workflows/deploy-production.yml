@@ -3,7 +3,7 @@ name: Deploy API to Digital Ocean (Production)
 on:
   push:
     tags:
-        - "v*.*.*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 env:
   REGISTRY: ghcr.io

@@ -21,10 +21,10 @@ This project uses GitHub Actions to deploy to the application hosted on a Digita
 
 A staging environment is used to deploy new images for testing, along with an accompanying staging frontend.
 
-To deploy the API to the staging environment, create and push a tag that matches the format `t*.*.*` such as:
+To deploy the API to the staging environment, create and push a development tag that matches the format `v*.*.*.dev*` such as:
 
 ```sh
-git tag tX.Y.Z.n
+git tag vX.Y.Z.devN
 git push --tags
 ```
 
@@ -32,9 +32,9 @@ The GitHub Action triggered by this push will build and push the image to the Gi
 
 ### Production Environment
 
-Similarly, the production environment uses GitHub Actions for deploying new APIs. Simply push a new tag with `v*.*.*` format instead:
+Similarly, the production environment uses GitHub Actions for deploying new APIs. Simply push a new tag with `v*.*.*` (no `devN` suffix) format instead:
 
 ```sh
-git tag vX.Y.Z.n
+git tag vX.Y.Z
 git push --tags
 ```
