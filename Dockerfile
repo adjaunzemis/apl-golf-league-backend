@@ -1,16 +1,12 @@
-# install python in the container
 FROM python:3.12
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# copy the local requirements.txt file to the
-# /app/requirements.txt in the container
-# (the /app dir will be created)
-COPY ./requirements.txt /app/requirements.txt
+COPY ./pyproject.toml pyproject.toml
+COPY ./uv.lock uv.lock
 
-# install the packages from the requirements.txt file in the container
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+RUN uv sync --frozen
 
-# copy the local app folder to the app folder in the container
 COPY ./app /app/
 
-# execute command to start server
+ENV PATH="/.venv/bin:$PATH"
 CMD ["python", "-m", "app.main"]
