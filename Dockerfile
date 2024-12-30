@@ -8,4 +8,5 @@ RUN uv sync --frozen
 
 COPY ./app /app/
 
+ENV PATH="/.venv/bin:$PATH"
 CMD ["python", "-m", "app.main"]
