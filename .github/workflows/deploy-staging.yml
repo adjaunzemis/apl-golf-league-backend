@@ -122,3 +122,11 @@ jobs:
 
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+            echo Updating image tag in staging environment: ${{ github.ref_name }}
+            export APL_GOLF_LEAGUE_API_TAG_STAGING=${{ github.ref_name }}
+
+            echo Deploying to staging environment...
+            ./deploy-staging.sh
+
+            echo Successfully deployed ${{ github.ref_name }} to staging environment!
