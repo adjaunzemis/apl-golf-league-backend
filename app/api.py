@@ -4,6 +4,7 @@ FastAPI Application
 
 import logging
 import tomllib
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Dict, List
 
@@ -48,6 +49,14 @@ def _get_project_info():
     }
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_sql_db_and_tables()
+    create_nosql_db_and_collections()
+    yield
+    close_nosql_db()
+
+
 app = FastAPI(
     title=_get_project_info()["name"],
     description=_get_project_info()["description"],
@@ -56,6 +65,7 @@ app = FastAPI(
         "name": _get_project_info()["authors"][0]["name"],
         "email": _get_project_info()["authors"][0]["email"],
     },
+    lifespan=lifespan,
 )
 
 CONFIG_PATH = "app/logging.config"
@@ -131,21 +141,6 @@ app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
 app.include_router(payments.router, dependencies=[Depends(log_request_data)])
-
-
-@app.on_event("startup")
-def on_startup():
-    create_sql_db_and_tables()
-
-
-@app.on_event("startup")
-def startup_db_client():
-    create_nosql_db_and_collections()
-
-
-@app.on_event("shutdown")
-def on_shutdown():
-    close_nosql_db()
 
 
 @app.get("/mongodb_test/", response_model=List[Dict])
