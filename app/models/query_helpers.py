@@ -5,6 +5,7 @@ from typing import List, Optional
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, SQLModel, desc, or_, select
 
+from app.database.rounds import get_flight_round_data, get_hole_results_for_rounds
 from app.models.course import Course
 from app.models.division import Division, DivisionData
 from app.models.flight import Flight
@@ -12,8 +13,6 @@ from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer, GolferStatistics
 from app.models.handicap import HandicapIndex
-from app.models.hole import Hole
-from app.models.hole_result import HoleResult, HoleResultData
 from app.models.match import Match, MatchData, MatchSummary
 from app.models.match_round_link import MatchRoundLink
 from app.models.qualifying_score import QualifyingScore
@@ -898,10 +897,16 @@ def get_matches(session: Session, match_ids: List[int]) -> List[MatchData]:
     # Sort matches by week
     match_data.sort(key=lambda m: m.week)
 
+    print("MATCH DATA")
+    print(match_data)
+
     # Get round data for selected matches
     round_data = get_rounds_for_matches(
         session=session, match_ids=[m.match_id for m in match_data]
     )
+
+    print("ROUND DATA")
+    print(round_data)
 
     # Add round data to match data and return
     for m in match_data:
@@ -928,92 +933,14 @@ def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchDa
     """
     match_ids = session.exec(
         select(Match.id).where(
-            or_(Match.home_team_id.in_(team_ids)), (Match.away_team_id.in_(team_ids))
+            or_(Match.home_team_id.in_(team_ids), (Match.away_team_id.in_(team_ids)))
         )
     ).all()
     return get_matches(session=session, match_ids=match_ids)
 
 
 def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
-    """
-    Retrieves round data for the given flight-play rounds, including results.
-
-    Parameters
-    ----------
-    session : Session
-        database session
-    round_ids : list of integers
-        round identifiers
-
-    Returns
-    -------
-    round_data : list of RoundData
-        round data for the given rounds
-
-    """
-    round_query_data = session.exec(
-        select(Round, MatchRoundLink, RoundGolferLink, Golfer, Course, Track, Tee, Team)
-        .join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id)
-        .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
-        .join(Tee)
-        .join(Track)
-        .join(Course)
-        .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
-        .join(Match, onclause=Match.id == MatchRoundLink.match_id)
-        .join(
-            TeamGolferLink,
-            onclause=(
-                (TeamGolferLink.golfer_id == Golfer.id)
-                & (TeamGolferLink.team_id in (Match.home_team_id, Match.away_team_id))
-            ),
-        )
-        .join(Team, onclause=Team.id == TeamGolferLink.team_id)
-        .where(Round.id in round_ids)
-    )
-    round_data = [
-        RoundData(
-            round_id=round.id,
-            match_id=match_round_link.match_id,
-            team_id=team.id,
-            round_type=round.type,
-            date_played=round.date_played,
-            date_updated=round.date_updated,
-            golfer_id=round_golfer_link.golfer_id,
-            golfer_name=golfer.name,
-            golfer_playing_handicap=round_golfer_link.playing_handicap,
-            team_name=team.name,
-            course_id=course.id,
-            course_name=course.name,
-            track_id=track.id,
-            track_name=track.name,
-            tee_id=tee.id,
-            tee_name=tee.name,
-            tee_gender=tee.gender,
-            tee_par=tee.par,
-            tee_rating=tee.rating,
-            tee_slope=tee.slope,
-            tee_color=tee.color if tee.color else "none",
-        )
-        for round, match_round_link, round_golfer_link, golfer, course, track, tee, team in round_query_data
-    ]
-
-    # Query hole data for selected rounds
-    hole_result_data = get_hole_results_for_rounds(
-        session=session, round_ids=[r.round_id for r in round_data]
-    )
-
-    # Add hole data to round data and return
-    ahs = APLLegacyHandicapSystem()
-    for r in round_data:
-        r.holes = [h for h in hole_result_data if h.round_id == r.round_id]
-        r.tee_par = sum([h.par for h in r.holes])
-        r.gross_score = sum([h.gross_score for h in r.holes])
-        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in r.holes])
-        r.net_score = sum([h.net_score for h in r.holes])
-        r.score_differential = ahs.compute_score_differential(
-            r.tee_rating, r.tee_slope, r.adjusted_gross_score
-        )
-    return round_data
+    return get_flight_round_data(session=session, round_ids=round_ids)
 
 
 def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[RoundData]:
@@ -1147,48 +1074,6 @@ def get_tournament_rounds(
             r.tee_rating, r.tee_slope, r.adjusted_gross_score
         )
     return round_data
-
-
-def get_hole_results_for_rounds(
-    session: Session, round_ids: List[int]
-) -> List[HoleResultData]:
-    """
-    Retrieves hole result data for the given rounds.
-
-    Parameters
-    ----------
-    session : Session
-        database session
-    round_ids : list of integers
-        round identifiers
-
-    Returns
-    -------
-    hole_result_data : list of HoleResultData
-        hole results for the given rounds
-
-    """
-    # TODO: Simplify using HoleResultRead* classes
-    hole_query_data = session.exec(
-        select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids))
-    )
-    hole_result_data = [
-        HoleResultData(
-            hole_result_id=hole_result.id,
-            round_id=hole_result.round_id,
-            hole_id=hole_result.hole_id,
-            number=hole.number,
-            par=hole.par,
-            yardage=hole.yardage,
-            stroke_index=hole.stroke_index,
-            handicap_strokes=hole_result.handicap_strokes,
-            gross_score=hole_result.gross_score,
-            adjusted_gross_score=hole_result.adjusted_gross_score,
-            net_score=hole_result.net_score,
-        )
-        for hole_result, hole in hole_query_data
-    ]
-    return sorted(hole_result_data, key=lambda h: h.number)
 
 
 def compute_golfer_statistics_for_rounds(
