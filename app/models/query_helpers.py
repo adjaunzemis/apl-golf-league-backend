@@ -964,7 +964,11 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
             TeamGolferLink,
             onclause=(
                 (TeamGolferLink.golfer_id == Golfer.id)
-                & (TeamGolferLink.team_id in (Match.home_team_id, Match.away_team_id))
+                & (
+                    TeamGolferLink.team_id
+                    == Match.home_team_id | TeamGolferLink.team_id
+                    == Match.away_team_id
+                )
             ),
         )
         .join(Team, onclause=Team.id == TeamGolferLink.team_id)

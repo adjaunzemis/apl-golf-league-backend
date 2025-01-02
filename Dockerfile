@@ -1,7 +1,7 @@
 FROM python:3.12
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ARG VERSION=v0.0.0
+ARG VERSION=development
 COPY ./pyproject.toml pyproject.toml
 RUN sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 
