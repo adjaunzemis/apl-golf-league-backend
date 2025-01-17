@@ -359,66 +359,105 @@ async def submit_round(
 
 
 @router.patch("/golfer/", response_model=RoundReadWithData)
-async def patch_round_golfer_link(
+async def update_round_golfer_link(
     *,
     session: Session = Depends(get_sql_db_session),
-    # current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user), # TODO: Re-enable auth
     round_id: int = Query(..., description="Round to update"),
     golfer_id: int = Query(..., description="Updated golfer to link to round"),
-    playing_handicap: int | None = Query(None, description="Updated playing handicap"),
 ):
     # Validate request query parameters
     round_db = session.get(Round, round_id)
-    if not round_db:
+    if round_db is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
 
     golfer_db = session.get(Golfer, golfer_id)
-    if not round_db:
+    if golfer_db is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Golfer not found"
         )
 
-    old_playing_handicap: int | None = None
+    round_golfer_links_db = list(
+        session.exec(
+            select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
+        ).all()
+    )
+    if len(round_golfer_links_db) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
+        )
 
-    # Ensure golfer is not already associated with this round
-    round_golfer_links_db = session.exec(
-        select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
-    ).all()
-
-    if golfer_id in [rgl.golfer_id for rgl in round_golfer_links_db]:
+    round_golfer_link_db = round_golfer_links_db[0]
+    if round_golfer_link_db.golfer_id == golfer_id:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Golfer already assigned to this round",
         )
 
-    if len(round_golfer_links_db) > 1:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Cannot patch round golfer for multi-golfer rounds",
-        )
-    elif len(round_golfer_links_db) == 1:
-        # Cache existing playing handicap
-        if round_golfer_links_db[0].playing_handicap is not None:
-            old_playing_handicap = round_golfer_links_db[0].playing_handicap
-
-        # Remove existing round golfer link
-        session.delete(round_golfer_links_db[0])
-        session.commit()
+    # Remove existing round golfer link
+    playing_handicap = round_golfer_link_db.playing_handicap
+    session.delete(round_golfer_link_db)
 
     # Link round to new golfer
-    if playing_handicap is None and old_playing_handicap is not None:
-        playing_handicap = old_playing_handicap
-
-    round_golfer_link_db = RoundGolferLink(
+    new_round_golfer_link_db = RoundGolferLink(
         round_id=round_db.id,
         golfer_id=golfer_db.id,
         playing_handicap=playing_handicap,
     )
-    session.add(round_golfer_link_db)
+    session.add(new_round_golfer_link_db)
+
     session.commit()
-    session.refresh(round_golfer_link_db)
+    session.refresh(round_db)
+    return round_db
+
+
+@router.patch("/playing-handicap/", response_model=RoundReadWithData)
+async def update_round_golfer_playing_handicap(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    # current_user: User = Depends(get_current_active_user), # TODO: Re-enable auth
+    round_id: int = Query(..., description="Round to update"),
+    golfer_id: int = Query(..., description="Golfer to update"),
+    playing_handicap: int = Query(..., description="Updated playing handicap"),
+):
+    # Validate request query parameters
+    round_db = session.get(Round, round_id)
+    if round_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    golfer_db = session.get(Golfer, golfer_id)
+    if golfer_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Golfer not found"
+        )
+
+    round_golfer_links_db = list(
+        session.exec(
+            select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
+        ).all()
+    )
+    if len(round_golfer_links_db) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
+        )
+
+    round_golfer_link_db = round_golfer_links_db[0]
+    if round_golfer_link_db.golfer_id != golfer_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Golfer is not assigned to this round",
+        )
+    if round_golfer_link_db.playing_handicap == playing_handicap:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Playing handicap is already {round_golfer_link_db.playing_handicap}",
+        )
 
     # Determine handicapping system by year
     # TODO: Make a utility/factory for this
@@ -446,10 +485,8 @@ async def patch_round_golfer_link(
         hole_result_db.net_score = (
             hole_result_data.gross_score - hole_result_db.handicap_strokes
         )
-
         session.add(hole_result_db)
-        session.commit()
-        session.refresh(hole_result_db)
 
+    session.commit()
     session.refresh(round_db)
     return round_db
