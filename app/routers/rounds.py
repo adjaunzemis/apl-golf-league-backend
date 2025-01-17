@@ -362,7 +362,7 @@ async def submit_round(
 async def patch_round_golfer_link(
     *,
     session: Session = Depends(get_sql_db_session),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
     round_id: int = Query(..., description="Round to update"),
     golfer_id: int = Query(..., description="Updated golfer to link to round"),
     playing_handicap: int | None = Query(None, description="Updated playing handicap"),
