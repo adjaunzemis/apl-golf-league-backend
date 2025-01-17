@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.database import rounds as db_rounds
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import Golfer
 from app.models.hole import Hole
@@ -353,3 +354,71 @@ async def submit_round(
         holes=holes_response,
         is_valid=round_validated.is_valid,
     )
+
+
+@router.patch("/golfer/", response_model=RoundReadWithData)
+async def patch_round_golfer_link(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    round_id: int = Query(..., description="Round to update"),
+    golfer_id: int = Query(..., description="Updated golfer to link to round"),
+    playing_handicap: int | None = Query(None, description="Updated playing handicap"),
+):
+    # Validate request query parameters
+    round_db = session.get(Round, round_id)
+    if not round_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    golfer_db = session.get(Golfer, golfer_id)
+    if not round_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Golfer not found"
+        )
+
+    old_playing_handicap: int | None = None
+
+    # Ensure golfer is not already associated with this round
+    round_golfer_links_db = session.exec(
+        select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
+    ).all()
+
+    if golfer_id in [rgl.golfer_id for rgl in round_golfer_links_db]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Golfer already assigned to this round",
+        )
+
+    if len(round_golfer_links_db) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cannot patch round golfer for multi-golfer rounds",
+        )
+    elif len(round_golfer_links_db) == 1:
+        # Cache existing playing handicap
+        if round_golfer_links_db[0].playing_handicap is not None:
+            old_playing_handicap = round_golfer_links_db[0].playing_handicap
+
+        # Remove existing round golfer link
+        session.delete(round_golfer_links_db[0])
+        session.commit()
+
+    # Link round to new golfer
+    if playing_handicap is None and old_playing_handicap is not None:
+        playing_handicap = old_playing_handicap
+
+    round_golfer_link_db = RoundGolferLink(
+        round_id=round_db.id,
+        golfer_id=golfer_db.id,
+        playing_handicap=playing_handicap,
+    )
+    session.add(round_golfer_link_db)
+    session.commit()
+    session.refresh(round_golfer_link_db)
+
+    # TODO: Update hole results
+    db_rounds.get_hole_results_for_rounds(session=session, round_ids=[round_db.id])
+
+    session.refresh(round_db)
+    return round_db

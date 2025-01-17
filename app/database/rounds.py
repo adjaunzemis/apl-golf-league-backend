@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, asc, select
 
 from app.database import courses as db_courses
 from app.models.golfer import Golfer
@@ -68,9 +68,12 @@ def get_hole_results_for_rounds(
     """
     # TODO: Simplify using HoleResultRead* classes
     hole_query_data = session.exec(
-        select(HoleResult, Hole).join(Hole).where(HoleResult.round_id.in_(round_ids))
+        select(HoleResult, Hole)
+        .join(Hole)
+        .where(HoleResult.round_id.in_(round_ids))
+        .order_by(asc(HoleResult.round_id), asc(Hole.number))
     )
-    hole_result_data = [
+    return [
         HoleResultData(
             hole_result_id=hole_result.id,
             round_id=hole_result.round_id,
@@ -86,9 +89,6 @@ def get_hole_results_for_rounds(
         )
         for hole_result, hole in hole_query_data
     ]
-    return sorted(
-        hole_result_data, key=lambda h: (h.round_id, h.number)
-    )  # TODO: sort in database
 
 
 def get_round_results_by_id(
