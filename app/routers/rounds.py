@@ -36,6 +36,8 @@ from app.models.tournament import Tournament
 from app.models.tournament_round_link import TournamentRoundLink
 from app.models.user import User
 from app.utilities import scoring
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 
@@ -360,6 +362,7 @@ async def submit_round(
 async def patch_round_golfer_link(
     *,
     session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
     round_id: int = Query(..., description="Round to update"),
     golfer_id: int = Query(..., description="Updated golfer to link to round"),
     playing_handicap: int | None = Query(None, description="Updated playing handicap"),
@@ -417,8 +420,36 @@ async def patch_round_golfer_link(
     session.commit()
     session.refresh(round_golfer_link_db)
 
-    # TODO: Update hole results
-    db_rounds.get_hole_results_for_rounds(session=session, round_ids=[round_db.id])
+    # Determine handicapping system by year
+    # TODO: Make a utility/factory for this
+    if round_db.date_played.year >= 2022:
+        ahs = APLHandicapSystem()
+    else:
+        ahs = APLLegacyHandicapSystem()
+
+    # Update hole results
+    hole_results_data = db_rounds.get_hole_results_for_rounds(
+        session=session, round_ids=[round_db.id]
+    )
+    for hole_result_data in hole_results_data:
+        hole_result_db = session.get(HoleResult, hole_result_data.hole_result_id)
+
+        hole_result_db.handicap_strokes = ahs.compute_hole_handicap_strokes(
+            hole_result_data.stroke_index, playing_handicap
+        )
+        hole_result_db.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(
+            hole_result_data.par,
+            hole_result_data.stroke_index,
+            hole_result_data.gross_score,
+            playing_handicap,
+        )
+        hole_result_db.net_score = (
+            hole_result_data.gross_score - hole_result_db.handicap_strokes
+        )
+
+        session.add(hole_result_db)
+        session.commit()
+        session.refresh(hole_result_db)
 
     session.refresh(round_db)
     return round_db
