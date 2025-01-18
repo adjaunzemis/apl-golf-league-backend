@@ -131,11 +131,10 @@ jobs:
             echo Stopping API container in production...
             docker container stop aplgolfapi-production
 
-            echo Pruning old images...
-            sleep 10 # wait for old container to stop
-            docker container prune --force
-            docker image prune --all --force
-
             echo Deploying ${{ github.ref_name }} to production...
             docker-compose --env-file .env.production up -d
-            echo Successfully deployed ${{ github.ref_name }} to production environment!
+
+            echo Pruning old images...
+            sleep 5 # wait to ensure new container is running
+            docker container prune --force
+            docker image prune --all --force
