@@ -86,7 +86,7 @@ class RoundSummary(SQLModel):
     score_differential: Optional[float] = None
 
 
-class RoundData(SQLModel):
+class RoundResults(SQLModel):
     round_id: int
     match_id: Optional[int] = None
     team_id: Optional[int] = None
@@ -115,9 +115,9 @@ class RoundData(SQLModel):
     holes: List[HoleResultData] = []
 
 
-class RoundDataWithCount(SQLModel):
+class RoundResultsWithCount(SQLModel):
     num_rounds: int
-    rounds: List[RoundData]
+    rounds: List[RoundResults]
 
 
 class RoundValidationRequest(BaseModel):

@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
-from app.database import handicap as db_handicap
+from app.database import handicaps as db_handicap
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import Golfer
 from app.models.qualifying_score import (

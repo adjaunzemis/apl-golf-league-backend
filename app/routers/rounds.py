@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.database import rounds as db_rounds
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import Golfer
 from app.models.hole import Hole
@@ -20,9 +21,9 @@ from app.models.query_helpers import get_flight_rounds, get_tournament_rounds
 from app.models.round import (
     Round,
     RoundCreate,
-    RoundData,
     RoundRead,
     RoundReadWithData,
+    RoundResults,
     RoundSubmissionRequest,
     RoundSubmissionResponse,
     RoundType,
@@ -35,11 +36,13 @@ from app.models.tournament import Tournament
 from app.models.tournament_round_link import TournamentRoundLink
 from app.models.user import User
 from app.utilities import scoring
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 
 
-@router.get("/", response_model=List[RoundData])
+@router.get("/", response_model=List[RoundResults])
 async def read_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -353,3 +356,137 @@ async def submit_round(
         holes=holes_response,
         is_valid=round_validated.is_valid,
     )
+
+
+@router.patch("/golfer/", response_model=RoundReadWithData)
+async def update_round_golfer_link(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    round_id: int = Query(..., description="Round to update"),
+    golfer_id: int = Query(..., description="Updated golfer to link to round"),
+):
+    # Validate request query parameters
+    round_db = session.get(Round, round_id)
+    if round_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    golfer_db = session.get(Golfer, golfer_id)
+    if golfer_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Golfer not found"
+        )
+
+    round_golfer_links_db = list(
+        session.exec(
+            select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
+        ).all()
+    )
+    if len(round_golfer_links_db) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
+        )
+
+    round_golfer_link_db = round_golfer_links_db[0]
+    if round_golfer_link_db.golfer_id == golfer_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Golfer already assigned to this round",
+        )
+
+    # Remove existing round golfer link
+    playing_handicap = round_golfer_link_db.playing_handicap
+    session.delete(round_golfer_link_db)
+
+    # Link round to new golfer
+    new_round_golfer_link_db = RoundGolferLink(
+        round_id=round_db.id,
+        golfer_id=golfer_db.id,
+        playing_handicap=playing_handicap,
+    )
+    session.add(new_round_golfer_link_db)
+
+    session.commit()
+    session.refresh(round_db)
+    return round_db
+
+
+@router.patch("/playing-handicap/", response_model=RoundReadWithData)
+async def update_round_golfer_playing_handicap(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    round_id: int = Query(..., description="Round to update"),
+    golfer_id: int = Query(..., description="Golfer to update"),
+    playing_handicap: int = Query(..., description="Updated playing handicap"),
+):
+    # Validate request query parameters
+    round_db = session.get(Round, round_id)
+    if round_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    golfer_db = session.get(Golfer, golfer_id)
+    if golfer_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Golfer not found"
+        )
+
+    round_golfer_links_db = list(
+        session.exec(
+            select(RoundGolferLink).where(RoundGolferLink.round_id == round_id)
+        ).all()
+    )
+    if len(round_golfer_links_db) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
+        )
+
+    round_golfer_link_db = round_golfer_links_db[0]
+    if round_golfer_link_db.golfer_id != golfer_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Golfer is not assigned to this round",
+        )
+    if round_golfer_link_db.playing_handicap == playing_handicap:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Playing handicap is already {round_golfer_link_db.playing_handicap}",
+        )
+
+    # Determine handicapping system by year
+    # TODO: Make a utility/factory for this
+    if round_db.date_played.year >= 2022:
+        ahs = APLHandicapSystem()
+    else:
+        ahs = APLLegacyHandicapSystem()
+
+    # Update hole results
+    hole_results_data = db_rounds.get_hole_results_for_rounds(
+        session=session, round_ids=[round_db.id]
+    )
+    for hole_result_data in hole_results_data:
+        hole_result_db = session.get(HoleResult, hole_result_data.hole_result_id)
+
+        hole_result_db.handicap_strokes = ahs.compute_hole_handicap_strokes(
+            hole_result_data.stroke_index, playing_handicap
+        )
+        hole_result_db.adjusted_gross_score = ahs.compute_hole_adjusted_gross_score(
+            hole_result_data.par,
+            hole_result_data.stroke_index,
+            hole_result_data.gross_score,
+            playing_handicap,
+        )
+        hole_result_db.net_score = (
+            hole_result_data.gross_score - hole_result_db.handicap_strokes
+        )
+        session.add(hole_result_db)
+
+    session.commit()
+    session.refresh(round_db)
+    return round_db

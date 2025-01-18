@@ -152,8 +152,8 @@ def get_rounds_in_scoring_record(
 
     Returns
     -------
-    rounds : list of RoundData
-        round data for rounds in golfer's scoring record
+    rounds : list of RoundResults
+        round results for rounds in golfer's scoring record
 
     """
     round_ids = session.exec(

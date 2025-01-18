@@ -17,7 +17,7 @@ from app.models.hole_result import HoleResult, HoleResultData
 from app.models.match import Match, MatchData, MatchSummary
 from app.models.match_round_link import MatchRoundLink
 from app.models.qualifying_score import QualifyingScore
-from app.models.round import Round, RoundData, RoundSummary, ScoringType
+from app.models.round import Round, RoundResults, RoundSummary, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.team import Team, TeamRead
 from app.models.team_golfer_link import TeamGolferLink
@@ -93,7 +93,7 @@ class TournamentTeamData(TeamRead):
     year: int
     tournament_id: int
     golfers: List[GolferTeamData]
-    rounds: Optional[List[RoundData]] = []
+    rounds: Optional[List[RoundResults]] = []
 
 
 class FlightInfo(SQLModel):
@@ -934,7 +934,7 @@ def get_matches_for_teams(session: Session, team_ids: List[int]) -> List[MatchDa
     return get_matches(session=session, match_ids=match_ids)
 
 
-def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]:
+def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundResults]:
     """
     Retrieves round data for the given flight-play rounds, including results.
 
@@ -947,8 +947,8 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
 
     Returns
     -------
-    round_data : list of RoundData
-        round data for the given rounds
+    round_data : list of RoundResults
+        round results for the given rounds
 
     """
     round_query_data = session.exec(
@@ -976,7 +976,7 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
         .where(Round.id.in_(round_ids))
     )
     round_data = [
-        RoundData(
+        RoundResults(
             round_id=round.id,
             match_id=match_round_link.match_id,
             team_id=team.id,
@@ -1021,7 +1021,9 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundData]
     return round_data
 
 
-def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[RoundData]:
+def get_rounds_for_matches(
+    session: Session, match_ids: List[int]
+) -> List[RoundResults]:
     """
     Retrieves round data for the given matches.
 
@@ -1034,7 +1036,7 @@ def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[Round
 
     Returns
     -------
-    round_data : list of RoundData
+    round_data : list of RoundResults
         rounds played for the given matches
 
     """
@@ -1046,7 +1048,9 @@ def get_rounds_for_matches(session: Session, match_ids: List[int]) -> List[Round
     return get_flight_rounds(session=session, round_ids=round_ids)
 
 
-def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[RoundData]:
+def get_rounds_for_tournament(
+    session: Session, tournament_id: int
+) -> List[RoundResults]:
     """
     Retrieves round data for the given tournament.
 
@@ -1059,7 +1063,7 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
 
     Returns
     -------
-    round_data : list of RoundData
+    round_data : list of RoundResults
         rounds played for the given tournament
 
     """
@@ -1075,7 +1079,7 @@ def get_rounds_for_tournament(session: Session, tournament_id: int) -> List[Roun
 
 def get_tournament_rounds(
     session: Session, tournament_id: int, round_ids: List[int]
-) -> List[RoundData]:
+) -> List[RoundResults]:
     """
     Retrieves round data for the given tournament-play rounds, including results.
 
@@ -1090,8 +1094,8 @@ def get_tournament_rounds(
 
     Returns
     -------
-    round_data : list of RoundData
-        round data for the given rounds
+    round_data : list of RoundResults
+        round results for the given rounds
 
     """
     round_query_data = session.exec(
@@ -1109,9 +1113,9 @@ def get_tournament_rounds(
         .where(TournamentTeamLink.tournament_id == tournament_id)
     ).all()
     round_data = [
-        RoundData(
+        RoundResults(
             round_id=round.id,
-            match_id=None,  # TODO: remove match_id from RoundData
+            match_id=None,  # TODO: remove match_id from RoundResults
             team_id=team.id,
             round_type=round.type,
             date_played=round.date_played,
@@ -1197,7 +1201,7 @@ def get_hole_results_for_rounds(
 
 
 def compute_golfer_statistics_for_rounds(
-    golfer_id: int, rounds: List[RoundData]
+    golfer_id: int, rounds: List[RoundResults]
 ) -> GolferStatistics:
     """
     Computes statistics for the given golfer from the given rounds.
@@ -1208,7 +1212,7 @@ def compute_golfer_statistics_for_rounds(
     ----------
     golfer_id : int
         golfer identifier
-    rounds : list of RoundData
+    rounds : list of RoundResults
         rounds to process for statistics
 
     Returns
@@ -1361,8 +1365,8 @@ def get_rounds_in_scoring_record(
 
     Returns
     -------
-    rounds : list of RoundData
-        round data for rounds in golfer's scoring record
+    rounds : list of RoundResults
+        round results for rounds in golfer's scoring record
 
     """
     round_ids = session.exec(
