@@ -128,7 +128,14 @@ jobs:
                 echo "IMAGE_TAG=${{ github.ref_name }}" >> ".env.staging"
             fi
 
-            echo Deploying to staging environment...
-            ./deploy-staging.sh
+            echo Stopping API container in staging...
+            docker container stop aplgolfapi-staging
 
+            echo Pruning old images...
+            sleep 10 # wait for old container to stop
+            docker container prune --force
+            docker image prune --all --force
+
+            echo Deploying ${{ github.ref_name }} to staging...
+            docker-compose --env-file .env.staging up -d
             echo Successfully deployed ${{ github.ref_name }} to staging environment!
