@@ -128,7 +128,13 @@ jobs:
                 echo "IMAGE_TAG=${{ github.ref_name }}" >> ".env.production"
             fi
 
-            echo Deploying to production environment...
-            ./deploy-production.sh
+            echo Stopping API container in production...
+            docker container stop aplgolfapi-production
 
-            echo Successfully deployed ${{ github.ref_name }} to production environment!
+            echo Deploying ${{ github.ref_name }} to production...
+            docker-compose --env-file .env.production up -d
+
+            echo Pruning old images...
+            sleep 5 # wait to ensure new container is running
+            docker container prune --force
+            docker image prune --all --force
