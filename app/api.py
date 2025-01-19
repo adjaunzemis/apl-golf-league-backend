@@ -28,6 +28,7 @@ from app.routers import (
     officers,
     payments,
     rounds,
+    seasons,
     tasks,
     teams,
     tournaments,
@@ -131,6 +132,7 @@ async def get_heartbeat():
 
 app.include_router(tasks.router, dependencies=[Depends(log_request_data)])
 app.include_router(users.router, dependencies=[Depends(log_request_data)])
+app.include_router(seasons.router, dependencies=[Depends(log_request_data)])
 app.include_router(courses.router, dependencies=[Depends(log_request_data)])
 app.include_router(golfers.router, dependencies=[Depends(log_request_data)])
 app.include_router(teams.router, dependencies=[Depends(log_request_data)])
