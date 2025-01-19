@@ -29,6 +29,21 @@ def unauthorized_client_fixture(session: Session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(name="client_non_admin")
+def non_admin_client_fixture(session: Session):
+    def get_session_override():
+        return session
+
+    def get_current_user_override():
+        return User(username="test_user", is_admin=False, disabled=False)
+
+    app.dependency_overrides[get_sql_db_session] = get_session_override
+    app.dependency_overrides[get_current_user] = get_current_user_override
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
 @pytest.fixture(name="client_admin")
 def admin_client_fixture(session: Session):
     def get_session_override():

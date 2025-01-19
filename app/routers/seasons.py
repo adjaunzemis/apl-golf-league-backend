@@ -6,7 +6,7 @@ from sqlmodel import Session
 
 from app.database import seasons as db_seasons
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.seasons import Season
+from app.models.seasons import Season, SeasonCreate
 from app.models.user import User
 
 router = APIRouter(prefix="/seasons", tags=["Seasons"])
@@ -39,7 +39,7 @@ async def create_season(
     *,
     session: Session = Depends(get_sql_db_session),
     current_user: User = Depends(get_current_active_user),
-    new_season: Season = Body(..., description="New season to add"),
+    new_season: SeasonCreate = Body(..., description="New season to add"),
 ):
     if not current_user.is_admin:
         raise HTTPException(
@@ -55,12 +55,10 @@ async def create_season(
     return season_db
 
 
-@router.get("/active", response_model=Season)
-async def get_active_season(
-    *, session: Session = Depends(get_sql_db_session), year: int
-):
+@router.get("/active/", response_model=Season)
+async def get_active_season(*, session: Session = Depends(get_sql_db_session)):
     season_db = db_seasons.get_active_season(session)
-    if season_db is not None:
+    if season_db is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unable to find current active season",
@@ -103,6 +101,7 @@ async def delete_season(
     season_db = db_seasons.delete_season(session, year)
     if season_db is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to delete season"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unable to delete season",
         )
     return season_db

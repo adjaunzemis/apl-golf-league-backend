@@ -69,7 +69,7 @@ def test_set_active_season_not_found(session_with_seasons):
     assert active_season is None
 
 
-def test_delete_season_active(session_with_seasons):
+def test_delete_season(session_with_seasons):
     season = db_seasons.delete_season(session_with_seasons, 2025)
     assert season.year == 2025
     assert not season.is_active
