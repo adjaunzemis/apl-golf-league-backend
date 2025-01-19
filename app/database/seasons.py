@@ -1,6 +1,6 @@
 from sqlmodel import Session, desc, select
 
-from app.models.seasons import Season
+from app.models.seasons import Season, SeasonCreate
 
 
 def get_seasons(session: Session) -> list[Season]:
@@ -11,7 +11,9 @@ def get_season_by_year(session: Session, year: int) -> Season | None:
     return session.exec(select(Season).where(Season.year == year)).one_or_none()
 
 
-def create_season(session: Session, new_season: Season) -> Season:
+def create_season(session: Session, new_season: SeasonCreate) -> Season | None:
+    if get_season_by_year(session, new_season.year) is not None:
+        return None
     season_db = Season.model_validate(new_season)
     session.add(season_db)
     session.commit()
