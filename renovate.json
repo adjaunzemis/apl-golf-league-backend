@@ -7,7 +7,7 @@
   "lockFileMaintenance": {
     "enabled": true,
     "recreateWhen": "always",
-    "rebaseStalePrs": true,
+    "rebaseWhen": "behind-base-branch",
     "branchTopic": "lock-file-maintenance",
     "commitMessageAction": "Lock file maintenance",
     "commitMessageTopic": null,
@@ -20,19 +20,29 @@
       "Change": "All locks refreshed"
     }
   },
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "packageRules": [
     {
-      "matchDatasources": ["pypi"],
-      "addLabels": ["python"]
+      "matchDatasources": [
+        "pypi"
+      ],
+      "addLabels": [
+        "python"
+      ]
     },
     {
       "matchDatasources": [
         "docker"
       ],
-      "matchPackageNames": ["python"],
+      "matchPackageNames": [
+        "python"
+      ],
       "versioning": "pep440",
-      "addLabels": ["docker"]
+      "addLabels": [
+        "docker"
+      ]
     }
   ],
   "assignees": [
