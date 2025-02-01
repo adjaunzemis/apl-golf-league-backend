@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "docker:pinDigests"
   ],
   "lockFileMaintenance": {
     "enabled": true,
@@ -18,5 +19,23 @@
     "prBodyDefinitions": {
       "Change": "All locks refreshed"
     }
-  }
+  },
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchDatasources": ["pypi"],
+      "addLabels": ["python"]
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": ["python"],
+      "versioning": "pep440",
+      "addLabels": ["docker"]
+    }
+  ],
+  "assignees": [
+    "adjaunzemis"
+  ]
 }
