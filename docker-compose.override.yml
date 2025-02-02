@@ -1,0 +1,5 @@
+services:
+  aplgolfapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
