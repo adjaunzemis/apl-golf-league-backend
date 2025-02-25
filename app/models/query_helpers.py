@@ -100,31 +100,33 @@ class FlightInfo(SQLModel):
     id: int
     year: int
     name: str
-    course: str = None
-    logo_url: str = None
-    secretary: str = None
-    secretary_email: str = None
-    signup_start_date: str = None
-    signup_stop_date: str = None
-    start_date: str = None
-    weeks: int = None
+    course: str | None = None
+    logo_url: str | None = None
+    secretary: str | None = None
+    secretary_email: str | None = None
+    signup_start_date: str | None = None
+    signup_stop_date: str | None = None
+    start_date: str | None = None
+    weeks: int | None = None
+    tee_times: str | None = None
+    num_teams: int | None = None
 
 
 class FlightData(SQLModel):
     id: int
     year: int
     name: str
-    course_id: Optional[int] = None
-    course: str = None
-    logo_url: str = None
-    secretary: str = None
-    secretary_email: str = None
-    secretary_phone: str = None
-    signup_start_date: str = None
-    signup_stop_date: str = None
-    start_date: str = None
-    weeks: int = None
-    tee_times: Optional[str] = None
+    course_id: int | None = None
+    course: str | None = None
+    logo_url: str | None = None
+    secretary: str | None = None
+    secretary_email: str | None = None
+    secretary_phone: str | None = None
+    signup_start_date: str | None = None
+    signup_stop_date: str | None = None
+    start_date: str | None = None
+    weeks: int | None = None
+    tee_times: str | None = None
     locked: bool = False
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []

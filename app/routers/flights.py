@@ -10,6 +10,7 @@ from app.models.flight_division_link import FlightDivisionLink
 from app.models.match import MatchSummary
 from app.models.query_helpers import (
     FlightData,
+    FlightInfo,
     FlightInfoWithCount,
     get_divisions_in_flights,
     get_flights,
@@ -32,7 +33,14 @@ async def read_flights(
         flight_ids = session.exec(select(Flight.id).where(Flight.year == year)).all()
     else:  # get all
         flight_ids = session.exec(select(Flight.id)).all()
-    flight_info = get_flights(session=session, flight_ids=flight_ids)
+    flight_data = get_flights(session=session, flight_ids=flight_ids)
+    flight_info = [
+        FlightInfo(
+            num_teams=len(get_teams_in_flights(session=session, flight_ids=(data.id,))),
+            **data.model_dump(),
+        )
+        for data in flight_data
+    ]
     flight_info.sort(key=lambda flight: (flight.name, -flight.year))
     return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
 
