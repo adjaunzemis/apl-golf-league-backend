@@ -63,6 +63,7 @@ class FlightTeamGolfer(BaseModel):
     golfer_id: int
     name: str
     role: TeamRole
+    division: str
 
 
 class FlightTeam(BaseModel):
