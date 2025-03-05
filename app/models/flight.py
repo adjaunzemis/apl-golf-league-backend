@@ -76,10 +76,10 @@ class FlightTeam(BaseModel):
 class FlightStandingsTeam(BaseModel):
     team_id: int
     team_name: str
-    points_won: float
-    matches_played: int
-    avg_points: float
-    position: str
+    points_won: float = 0
+    matches_played: int = 0
+    avg_points: float = 0
+    position: str = ""
 
 
 class FlightStandings(BaseModel):

@@ -199,3 +199,12 @@ async def get_matches(
     flight_id: int = Query(..., description="Flight identifier"),
 ):
     return db_flights.get_flight_match_summaries(session=session, flight_id=flight_id)
+
+
+@router.get("/standings/")
+async def get_standings(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Query(..., description="Flight identifier"),
+):
+    return db_flights.get_standings(session=session, flight_id=flight_id)

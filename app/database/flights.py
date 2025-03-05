@@ -1,7 +1,13 @@
 from sqlmodel import Session, select
 
 from app.models.division import Division
-from app.models.flight import Flight, FlightStandings, FlightTeam, FlightTeamGolfer
+from app.models.flight import (
+    Flight,
+    FlightStandings,
+    FlightStandingsTeam,
+    FlightTeam,
+    FlightTeamGolfer,
+)
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
 from app.models.match import Match, MatchSummary
@@ -21,7 +27,7 @@ def get_teams_in_flight(session: Session, flight_id: int) -> list[FlightTeam]:
     teams: dict[int, FlightTeam] = {}
 
     for team, golfer, teamgolferlink, division in results:
-        if team.id not in teams.keys():
+        if team.id not in teams:
             teams[team.id] = FlightTeam(
                 flight_id=flight_id, team_id=team.id, name=team.name
             )
@@ -67,5 +73,55 @@ def get_flight_match_summaries(session: Session, flight_id: int) -> list[MatchSu
     return match_summaries
 
 
-def get_standings(id: int) -> FlightStandings:
-    pass
+def get_standings(session: Session, flight_id: int) -> FlightStandings:
+    matches = get_flight_match_summaries(session=session, flight_id=flight_id)
+
+    team_data_map: dict[int, FlightStandingsTeam] = {}
+    for match in matches:
+        if match.home_score is None or match.away_score is None:
+            continue
+
+        if match.home_team_id not in team_data_map:
+            team_data_map[match.home_team_id] = FlightStandingsTeam(
+                team_id=match.home_team_id, team_name=match.home_team_name
+            )
+        team_data_map[match.home_team_id].matches_played += 1
+        team_data_map[match.home_team_id].points_won += match.home_score
+        team_data_map[match.home_team_id].avg_points = (
+            team_data_map[match.home_team_id].points_won
+            / team_data_map[match.home_team_id].matches_played
+        )
+
+        if match.away_team_id not in team_data_map:
+            team_data_map[match.away_team_id] = FlightStandingsTeam(
+                team_id=match.away_team_id, team_name=match.away_team_name
+            )
+        team_data_map[match.away_team_id].matches_played += 1
+        team_data_map[match.away_team_id].points_won += match.away_score
+        team_data_map[match.away_team_id].avg_points = (
+            team_data_map[match.away_team_id].points_won
+            / team_data_map[match.away_team_id].matches_played
+        )
+
+    team_data = sorted(team_data_map.values(), key=lambda t: t.avg_points, reverse=True)
+
+    # TODO: Implement tie-breaks
+
+    for idx, team in enumerate(team_data):
+        if idx > 0 and team.avg_points == team_data[idx - 1].avg_points:
+            team.position = team_data[idx - 1].position
+            continue
+
+        if (
+            idx < len(team_data) - 1
+            and team.avg_points == team_data[idx + 1].avg_points
+        ):
+            team.position = f"T{idx + 1}"
+            continue
+
+        team.position = f"{idx + 1}"
+
+    return FlightStandings(
+        flight_id=flight_id,
+        teams=team_data,
+    )
