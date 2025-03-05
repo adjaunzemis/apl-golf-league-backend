@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.course import Course
@@ -7,6 +8,7 @@ from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
 from app.models.team import Team
+from app.models.team_golfer_link import TeamRole
 
 
 class FlightBase(SQLModel):
@@ -55,3 +57,30 @@ class FlightUpdate(SQLModel):
 
 class FlightRead(FlightBase):
     id: int
+
+
+class FlightTeamGolfer(BaseModel):
+    golfer_id: int
+    name: str
+    role: TeamRole
+
+
+class FlightTeam(BaseModel):
+    flight_id: int
+    team_id: int
+    name: str
+    golfers: list[FlightTeamGolfer] = Field(default_factory=list)
+
+
+class FlightStandingsTeam(BaseModel):
+    team_id: int
+    team_name: str
+    points_won: float
+    matches_played: int
+    avg_points: float
+    position: str
+
+
+class FlightStandings(BaseModel):
+    flight_id: int
+    teams: list[FlightStandingsTeam]

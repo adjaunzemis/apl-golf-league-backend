@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.database import flights as db_flights
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.flight import Flight, FlightCreate, FlightRead
 from app.models.flight_division_link import FlightDivisionLink
@@ -180,3 +181,12 @@ def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
 
     session.refresh(flight_db)
     return flight_db
+
+
+@router.get("/teams/")
+async def get_teams(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Query(..., description="Flight identifier"),
+):
+    return db_flights.get_teams_in_flight(session=session, flight_id=flight_id)
