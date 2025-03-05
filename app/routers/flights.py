@@ -190,3 +190,12 @@ async def get_teams(
     flight_id: int = Query(..., description="Flight identifier"),
 ):
     return db_flights.get_teams_in_flight(session=session, flight_id=flight_id)
+
+
+@router.get("/matches/")
+async def get_matches(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Query(..., description="Flight identifier"),
+):
+    return db_flights.get_flight_match_summaries(session=session, flight_id=flight_id)

@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import List, Optional
+from enum import StrEnum
 
 from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
@@ -21,12 +20,12 @@ class MatchBase(SQLModel):
     week: int
     home_team_id: int = Field(default=None, foreign_key="team.id")
     away_team_id: int = Field(default=None, foreign_key="team.id")
-    home_score: Optional[float] = None
-    away_score: Optional[float] = None
+    home_score: float | None = None
+    away_score: float | None = None
 
 
 class Match(MatchBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     flight: Flight = Relationship()
     home_team: Team = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Match.home_team_id]"}
@@ -34,7 +33,7 @@ class Match(MatchBase, table=True):
     away_team: Team = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Match.away_team_id]"}
     )
-    rounds: List[Round] = Relationship(link_model=MatchRoundLink)
+    rounds: list[Round] = Relationship(link_model=MatchRoundLink)
 
 
 class MatchCreate(MatchBase):
@@ -42,12 +41,12 @@ class MatchCreate(MatchBase):
 
 
 class MatchUpdate(SQLModel):
-    flight_id: Optional[int] = None
-    week: Optional[int] = None
-    home_team_id: Optional[int] = None
-    away_team_id: Optional[int] = None
-    home_score: Optional[float] = None
-    away_score: Optional[float] = None
+    flight_id: int | None = None
+    week: int | None = None
+    home_team_id: int | None = None
+    away_team_id: int | None = None
+    home_score: float | None = None
+    away_score: float | None = None
 
 
 class MatchRead(MatchBase):
@@ -58,10 +57,10 @@ class MatchReadWithData(MatchRead):
     flight: FlightRead = None
     home_team: TeamRead = None
     away_team: TeamRead = None
-    rounds: List[RoundReadWithData] = []
+    rounds: list[RoundReadWithData] = Field(default_factory=list)
 
 
-class MatchSummary(SQLModel):
+class MatchSummary(BaseModel):
     match_id: int
     home_team_id: int
     home_team_name: str
@@ -69,20 +68,20 @@ class MatchSummary(SQLModel):
     away_team_name: str
     flight_name: str
     week: int
-    home_score: Optional[float] = None
-    away_score: Optional[float] = None
+    home_score: float | None = None
+    away_score: float | None = None
 
 
 class MatchData(MatchSummary):
-    rounds: Optional[List[RoundResults]] = []
+    rounds: list[RoundResults] | None = Field(default_factory=list)
 
 
-class MatchDataWithCount(SQLModel):
+class MatchDataWithCount(BaseModel):
     num_matches: int
-    matches: List[MatchData]
+    matches: list[MatchData]
 
 
-class MatchHoleWinner(str, Enum):
+class MatchHoleWinner(StrEnum):
     """Indicates which team won the hole during the match."""
 
     HOME = "Home"
@@ -103,14 +102,14 @@ class MatchHoleResult(BaseModel):
 
 
 class MatchValidationRequest(BaseModel):
-    home_team_rounds: List[RoundValidationRequest]
-    away_team_rounds: List[RoundValidationRequest]
+    home_team_rounds: list[RoundValidationRequest]
+    away_team_rounds: list[RoundValidationRequest]
 
 
 class MatchValidationResponse(BaseModel):
-    home_team_rounds: List[RoundValidationResponse]
-    away_team_rounds: List[RoundValidationResponse]
+    home_team_rounds: list[RoundValidationResponse]
+    away_team_rounds: list[RoundValidationResponse]
     home_team_score: float = 0.0
     away_team_score: float = 0.0
-    hole_results: List[MatchHoleResult] = []
+    hole_results: list[MatchHoleResult] = Field(default_factory=list)
     is_valid: bool = False
