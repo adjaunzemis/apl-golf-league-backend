@@ -1,8 +1,10 @@
 from sqlmodel import Session, select
 
+from app.models.course import Course
 from app.models.division import Division
 from app.models.flight import (
     Flight,
+    FlightInfo,
     FlightStandings,
     FlightStandingsTeam,
     FlightTeam,
@@ -15,7 +17,41 @@ from app.models.team import Team
 from app.models.team_golfer_link import TeamGolferLink
 
 
-def get_teams_in_flight(session: Session, flight_id: int) -> list[FlightTeam]:
+def get_ids(session: Session, year: int | None = None) -> list[int]:
+    query = select(Flight.id)
+    if year:
+        query = query.where(Flight.year == year)
+    return session.exec(query.order_by(Flight.id)).all()
+
+
+def get_info(session: Session, flight_id: int) -> FlightInfo:
+    flight = session.exec(select(Flight).where(Flight.id == flight_id)).one()
+    teams = get_teams(session=session, flight_id=flight_id)
+    course = session.exec(
+        select(Course).where(Course.id == flight.course_id)
+    ).one_or_none()
+    return FlightInfo(
+        id=flight.id,
+        year=flight.year,
+        name=flight.name,
+        course=course.name if course is not None else None,
+        logo_url=flight.logo_url,
+        secretary=flight.secretary,
+        secretary_email=flight.secretary_email,
+        signup_start_date=flight.signup_start_date.astimezone()
+        .replace(microsecond=0)
+        .isoformat(),
+        signup_stop_date=flight.signup_stop_date.astimezone()
+        .replace(microsecond=0)
+        .isoformat(),
+        start_date=flight.start_date.astimezone().replace(microsecond=0).isoformat(),
+        weeks=flight.weeks,
+        tee_times=flight.tee_times,
+        num_teams=len(teams),
+    )
+
+
+def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
     results = session.exec(
         select(Team, Golfer, TeamGolferLink, Division)
         .join(FlightTeamLink, onclause=FlightTeamLink.team_id == Team.id)
@@ -46,11 +82,10 @@ def get_teams_in_flight(session: Session, flight_id: int) -> list[FlightTeam]:
     return list(teams.values())
 
 
-def get_flight_match_summaries(session: Session, flight_id: int) -> list[MatchSummary]:
+def get_match_summaries(session: Session, flight_id: int) -> list[MatchSummary]:
     flight_name = session.exec(select(Flight.name).where(Flight.id == flight_id)).one()
     team_map = {
-        team.team_id: team
-        for team in get_teams_in_flight(session=session, flight_id=flight_id)
+        team.team_id: team for team in get_teams(session=session, flight_id=flight_id)
     }
     matches = session.exec(select(Match).where(Match.flight_id == flight_id)).all()
 
@@ -74,7 +109,7 @@ def get_flight_match_summaries(session: Session, flight_id: int) -> list[MatchSu
 
 
 def get_standings(session: Session, flight_id: int) -> FlightStandings:
-    matches = get_flight_match_summaries(session=session, flight_id=flight_id)
+    matches = get_match_summaries(session=session, flight_id=flight_id)
 
     team_data_map: dict[int, FlightStandingsTeam] = {}
     for match in matches:

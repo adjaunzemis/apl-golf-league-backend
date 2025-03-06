@@ -16,15 +16,15 @@ class FlightBase(SQLModel):
     year: int
     course_id: int = Field(default=None, foreign_key="course.id")
     logo_url: str | None = None
-    secretary: str | None = None
+    secretary: str
     secretary_email: str | None = None
     secretary_phone: str | None = None
-    signup_start_date: datetime | None = None
-    signup_stop_date: datetime | None = None
-    start_date: datetime | None = None
-    weeks: int | None = None
+    signup_start_date: datetime
+    signup_stop_date: datetime
+    start_date: datetime
+    weeks: int
     tee_times: str | None = None
-    locked: bool | None = False
+    locked: bool = False
 
 
 class Flight(FlightBase, table=True):
@@ -57,6 +57,22 @@ class FlightUpdate(SQLModel):
 
 class FlightRead(FlightBase):
     id: int
+
+
+class FlightInfo(SQLModel):
+    id: int
+    year: int
+    name: str
+    course: str | None = None
+    logo_url: str | None = None
+    secretary: str
+    secretary_email: str | None = None
+    signup_start_date: str
+    signup_stop_date: str
+    start_date: str
+    weeks: int
+    tee_times: str | None = None
+    num_teams: int
 
 
 class FlightTeamGolfer(BaseModel):

@@ -96,22 +96,6 @@ class TournamentTeamData(TeamRead):
     rounds: Optional[List[RoundResults]] = []
 
 
-class FlightInfo(SQLModel):
-    id: int
-    year: int
-    name: str
-    course: str | None = None
-    logo_url: str | None = None
-    secretary: str | None = None
-    secretary_email: str | None = None
-    signup_start_date: str | None = None
-    signup_stop_date: str | None = None
-    start_date: str | None = None
-    weeks: int | None = None
-    tee_times: str | None = None
-    num_teams: int | None = None
-
-
 class FlightData(SQLModel):
     id: int
     year: int
@@ -131,11 +115,6 @@ class FlightData(SQLModel):
     divisions: List[DivisionData] = []
     teams: List[FlightTeamReadWithGolfers] = []
     matches: List[MatchSummary] = []
-
-
-class FlightInfoWithCount(SQLModel):
-    num_flights: int
-    flights: List[FlightInfo]
 
 
 class TournamentInfo(SQLModel):
