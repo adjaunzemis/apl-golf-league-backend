@@ -64,6 +64,8 @@ class FlightInfo(SQLModel):
     year: int
     name: str
     course: str | None = None
+    address: str | None = None
+    phone: str | None = None
     logo_url: str | None = None
     secretary: str
     secretary_email: str | None = None

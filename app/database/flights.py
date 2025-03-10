@@ -35,6 +35,8 @@ def get_info(session: Session, flight_id: int) -> FlightInfo:
         year=flight.year,
         name=flight.name,
         course=course.name if course is not None else None,
+        address=course.address if course is not None else None,
+        phone=course.phone if course is not None else None,
         logo_url=flight.logo_url,
         secretary=flight.secretary,
         secretary_email=flight.secretary_email,
