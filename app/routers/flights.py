@@ -1,16 +1,16 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.database import flights as db_flights
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.flight import Flight, FlightCreate, FlightRead
+from app.models.flight import Flight, FlightCreate, FlightInfo, FlightRead
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.match import MatchSummary
 from app.models.query_helpers import (
     FlightData,
-    FlightInfoWithCount,
     get_divisions_in_flights,
     get_flights,
     get_matches_for_teams,
@@ -22,19 +22,17 @@ from app.routers.utilities import upsert_division
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
 
-@router.get("/", response_model=FlightInfoWithCount)
+@router.get("/", response_model=list[FlightInfo])
 async def read_flights(
     *,
     session: Session = Depends(get_sql_db_session),
     year: int = Query(default=None, ge=2000),
 ):
-    if year:  # filter to a certain year
-        flight_ids = session.exec(select(Flight.id).where(Flight.year == year)).all()
-    else:  # get all
-        flight_ids = session.exec(select(Flight.id)).all()
-    flight_info = get_flights(session=session, flight_ids=flight_ids)
-    flight_info.sort(key=lambda flight: (flight.name, -flight.year))
-    return FlightInfoWithCount(num_flights=len(flight_ids), flights=flight_info)
+    flight_ids = db_flights.get_ids(session=session, year=year)
+    return [
+        db_flights.get_info(session=session, flight_id=flight_id)
+        for flight_id in flight_ids
+    ]
 
 
 @router.get("/{flight_id}", response_model=FlightData)
@@ -172,3 +170,39 @@ def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
 
     session.refresh(flight_db)
     return flight_db
+
+
+@router.get("/info/{flight_id}")
+async def get_info(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_info(session=session, flight_id=flight_id)
+
+
+@router.get("/teams/{flight_id}")
+async def get_teams(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_teams(session=session, flight_id=flight_id)
+
+
+@router.get("/matches/{flight_id}")
+async def get_matches(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_match_summaries(session=session, flight_id=flight_id)
+
+
+@router.get("/standings/{flight_id}")
+async def get_standings(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_standings(session=session, flight_id=flight_id)

@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class TeamRole(str, Enum):
+class TeamRole(StrEnum):
     CAPTAIN = "Captain"
     PLAYER = "Player"
     SUBSTITUTE = "Substitute"
