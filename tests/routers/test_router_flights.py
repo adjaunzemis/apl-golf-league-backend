@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -10,11 +12,43 @@ from app.models.team import Team
 
 
 @pytest.mark.parametrize(
-    "name, year, course_id, divisions",
-    [("Test Flight Name", 2021, 1, []), ("Test Flight Name", 2021, None, [])],
+    "name, year, course_id, divisions, secretary, signup_start_date, signup_stop_date, start_date, weeks",
+    [
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            None,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+    ],
 )
 def test_create_flight(
-    client_admin: TestClient, name: str, year: int, course_id: int, divisions: list
+    client_admin: TestClient,
+    name: str,
+    year: int,
+    course_id: int,
+    divisions: list,
+    secretary: str,
+    signup_start_date: datetime,
+    signup_stop_date: datetime,
+    start_date: datetime,
+    weeks: int,
 ):
     response = client_admin.post(
         "/flights/",
@@ -23,6 +57,11 @@ def test_create_flight(
             "year": year,
             "course_id": course_id,
             "divisions": divisions,
+            "secretary": secretary,
+            "signup_start_date": str(signup_start_date),
+            "signup_stop_date": str(signup_stop_date),
+            "start_date": str(start_date),
+            "weeks": weeks,
         },
     )
     assert response.status_code == status.HTTP_200_OK
@@ -35,11 +74,98 @@ def test_create_flight(
 
 
 @pytest.mark.parametrize(
-    "name, year, course_id, divisions",
-    [(None, 2021, 1, []), ("Test Flight Name", None, 1, [])],
+    "name, year, course_id, divisions, secretary, signup_start_date, signup_stop_date, start_date, weeks",
+    [
+        (
+            None,
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            None,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            None,
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            None,
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            None,
+            datetime(2021, 4, 1),
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            None,
+            18,
+        ),
+        (
+            "Test Flight Name",
+            2021,
+            1,
+            [],
+            "Test Secretary",
+            datetime(2021, 3, 1),
+            datetime(2021, 3, 15),
+            datetime(2021, 4, 1),
+            None,
+        ),
+    ],
 )
 def test_create_flight_incomplete(
-    client_admin: TestClient, name: str, year: int, course_id: int, divisions: list
+    client_admin: TestClient,
+    name: str | None,
+    year: int | None,
+    course_id: int | None,
+    divisions: list | None,
+    secretary: str | None,
+    signup_start_date: datetime | None,
+    signup_stop_date: datetime | None,
+    start_date: datetime | None,
+    weeks: int | None,
 ):
     response = client_admin.post(
         "/flights/",
@@ -48,6 +174,11 @@ def test_create_flight_incomplete(
             "year": year,
             "course_id": course_id,
             "divisions": divisions,
+            "secretary": secretary,
+            "signup_start_date": str(signup_start_date),
+            "signup_stop_date": str(signup_stop_date),
+            "start_date": str(start_date),
+            "weeks": weeks,
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -109,8 +240,26 @@ def test_read_flights(session: Session, client_unauthorized: TestClient):
         session.add(course)
 
     flights = [
-        Flight(name="Test Flight 1", year=2021, course_id=1),
-        Flight(name="Test Flight 2", year=2021, course_id=2),
+        Flight(
+            name="Test Flight 1",
+            year=2021,
+            course_id=1,
+            secretary="Test Secretary",
+            signup_start_date=datetime(2021, 3, 1),
+            signup_stop_date=datetime(2021, 3, 15),
+            start_date=datetime(2021, 4, 1),
+            weeks=18,
+        ),
+        Flight(
+            name="Test Flight 2",
+            year=2021,
+            course_id=2,
+            secretary="Test Secretary",
+            signup_start_date=datetime(2021, 3, 1),
+            signup_stop_date=datetime(2021, 3, 15),
+            start_date=datetime(2021, 4, 1),
+            weeks=18,
+        ),
     ]
     for flight in flights:
         session.add(flight)
@@ -120,21 +269,18 @@ def test_read_flights(session: Session, client_unauthorized: TestClient):
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
-    assert data["num_flights"] == len(flights)
-    assert len(data["flights"]) == len(flights)
+    assert len(data) == len(flights)
 
-    for dIdx in range(len(data["flights"])):
-        assert data["flights"][dIdx]["name"] == flights[dIdx].name
-        assert data["flights"][dIdx]["year"] == flights[dIdx].year
+    for idx, flight_json in enumerate(data):
+        assert flight_json["name"] == flights[idx].name
+        assert flight_json["year"] == flights[idx].year
         assert (
-            data["flights"][dIdx]["course"]
+            flight_json["course"]
             == [
-                course.name
-                for course in courses
-                if course.id == flights[dIdx].course_id
+                course.name for course in courses if course.id == flights[idx].course_id
             ][0]
         )
-        assert data["flights"][dIdx]["id"] == flights[dIdx].id
+        assert flight_json["id"] == flights[idx].id
 
 
 def test_read_flight(session: Session, client_unauthorized: TestClient):
@@ -142,7 +288,16 @@ def test_read_flight(session: Session, client_unauthorized: TestClient):
     session.add(course)
     session.commit()
     session.refresh(course)
-    flight = Flight(name="Test Flight 1", year=2021, course_id=course.id)
+    flight = Flight(
+        name="Test Flight 1",
+        year=2021,
+        course_id=course.id,
+        secretary="Test Secretary",
+        signup_start_date=datetime(2021, 3, 1),
+        signup_stop_date=datetime(2021, 3, 15),
+        start_date=datetime(2021, 4, 1),
+        weeks=18,
+    )
     session.add(flight)
     team = Team(name="Test Team 1")
     session.add(team)
@@ -166,7 +321,16 @@ def test_read_flight(session: Session, client_unauthorized: TestClient):
 
 
 def test_delete_flight(session: Session, client_admin: TestClient):
-    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
+    flight = Flight(
+        name="Test Flight 1",
+        year=2021,
+        course_id=1,
+        secretary="Test Secretary",
+        signup_start_date=datetime(2021, 3, 1),
+        signup_stop_date=datetime(2021, 3, 15),
+        start_date=datetime(2021, 4, 1),
+        weeks=18,
+    )
     session.add(flight)
     session.commit()
 
@@ -178,7 +342,16 @@ def test_delete_flight(session: Session, client_admin: TestClient):
 
 
 def test_delete_flight_unauthorized(session: Session, client_unauthorized: TestClient):
-    flight = Flight(name="Test Flight 1", year=2021, course_id=1)
+    flight = Flight(
+        name="Test Flight 1",
+        year=2021,
+        course_id=1,
+        secretary="Test Secretary",
+        signup_start_date=datetime(2021, 3, 1),
+        signup_stop_date=datetime(2021, 3, 15),
+        start_date=datetime(2021, 4, 1),
+        weeks=18,
+    )
     session.add(flight)
     session.commit()
 
