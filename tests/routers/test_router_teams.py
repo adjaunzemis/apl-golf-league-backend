@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -47,7 +49,18 @@ def test_create_team_flight(
     for g in golfer_data:
         session.add(Golfer(name=g["golfer_name"]))
 
-    session.add(Flight(name="Test Flight", year=2021, id=flight_id))
+    session.add(
+        Flight(
+            name="Test Flight",
+            year=2021,
+            id=flight_id,
+            secretary="Test Secretary",
+            signup_start_date=datetime(2021, 3, 1),
+            signup_stop_date=datetime(2021, 3, 15),
+            start_date=datetime(2021, 4, 1),
+            weeks=18,
+        )
+    )
     session.add(LeagueDues(year=2021, type=LeagueDuesType.FLIGHT_DUES, amount=50))
 
     session.commit()
@@ -103,7 +116,18 @@ def test_read_teams(session: Session, client_unauthorized: TestClient):
     for golfer in golfers:
         session.add(golfer)
 
-    session.add(Flight(name="Test Flight", year=2021, id=1))
+    session.add(
+        Flight(
+            name="Test Flight",
+            year=2021,
+            id=1,
+            secretary="Test Secretary",
+            signup_start_date=datetime(2021, 3, 1),
+            signup_stop_date=datetime(2021, 3, 15),
+            start_date=datetime(2021, 4, 1),
+            weeks=18,
+        )
+    )
 
     teams = [
         Team(name="Test Team 1", flight_id=1, id=1),
@@ -143,7 +167,18 @@ def test_read_team_flight(session: Session, client_unauthorized: TestClient):
     for golfer in golfers:
         session.add(golfer)
 
-    session.add(Flight(name="Test Flight", year=2021, id=1))
+    session.add(
+        Flight(
+            name="Test Flight",
+            year=2021,
+            id=1,
+            secretary="Test Secretary",
+            signup_start_date=datetime(2021, 3, 1),
+            signup_stop_date=datetime(2021, 3, 15),
+            start_date=datetime(2021, 4, 1),
+            weeks=18,
+        )
+    )
     session.add(Division(name="Test Division", gender=TeeGender.MENS, id=1))
     session.add(FlightDivisionLink(flight_id=1, division_id=1))
 
