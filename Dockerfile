@@ -1,4 +1,4 @@
-FROM python:3.12@sha256:85ec4fe2a3f8ccac3315795f80c1cd2ef1ac496e892729548c716b120ea2c46a
+FROM python:3.12@sha256:58cc8fe14823e640082ae8282814e84c962be2b65c1b057d8968b908b6f0e94b
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:d25a9b42ecc3aac0d63782654dcb2ab4b304f86357794b05a5c39b17f4777339 /uv /uvx /bin/
 
 ARG VERSION=v0.0.0
