@@ -1,7 +1,8 @@
+from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
 from app.models.course import Course
-from app.models.division import Division
+from app.models.division import Division, FlightDivision
 from app.models.flight import (
     Flight,
     FlightInfo,
@@ -10,11 +11,14 @@ from app.models.flight import (
     FlightTeam,
     FlightTeamGolfer,
 )
+from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
 from app.models.match import Match, MatchSummary
 from app.models.team import Team
 from app.models.team_golfer_link import TeamGolferLink
+from app.models.tee import Tee
+from app.models.track import Track
 
 
 def get_ids(session: Session, year: int | None = None) -> list[int]:
@@ -51,6 +55,54 @@ def get_info(session: Session, flight_id: int) -> FlightInfo:
         tee_times=flight.tee_times,
         num_teams=len(teams),
     )
+
+
+def get_divisions(session: Session, flight_id: int) -> list[FlightDivision]:
+    primary_track = aliased(Track)
+    primary_tee = aliased(Tee)
+    secondary_track = aliased(Track)
+    secondary_tee = aliased(Tee)
+    division_query_data = session.exec(
+        select(
+            Division,
+            FlightDivisionLink,
+            primary_tee,
+            primary_track,
+            secondary_tee,
+            secondary_track,
+        )
+        .join(
+            FlightDivisionLink, onclause=FlightDivisionLink.division_id == Division.id
+        )
+        .join(primary_tee, onclause=Division.primary_tee_id == primary_tee.id)
+        .join(primary_track, onclause=primary_tee.track_id == primary_track.id)
+        .join(secondary_tee, onclause=Division.secondary_tee_id == secondary_tee.id)
+        .join(secondary_track, onclause=secondary_tee.track_id == secondary_track.id)
+        .where(FlightDivisionLink.flight_id == flight_id)
+    )
+    return [
+        FlightDivision(
+            id=division.id,
+            flight_id=flight_division_link.flight_id,
+            name=division.name,
+            gender=division.gender,
+            primary_track_id=primary_track_db.id,
+            primary_track_name=primary_track_db.name,
+            primary_tee_id=primary_tee_db.id,
+            primary_tee_name=primary_tee_db.name,
+            primary_tee_par=primary_tee_db.par,
+            primary_tee_rating=primary_tee_db.rating,
+            primary_tee_slope=primary_tee_db.slope,
+            secondary_track_id=secondary_track_db.id,
+            secondary_track_name=secondary_track_db.name,
+            secondary_tee_id=secondary_tee_db.id,
+            secondary_tee_name=secondary_tee_db.name,
+            secondary_tee_par=secondary_tee_db.par,
+            secondary_tee_rating=secondary_tee_db.rating,
+            secondary_tee_slope=secondary_tee_db.slope,
+        )
+        for division, flight_division_link, primary_tee_db, primary_track_db, secondary_tee_db, secondary_track_db in division_query_data
+    ]
 
 
 def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
