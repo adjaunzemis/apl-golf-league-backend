@@ -215,3 +215,12 @@ async def get_standings(
     flight_id: int = Path(..., description="Flight identifier"),
 ):
     return db_flights.get_standings(session=session, flight_id=flight_id)
+
+
+@router.get("/statistics/{flight_id}")
+async def get_statistics(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_statistics(session=session, flight_id=flight_id)
