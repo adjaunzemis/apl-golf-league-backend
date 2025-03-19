@@ -260,7 +260,15 @@ def get_statistics(session: Session, flight_id: int) -> FlightStatistics:
             golfer_stats.num_matches += 1
             golfer_stats.num_rounds += 1  # TODO: track repeat rounds
 
-            # TODO: update total and average points won
+            points_won = 0
+            if golfer_stats.golfer_team_id == golfer_match.home_team_id:
+                points_won = golfer_match.home_score
+            elif golfer_stats.golfer_team_id == golfer_match.away_team_id:
+                points_won = golfer_match.away_score
+            golfer_stats.points_won += points_won
+            golfer_stats.avg_points_won += (
+                points_won - golfer_stats.avg_points_won
+            ) / golfer_stats.num_matches
 
             par = 0
             gross_score = 0
