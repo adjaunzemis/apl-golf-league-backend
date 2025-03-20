@@ -181,6 +181,15 @@ async def get_info(
     return db_flights.get_info(session=session, flight_id=flight_id)
 
 
+@router.get("/divisions/{flight_id}")
+async def get_divisions(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_divisions(session=session, flight_id=flight_id)
+
+
 @router.get("/teams/{flight_id}")
 async def get_teams(
     *,
@@ -206,3 +215,12 @@ async def get_standings(
     flight_id: int = Path(..., description="Flight identifier"),
 ):
     return db_flights.get_standings(session=session, flight_id=flight_id)
+
+
+@router.get("/statistics/{flight_id}")
+async def get_statistics(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_flights.get_statistics(session=session, flight_id=flight_id)

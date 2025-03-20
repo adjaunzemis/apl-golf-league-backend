@@ -103,3 +103,44 @@ class FlightStandingsTeam(BaseModel):
 class FlightStandings(BaseModel):
     flight_id: int
     teams: list[FlightStandingsTeam]
+
+
+class GolferStatisticsScoring(BaseModel):
+    avg_score: float = 0
+    avg_score_to_par: float = 0
+    avg_par_3_score: float = 0
+    avg_par_4_score: float = 0
+    avg_par_5_score: float = 0
+    num_aces: int = 0
+    num_albatrosses: int = 0
+    num_eagles: int = 0
+    num_birdies: int = 0
+    num_pars: int = 0
+    num_bogeys: int = 0
+    num_double_bogeys: int = 0
+    num_others: int = 0
+
+
+class GolferStatistics(BaseModel):
+    golfer_id: int
+    golfer_name: str
+    golfer_team_id: int
+    golfer_team_role: TeamRole
+    num_rounds: int = 0
+    num_holes: int = 0
+    num_par_3_holes: int = 0
+    num_par_4_holes: int = 0
+    num_par_5_holes: int = 0
+    gross_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
+    net_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
+
+
+class FlightGolferStatistics(GolferStatistics):
+    num_matches: int = 0
+    points_won: float = 0
+    avg_points_won: float = 0
+
+
+class FlightStatistics(BaseModel):
+    flight_id: int
+    golfers: list[FlightGolferStatistics] = Field(default_factory=list)
