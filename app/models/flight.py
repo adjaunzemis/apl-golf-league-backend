@@ -105,29 +105,12 @@ class FlightStandings(BaseModel):
     teams: list[FlightStandingsTeam]
 
 
-class FlightStatisticsGolfer(BaseModel):
-    golfer_id: int
-    golfer_name: str
-    golfer_team_id: int
-    golfer_team_role: TeamRole
-    num_matches: int = 0
-    num_rounds: int = 0
-    points_won: float = 0
-    avg_points_won: float = 0
-    avg_gross: float = 0
-    avg_gross_to_par: float = 0
-    avg_net: float = 0
-    avg_net_to_par: float = 0
-    num_holes: int = 0
-    num_par_3_holes: int = 0
-    num_par_4_holes: int = 0
-    num_par_5_holes: int = 0
-    avg_par_3_gross: float = 0
-    avg_par_3_net: float = 0
-    avg_par_4_gross: float = 0
-    avg_par_4_net: float = 0
-    avg_par_5_gross: float = 0
-    avg_par_5_net: float = 0
+class GolferStatisticsScoring(BaseModel):
+    avg_score: float = 0
+    avg_score_to_par: float = 0
+    avg_par_3_score: float = 0
+    avg_par_4_score: float = 0
+    avg_par_5_score: float = 0
     num_aces: int = 0
     num_albatrosses: int = 0
     num_eagles: int = 0
@@ -138,6 +121,26 @@ class FlightStatisticsGolfer(BaseModel):
     num_others: int = 0
 
 
+class GolferStatistics(BaseModel):
+    golfer_id: int
+    golfer_name: str
+    golfer_team_id: int
+    golfer_team_role: TeamRole
+    num_rounds: int = 0
+    num_holes: int = 0
+    num_par_3_holes: int = 0
+    num_par_4_holes: int = 0
+    num_par_5_holes: int = 0
+    gross_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
+    net_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
+
+
+class FlightGolferStatistics(GolferStatistics):
+    num_matches: int = 0
+    points_won: float = 0
+    avg_points_won: float = 0
+
+
 class FlightStatistics(BaseModel):
     flight_id: int
-    golfers: list[FlightStatisticsGolfer] = Field(default_factory=list)
+    golfers: list[FlightGolferStatistics] = Field(default_factory=list)

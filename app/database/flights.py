@@ -5,11 +5,11 @@ from app.models.course import Course
 from app.models.division import Division, FlightDivision
 from app.models.flight import (
     Flight,
+    FlightGolferStatistics,
     FlightInfo,
     FlightStandings,
     FlightStandingsTeam,
     FlightStatistics,
-    FlightStatisticsGolfer,
     FlightTeam,
     FlightTeamGolfer,
 )
@@ -236,10 +236,10 @@ def get_statistics(session: Session, flight_id: int) -> FlightStatistics:
         .where(TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id)))
     ).all()
 
-    flight_golfer_stats: dict[int, FlightStatisticsGolfer] = {}
+    flight_golfer_stats: dict[int, FlightGolferStatistics] = {}
     for match, match_round, match_golfer, match_tgl in match_data:
         if match_golfer.id not in flight_golfer_stats:
-            flight_golfer_stats[match_golfer.id] = FlightStatisticsGolfer(
+            flight_golfer_stats[match_golfer.id] = FlightGolferStatistics(
                 golfer_id=match_golfer.id,
                 golfer_name=match_golfer.name,
                 golfer_team_id=match_tgl.team_id,
@@ -273,68 +273,92 @@ def get_statistics(session: Session, flight_id: int) -> FlightStatistics:
             golfer_stats.num_holes += 1
 
             par += hole.par
+
+            # Gross scoring (hole)
             gross_score += hole_result.gross_score
+
+            if hole_result.gross_score <= 1:
+                golfer_stats.gross_scoring.num_aces += 1
+            elif hole_result.gross_score == (hole.par - 3):
+                golfer_stats.gross_scoring.num_albatrosses += 1
+            elif hole_result.gross_score == (hole.par - 2):
+                golfer_stats.gross_scoring.num_eagles += 1
+            elif hole_result.gross_score == (hole.par - 1):
+                golfer_stats.gross_scoring.num_birdies += 1
+            elif hole_result.gross_score == hole.par:
+                golfer_stats.gross_scoring.num_pars += 1
+            elif hole_result.gross_score == (hole.par + 1):
+                golfer_stats.gross_scoring.num_bogeys += 1
+            elif hole_result.gross_score == (hole.par + 2):
+                golfer_stats.gross_scoring.num_double_bogeys += 1
+            elif hole_result.gross_score > (hole.par + 2):
+                golfer_stats.gross_scoring.num_others += 1
+
+            # Gross scoring (hole)
             net_score += hole_result.net_score
 
-            if hole_result.gross_score == 1:
-                golfer_stats.num_aces += 1
-            elif hole_result.gross_score == (hole.par - 3):
-                golfer_stats.num_albatrosses += 1
-            elif hole_result.gross_score == (hole.par - 2):
-                golfer_stats.num_eagles += 1
-            elif hole_result.gross_score == (hole.par - 1):
-                golfer_stats.num_birdies += 1
-            elif hole_result.gross_score == hole.par:
-                golfer_stats.num_pars += 1
-            elif hole_result.gross_score == (hole.par + 1):
-                golfer_stats.num_bogeys += 1
-            elif hole_result.gross_score == (hole.par + 2):
-                golfer_stats.num_double_bogeys += 1
-            elif hole_result.gross_score > (hole.par + 2):
-                golfer_stats.num_others += 1
+            if hole_result.net_score <= 1:
+                golfer_stats.net_scoring.num_aces += 1
+            elif hole_result.net_score == (hole.par - 3):
+                golfer_stats.net_scoring.num_albatrosses += 1
+            elif hole_result.net_score == (hole.par - 2):
+                golfer_stats.net_scoring.num_eagles += 1
+            elif hole_result.net_score == (hole.par - 1):
+                golfer_stats.net_scoring.num_birdies += 1
+            elif hole_result.net_score == hole.par:
+                golfer_stats.net_scoring.num_pars += 1
+            elif hole_result.net_score == (hole.par + 1):
+                golfer_stats.net_scoring.num_bogeys += 1
+            elif hole_result.net_score == (hole.par + 2):
+                golfer_stats.net_scoring.num_double_bogeys += 1
+            elif hole_result.net_score > (hole.par + 2):
+                golfer_stats.net_scoring.num_others += 1
 
+            # Scoring by hole type
             if hole.par == 3:
                 golfer_stats.num_par_3_holes += 1
-                golfer_stats.avg_par_3_gross += (
-                    hole_result.gross_score - golfer_stats.avg_par_3_gross
+                golfer_stats.gross_scoring.avg_par_3_score += (
+                    hole_result.gross_score - golfer_stats.gross_scoring.avg_par_3_score
                 ) / golfer_stats.num_par_3_holes
-                golfer_stats.avg_par_3_net += (
-                    hole_result.net_score - golfer_stats.avg_par_3_net
+                golfer_stats.net_scoring.avg_par_3_score += (
+                    hole_result.net_score - golfer_stats.net_scoring.avg_par_3_score
                 ) / golfer_stats.num_par_3_holes
             elif hole.par == 4:
                 golfer_stats.num_par_4_holes += 1
-                golfer_stats.avg_par_4_gross += (
-                    hole_result.gross_score - golfer_stats.avg_par_4_gross
+                golfer_stats.gross_scoring.avg_par_4_score += (
+                    hole_result.gross_score - golfer_stats.gross_scoring.avg_par_4_score
                 ) / golfer_stats.num_par_4_holes
-                golfer_stats.avg_par_4_net += (
-                    hole_result.net_score - golfer_stats.avg_par_4_net
+                golfer_stats.net_scoring.avg_par_4_score += (
+                    hole_result.net_score - golfer_stats.net_scoring.avg_par_4_score
                 ) / golfer_stats.num_par_4_holes
             elif hole.par == 5:
                 golfer_stats.num_par_5_holes += 1
-                golfer_stats.avg_par_5_gross += (
-                    hole_result.gross_score - golfer_stats.avg_par_5_gross
+                golfer_stats.gross_scoring.avg_par_5_score += (
+                    hole_result.gross_score - golfer_stats.gross_scoring.avg_par_5_score
                 ) / golfer_stats.num_par_5_holes
-                golfer_stats.avg_par_5_net += (
-                    hole_result.net_score - golfer_stats.avg_par_5_net
+                golfer_stats.net_scoring.avg_par_5_score += (
+                    hole_result.net_score - golfer_stats.net_scoring.avg_par_5_score
                 ) / golfer_stats.num_par_5_holes
 
-        golfer_stats.avg_gross += (
-            gross_score - golfer_stats.avg_gross
+        # Gross scoring (round)
+        golfer_stats.gross_scoring.avg_score += (
+            gross_score - golfer_stats.gross_scoring.avg_score
         ) / golfer_stats.num_rounds
-        golfer_stats.avg_gross_to_par += (
-            (gross_score - par) - golfer_stats.avg_gross_to_par
+        golfer_stats.gross_scoring.avg_score_to_par += (
+            (gross_score - par) - golfer_stats.gross_scoring.avg_score_to_par
         ) / golfer_stats.num_rounds
 
-        golfer_stats.avg_net += (
-            net_score - golfer_stats.avg_net
+        # Net scoring (round)
+        golfer_stats.net_scoring.avg_score += (
+            net_score - golfer_stats.net_scoring.avg_score
         ) / golfer_stats.num_rounds
-        golfer_stats.avg_net_to_par += (
-            (net_score - par) - golfer_stats.avg_net_to_par
+        golfer_stats.net_scoring.avg_score_to_par += (
+            (net_score - par) - golfer_stats.net_scoring.avg_score_to_par
         ) / golfer_stats.num_rounds
 
     flight_stats = FlightStatistics(
         flight_id=flight_id, golfers=list(flight_golfer_stats.values())
     )
-    flight_stats.golfers.sort(key=lambda g: g.avg_gross)
+    flight_stats.golfers.sort(key=lambda g: g.gross_scoring.avg_score)
 
     return flight_stats
