@@ -52,10 +52,11 @@ async def read_tournaments(
     year: int = Query(default=None, ge=2000),
 ):
     tournament_ids = db_tournaments.get_ids(session=session, year=year)
-    return [
+    tournaments = [
         db_tournaments.get_info(session=session, tournament_id=tournament_id)
         for tournament_id in tournament_ids
     ]
+    return sorted(tournaments, key=lambda t: t.date)
 
 
 @router.get("/{tournament_id}", response_model=TournamentData)
