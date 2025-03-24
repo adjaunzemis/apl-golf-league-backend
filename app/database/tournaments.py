@@ -207,20 +207,27 @@ def get_round_summaries(
 
 
 def get_rounds_for_team(session: Session, team_id: int) -> list[RoundResults]:
-    trls = session.exec(
-        select(TournamentRoundLink)
-        .join(
-            TournamentTeamLink,
-            onclause=TournamentTeamLink.tournament_id
-            == TournamentRoundLink.tournament_id,
+    tournament_id = session.exec(
+        select(TournamentTeamLink.tournament_id).where(
+            TournamentTeamLink.team_id == team_id
         )
-        .where(TournamentTeamLink.team_id == team_id)
-    ).all()
-    if len(trls) == 0:
-        return []
+    ).one()
 
-    tournament_id = trls[0].tournament_id
-    round_ids = [trl.round_id for trl in trls]
+    round_ids = session.exec(
+        select(Round.id)
+        .join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id)
+        .join(
+            RoundGolferLink,
+            onclause=RoundGolferLink.round_id == TournamentRoundLink.round_id,
+        )
+        .join(
+            TeamGolferLink,
+            onclause=TeamGolferLink.golfer_id == RoundGolferLink.golfer_id,
+        )
+        .where(TeamGolferLink.team_id == team_id)
+        .where(TournamentRoundLink.tournament_id == tournament_id)
+    ).all()
+
     return get_tournament_rounds(
         session=session, tournament_id=tournament_id, round_ids=round_ids
     )
