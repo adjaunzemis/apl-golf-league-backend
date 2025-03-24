@@ -340,7 +340,7 @@ async def get_teams(
 
 
 @router.get("/rounds/{tournament_id}")
-async def get_matches(
+async def get_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
     tournament_id: int = Path(..., description="Flight identifier"),

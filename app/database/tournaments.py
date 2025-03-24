@@ -8,6 +8,7 @@ from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.match import Match
 from app.models.match_round_link import MatchRoundLink
+from app.models.query_helpers import get_hole_results_for_rounds
 from app.models.round import Round, RoundSummary
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.team import Team
@@ -27,6 +28,8 @@ from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.tournament_round_link import TournamentRoundLink
 from app.models.tournament_team_link import TournamentTeamLink
 from app.models.track import Track
+from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 def get_ids(session: Session, year: int | None = None) -> list[int]:
@@ -145,28 +148,55 @@ def get_teams(session: Session, tournament_id: int) -> list[TournamentTeam]:
     return list(teams.values())
 
 
-def get_round_summaries(session: Session, tournament_id: int) -> list[RoundSummary]:
-    tournament_name = session.exec(
-        select(Tournament.name).where(Tournament.id == tournament_id)
-    ).one()
-    team_map = {
-        team.team_id: team
-        for team in get_teams(session=session, tournament_id=tournament_id)
-    }
-    rounds = session.exec(
-        select(Round)
+def get_round_summaries(
+    session: Session, tournament_id: int, use_legacy_handicapping: bool = False
+) -> list[RoundSummary]:
+    round_query_data = session.exec(
+        select(Round, RoundGolferLink, Golfer, Course, Track, Tee)
         .join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id)
+        .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
+        .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
+        .join(Tee)
+        .join(Track)
+        .join(Course)
         .where(TournamentRoundLink.tournament_id == tournament_id)
     ).all()
 
     round_summaries = [
         RoundSummary(
             round_id=round.id,
+            date_played=round.date_played,
+            round_type=round.type,
+            golfer_name=golfer.name,
+            golfer_playing_handicap=round_golfer_link.playing_handicap,
+            course_name=course.name,
+            track_name=track.name,
+            tee_name=tee.name,
+            tee_gender=tee.gender,
+            tee_par=tee.par,
+            tee_rating=tee.rating,
+            tee_slope=tee.slope,
+            tee_color=tee.color if tee.color else "none",
         )
-        for round in rounds
+        for round, round_golfer_link, golfer, course, track, tee in round_query_data
     ]
     round_summaries.sort(key=lambda r: r.round_id)
 
+    handicap_system = (
+        APLLegacyHandicapSystem() if use_legacy_handicapping else APLHandicapSystem()
+    )
+    hole_result_data = get_hole_results_for_rounds(
+        session=session, round_ids=[r.round_id for r in round_summaries]
+    )
+    for r in round_summaries:
+        round_holes = [h for h in hole_result_data if h.round_id == r.round_id]
+        r.tee_par = sum([h.par for h in round_holes])
+        r.gross_score = sum([h.gross_score for h in round_holes])
+        r.adjusted_gross_score = sum([h.adjusted_gross_score for h in round_holes])
+        r.net_score = sum([h.net_score for h in round_holes])
+        r.score_differential = handicap_system.compute_score_differential(
+            r.tee_rating, r.tee_slope, r.adjusted_gross_score
+        )
     return round_summaries
 
 
