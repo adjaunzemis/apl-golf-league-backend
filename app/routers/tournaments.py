@@ -350,6 +350,15 @@ async def get_rounds(
     )
 
 
+@router.get("/team-rounds/{team_id}")
+async def get_rounds_for_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    team_id: int = Path(..., description="Team identifier"),
+):
+    return db_tournaments.get_rounds_for_team(session=session, team_id=team_id)
+
+
 @router.get("/standings/{tournament_id}")
 async def get_standings(
     *,

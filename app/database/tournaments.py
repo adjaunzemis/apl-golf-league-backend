@@ -206,6 +206,26 @@ def get_round_summaries(
     return round_summaries
 
 
+def get_rounds_for_team(session: Session, team_id: int) -> list[RoundResults]:
+    trls = session.exec(
+        select(TournamentRoundLink)
+        .join(
+            TournamentTeamLink,
+            onclause=TournamentTeamLink.tournament_id
+            == TournamentRoundLink.tournament_id,
+        )
+        .where(TournamentTeamLink.team_id == team_id)
+    ).all()
+    if len(trls) == 0:
+        return []
+
+    tournament_id = trls[0].tournament_id
+    round_ids = [trl.round_id for trl in trls]
+    return get_tournament_rounds(
+        session=session, tournament_id=tournament_id, round_ids=round_ids
+    )
+
+
 def _compute_team_scores_best_ball(
     rounds: list[RoundResults], num_balls: int = 1
 ) -> tuple[float, float]:
