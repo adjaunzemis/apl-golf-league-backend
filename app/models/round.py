@@ -96,6 +96,7 @@ class RoundResults(SQLModel):
     golfer_id: int
     golfer_name: str
     golfer_playing_handicap: Optional[int] = None
+    role: str | None = None
     team_name: Optional[str] = None
     course_id: int
     course_name: str

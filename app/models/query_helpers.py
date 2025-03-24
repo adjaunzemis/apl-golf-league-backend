@@ -10,7 +10,7 @@ from app.models.division import Division, DivisionData
 from app.models.flight import Flight
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import Golfer, GolferStatistics
+from app.models.golfer import Golfer, GolferStatisticsOLD
 from app.models.handicap import HandicapIndex
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult, HoleResultData
@@ -54,7 +54,7 @@ class GolferTeamData(SQLModel):
     team_name: str
     role: str
     year: int
-    statistics: Optional[GolferStatistics] = None
+    statistics: Optional[GolferStatisticsOLD] = None
     handicap_index: Optional[float] = None
     handicap_index_updated: Optional[str] = None
 
@@ -117,28 +117,6 @@ class FlightData(SQLModel):
     matches: List[MatchSummary] = []
 
 
-class TournamentInfo(SQLModel):
-    id: int
-    year: int
-    name: str
-    date: str = None
-    course: str = None
-    logo_url: str = None
-    secretary: str = None
-    secretary_email: str = None
-    signup_start_date: str = None
-    signup_stop_date: str = None
-    members_entry_fee: float = None
-    non_members_entry_fee: float = None
-    shotgun: bool = False
-    strokeplay: bool = False
-    bestball: int = 0
-    scramble: bool = False
-    ryder_cup: bool = False
-    individual: bool = False
-    chachacha: bool = False
-
-
 class TournamentData(SQLModel):
     id: int
     year: int
@@ -164,11 +142,6 @@ class TournamentData(SQLModel):
     ryder_cup: bool = False
     individual: bool = False
     chachacha: bool = False
-
-
-class TournamentInfoWithCount(SQLModel):
-    num_tournaments: int
-    tournaments: List[TournamentInfo]
 
 
 def get_flights(session: Session, flight_ids: List[int]) -> List[FlightData]:
@@ -1080,7 +1053,7 @@ def get_tournament_rounds(
 
     """
     round_query_data = session.exec(
-        select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee)
+        select(Round, RoundGolferLink, Golfer, TeamGolferLink, Team, Course, Track, Tee)
         .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
         .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
         .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
@@ -1104,6 +1077,7 @@ def get_tournament_rounds(
             golfer_id=round_golfer_link.golfer_id,
             golfer_name=golfer.name,
             golfer_playing_handicap=round_golfer_link.playing_handicap,
+            role=team_golfer_link.role,
             team_name=team.name,
             course_id=course.id,
             course_name=course.name,
@@ -1117,7 +1091,7 @@ def get_tournament_rounds(
             tee_slope=tee.slope,
             tee_color=tee.color if tee.color else "none",
         )
-        for round, round_golfer_link, golfer, team, course, track, tee in round_query_data
+        for round, round_golfer_link, golfer, team_golfer_link, team, course, track, tee in round_query_data
     ]
 
     # Query hole data for selected rounds
@@ -1183,7 +1157,7 @@ def get_hole_results_for_rounds(
 
 def compute_golfer_statistics_for_rounds(
     golfer_id: int, rounds: List[RoundResults]
-) -> GolferStatistics:
+) -> GolferStatisticsOLD:
     """
     Computes statistics for the given golfer from the given rounds.
 
@@ -1202,7 +1176,7 @@ def compute_golfer_statistics_for_rounds(
         statistics computed from rounds for the given golfer
 
     """
-    stats = GolferStatistics()
+    stats = GolferStatisticsOLD()
     for round in rounds:
         if round.golfer_id == golfer_id:
             stats.num_rounds += 1
@@ -1235,7 +1209,7 @@ def compute_golfer_statistics_for_rounds(
 
 def compute_golfer_statistics_for_matches(
     golfer_id: int, matches: List[MatchData]
-) -> GolferStatistics:
+) -> GolferStatisticsOLD:
     """
     Extracts rounds for given golfer from given matches, computes statistics.
 
