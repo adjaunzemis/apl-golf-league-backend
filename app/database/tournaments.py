@@ -49,6 +49,8 @@ def get_info(session: Session, tournament_id: int) -> TournamentInfo:
         year=tournament.year,
         name=tournament.name,
         course=course.name if course is not None else None,
+        address=course.address if course is not None else None,
+        phone=course.phone if course is not None else None,
         logo_url=tournament.logo_url,
         secretary=tournament.secretary,
         secretary_email=tournament.secretary_email,

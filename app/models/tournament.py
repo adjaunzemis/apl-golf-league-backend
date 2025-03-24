@@ -81,6 +81,8 @@ class TournamentInfo(SQLModel):
     name: str
     date: str = None
     course: str = None
+    address: str = None
+    phone: str = None
     logo_url: str = None
     secretary: str
     secretary_email: str = None
