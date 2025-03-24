@@ -1,3 +1,4 @@
+import numpy as np
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -8,8 +9,8 @@ from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.match import Match
 from app.models.match_round_link import MatchRoundLink
-from app.models.query_helpers import get_hole_results_for_rounds
-from app.models.round import Round, RoundSummary
+from app.models.query_helpers import get_hole_results_for_rounds, get_tournament_rounds
+from app.models.round import Round, RoundResults, RoundSummary
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.team import Team
 from app.models.team_golfer_link import TeamGolferLink
@@ -19,6 +20,7 @@ from app.models.tournament import (
     Tournament,
     TournamentInfo,
     TournamentStandings,
+    TournamentStandingsGolfer,
     TournamentStandingsTeam,
     TournamentStatistics,
     TournamentTeam,
@@ -64,6 +66,13 @@ def get_info(session: Session, tournament_id: int) -> TournamentInfo:
         .replace(microsecond=0)
         .isoformat(),
         date=tournament.date.astimezone().replace(microsecond=0).isoformat(),
+        shotgun=tournament.shotgun,
+        strokeplay=tournament.strokeplay,
+        bestball=tournament.bestball,
+        scramble=tournament.scramble,
+        ryder_cup=tournament.ryder_cup,
+        individual=tournament.individual,
+        chachacha=tournament.chachacha,
         num_teams=len(teams),
     )
 
@@ -185,6 +194,7 @@ def get_round_summaries(
     handicap_system = (
         APLLegacyHandicapSystem() if use_legacy_handicapping else APLHandicapSystem()
     )
+    # TODO: Move get_hole_results to a database module
     hole_result_data = get_hole_results_for_rounds(
         session=session, round_ids=[r.round_id for r in round_summaries]
     )
@@ -200,58 +210,103 @@ def get_round_summaries(
     return round_summaries
 
 
+def _compute_team_scores_best_ball(
+    rounds: list[RoundResults], num_balls: int = 1
+) -> tuple[float, float]:
+    gross_score = 0
+    net_score = 0
+    for hole_id in np.unique([h.hole_id for r in rounds for h in r.holes]):
+        hole_gross_scores = [
+            h.gross_score for r in rounds for h in r.holes if h.hole_id == hole_id
+        ]
+        print(f"NUM HOLE SCORES: {len(hole_gross_scores)}")
+        if len(hole_gross_scores) < num_balls:
+            gross_score += sum(
+                hole_gross_scores
+            )  # TODO: handle "fewer golfers than n" case
+        gross_score += sum(
+            sorted(hole_gross_scores)[:num_balls]
+        )  # take the "n" smallest scores
+
+        hole_net_scores = [
+            h.net_score for r in rounds for h in r.holes if h.hole_id == hole_id
+        ]
+        if len(hole_net_scores) < num_balls:
+            net_score += sum(
+                hole_net_scores
+            )  # TODO: handle "fewer golfers than n" case
+        net_score += sum(sorted(hole_net_scores)[:num_balls])
+    return gross_score, net_score
+
+
+def _compute_team_scores_scramble(rounds: list[RoundResults]) -> tuple[float, float]:
+    # NOTE: should only be one score per hole per team anyway
+    return _compute_team_scores_best_ball(rounds=rounds, num_balls=1)
+
+
+def _compute_individual_scores(rounds: list[RoundResults]) -> tuple[float, float]:
+    gross_score = sum([r.gross_score for r in rounds])
+    net_score = sum([r.net_score for r in rounds])
+    return gross_score, net_score
+
+
 def get_standings(session: Session, tournament_id: int) -> TournamentStandings:
-    rounds = get_round_summaries(session=session, tournament_id=tournament_id)
+    tournament_info = get_info(session=session, tournament_id=tournament_id)
 
-    team_data_map: dict[int, TournamentStandingsTeam] = {}
-    for round in rounds:
-        if round.home_score is None or round.away_score is None:
-            continue
-
-        if round.home_team_id not in team_data_map:
-            team_data_map[round.home_team_id] = TournamentStandingsTeam(
-                team_id=round.home_team_id, team_name=round.home_team_name
-            )
-        team_data_map[round.home_team_id].matches_played += 1
-        team_data_map[round.home_team_id].points_won += round.home_score
-        team_data_map[round.home_team_id].avg_points = (
-            team_data_map[round.home_team_id].points_won
-            / team_data_map[round.home_team_id].matches_played
-        )
-
-        if round.away_team_id not in team_data_map:
-            team_data_map[round.away_team_id] = TournamentStandingsTeam(
-                team_id=round.away_team_id, team_name=round.away_team_name
-            )
-        team_data_map[round.away_team_id].matches_played += 1
-        team_data_map[round.away_team_id].points_won += round.away_score
-        team_data_map[round.away_team_id].avg_points = (
-            team_data_map[round.away_team_id].points_won
-            / team_data_map[round.away_team_id].matches_played
-        )
-
-    team_data = sorted(team_data_map.values(), key=lambda t: t.avg_points, reverse=True)
-
-    # TODO: Implement tie-breaks
-
-    for idx, team in enumerate(team_data):
-        if idx > 0 and team.avg_points == team_data[idx - 1].avg_points:
-            team.position = team_data[idx - 1].position
-            continue
-
-        if (
-            idx < len(team_data) - 1
-            and team.avg_points == team_data[idx + 1].avg_points
-        ):
-            team.position = f"T{idx + 1}"
-            continue
-
-        team.position = f"{idx + 1}"
-
-    return TournamentStandings(
-        tournament_id=tournament_id,
-        teams=team_data,
+    round_ids = session.exec(
+        select(Round.id)
+        .join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id)
+        .where(TournamentRoundLink.tournament_id == tournament_id)
+    ).all()
+    round_data = get_tournament_rounds(
+        session=session, tournament_id=tournament_id, round_ids=round_ids
     )
+
+    standings = TournamentStandings(tournament_id=tournament_id)
+
+    for team_id in np.unique([r.team_id for r in round_data]):
+        team_rounds = [r for r in round_data if r.team_id == team_id]
+
+        gross_score: int | None = None
+        net_score: int | None = None
+        if tournament_info.scramble:
+            gross_score, net_score = _compute_team_scores_scramble(rounds=team_rounds)
+        elif tournament_info.bestball > 0:
+            gross_score, net_score = _compute_team_scores_best_ball(
+                rounds=team_rounds, num_balls=tournament_info.bestball
+            )
+
+        if gross_score is not None and net_score is not None:
+            standings.teams.append(
+                TournamentStandingsTeam(
+                    team_id=team_id,
+                    team_name=team_rounds[0].team_name,
+                    gross_score=gross_score,
+                    net_score=net_score,
+                )
+            )
+
+    # TODO: Sort team standings and determine positions
+
+    if tournament_info.individual:
+        for golfer_id in np.unique([r.golfer_id for r in round_data]):
+            golfer_rounds = [r for r in round_data if r.golfer_id == golfer_id]
+
+            indiv_gross, indiv_net = _compute_individual_scores(rounds=golfer_rounds)
+
+            standings.golfers.append(
+                TournamentStandingsGolfer(
+                    golfer_id=golfer_rounds[0].golfer_id,
+                    golfer_name=golfer_rounds[0].golfer_name,
+                    golfer_playing_handicap=golfer_rounds[0].golfer_playing_handicap,
+                    gross_score=indiv_gross,
+                    net_score=indiv_net,
+                )
+            )
+
+    # TODO: Sort individual standings and determine positions
+
+    return standings
 
 
 def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics:

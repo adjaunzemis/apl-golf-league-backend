@@ -117,15 +117,25 @@ class TournamentTeam(BaseModel):
 class TournamentStandingsTeam(BaseModel):
     team_id: int
     team_name: str
-    points_won: float = 0
-    matches_played: int = 0
-    avg_points: float = 0
+    gross_score: int
+    net_score: int
+    position: str = ""
+
+
+class TournamentStandingsGolfer(BaseModel):
+    golfer_id: int
+    golfer_name: str
+    # division_name: str # TODO: pass this through tournament round data
+    golfer_playing_handicap: int
+    gross_score: int
+    net_score: int
     position: str = ""
 
 
 class TournamentStandings(BaseModel):
     tournament_id: int
-    teams: list[TournamentStandingsTeam]
+    teams: list[TournamentStandingsTeam] = Field(default_factory=list)
+    golfers: list[TournamentStandingsGolfer] = Field(default_factory=list)
 
 
 class TournamentStatistics(BaseModel):
