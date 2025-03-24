@@ -215,27 +215,29 @@ def _compute_team_scores_best_ball(
 ) -> tuple[float, float]:
     gross_score = 0
     net_score = 0
-    for hole_id in np.unique([h.hole_id for r in rounds for h in r.holes]):
+    for hole_num in np.unique([h.number for r in rounds for h in r.holes]):
         hole_gross_scores = [
-            h.gross_score for r in rounds for h in r.holes if h.hole_id == hole_id
+            h.gross_score for r in rounds for h in r.holes if h.number == hole_num
         ]
-        print(f"NUM HOLE SCORES: {len(hole_gross_scores)}")
         if len(hole_gross_scores) < num_balls:
             gross_score += sum(
                 hole_gross_scores
             )  # TODO: handle "fewer golfers than n" case
-        gross_score += sum(
-            sorted(hole_gross_scores)[:num_balls]
-        )  # take the "n" smallest scores
+        else:
+            gross_score += sum(
+                sorted(hole_gross_scores)[:num_balls]
+            )  # take the "n" smallest scores
 
         hole_net_scores = [
-            h.net_score for r in rounds for h in r.holes if h.hole_id == hole_id
+            h.net_score for r in rounds for h in r.holes if h.number == hole_num
         ]
         if len(hole_net_scores) < num_balls:
             net_score += sum(
                 hole_net_scores
             )  # TODO: handle "fewer golfers than n" case
-        net_score += sum(sorted(hole_net_scores)[:num_balls])
+        else:
+            net_score += sum(sorted(hole_net_scores)[:num_balls])
+
     return gross_score, net_score
 
 
@@ -262,10 +264,12 @@ def get_standings(session: Session, tournament_id: int) -> TournamentStandings:
         session=session, tournament_id=tournament_id, round_ids=round_ids
     )
 
+    teams = get_teams(session=session, tournament_id=tournament_id)
+
     standings = TournamentStandings(tournament_id=tournament_id)
 
-    for team_id in np.unique([r.team_id for r in round_data]):
-        team_rounds = [r for r in round_data if r.team_id == team_id]
+    for team in teams:
+        team_rounds = [r for r in round_data if r.team_id == team.team_id]
 
         gross_score: int | None = None
         net_score: int | None = None
@@ -279,8 +283,8 @@ def get_standings(session: Session, tournament_id: int) -> TournamentStandings:
         if gross_score is not None and net_score is not None:
             standings.teams.append(
                 TournamentStandingsTeam(
-                    team_id=team_id,
-                    team_name=team_rounds[0].team_name,
+                    team_id=team.team_id,
+                    team_name=team.name,
                     gross_score=gross_score,
                     net_score=net_score,
                 )
