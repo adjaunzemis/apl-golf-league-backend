@@ -1,18 +1,17 @@
 from datetime import datetime
 from http import HTTPStatus
-from typing import List
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, SQLModel, select
 
+from app.database import tournaments as db_tournaments
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import Golfer
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.query_helpers import (
     TournamentData,
-    TournamentInfoWithCount,
     get_divisions_in_tournaments,
     get_round_summaries,
     get_rounds_for_tournament,
@@ -26,6 +25,7 @@ from app.models.tee import Tee
 from app.models.tournament import (
     Tournament,
     TournamentCreate,
+    TournamentInfo,
     TournamentRead,
 )
 from app.models.tournament_division_link import TournamentDivisionLink
@@ -42,31 +42,20 @@ router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 class TournamentInput(SQLModel):
     tournament_id: int
     date_played: datetime
-    rounds: List[RoundInput]
+    rounds: list[RoundInput]
 
 
-@router.get("/", response_model=TournamentInfoWithCount)
+@router.get("/", response_model=list[TournamentInfo])
 async def read_tournaments(
     *,
     session: Session = Depends(get_sql_db_session),
     year: int = Query(default=None, ge=2000),
 ):
-    if year:  # filter to a certain year
-        tournament_ids = session.exec(
-            select(Tournament.id).where(Tournament.year == year)
-        ).all()
-    else:  # get all
-        tournament_ids = session.exec(select(Tournament.id)).all()
-    tournament_info = get_tournaments(session=session, tournament_ids=tournament_ids)
-    tournament_info.sort(
-        key=lambda tournament: (
-            -tournament.year,
-            datetime.strptime(tournament.date, "%Y-%m-%dT%H:%M:%S%z"),
-        )
-    )
-    return TournamentInfoWithCount(
-        num_tournaments=len(tournament_ids), tournaments=tournament_info
-    )
+    tournament_ids = db_tournaments.get_ids(session=session, year=year)
+    return [
+        db_tournaments.get_info(session=session, tournament_id=tournament_id)
+        for tournament_id in tournament_ids
+    ]
 
 
 @router.get("/{tournament_id}", response_model=TournamentData)
@@ -160,7 +149,7 @@ async def delete_tournament(
     return {"ok": True}
 
 
-@router.post("/rounds", response_model=List[RoundSummary])
+@router.post("/rounds", response_model=list[RoundSummary])
 async def post_tournament_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -321,3 +310,59 @@ def upsert_tournament(
 
     session.refresh(tournament_db)
     return tournament_db
+
+
+@router.get("/info/{tournament_id}")
+async def get_info(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_info(session=session, tournament_id=tournament_id)
+
+
+@router.get("/divisions/{tournament_id}")
+async def get_divisions(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_divisions(session=session, tournament_id=tournament_id)
+
+
+@router.get("/teams/{tournament_id}")
+async def get_teams(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_teams(session=session, tournament_id=tournament_id)
+
+
+@router.get("/rounds/{tournament_id}")
+async def get_matches(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_round_summaries(
+        session=session, tournament_id=tournament_id
+    )
+
+
+@router.get("/standings/{tournament_id}")
+async def get_standings(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_standings(session=session, tournament_id=tournament_id)
+
+
+@router.get("/statistics/{tournament_id}")
+async def get_statistics(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_statistics(session=session, tournament_id=tournament_id)

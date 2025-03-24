@@ -81,3 +81,24 @@ class FlightDivision(SQLModel):
     secondary_tee_name: str
     secondary_tee_rating: float
     secondary_tee_slope: int
+
+
+class TournamentDivision(SQLModel):
+    id: int
+    tournament_id: int
+    name: str
+    gender: str
+    primary_track_id: int
+    primary_track_name: str
+    primary_tee_id: int
+    primary_tee_name: str
+    primary_tee_par: int
+    primary_tee_rating: float
+    primary_tee_slope: int
+    secondary_track_id: int
+    secondary_track_name: str
+    secondary_tee_id: int
+    secondary_tee_par: int
+    secondary_tee_name: str
+    secondary_tee_rating: float
+    secondary_tee_slope: int
