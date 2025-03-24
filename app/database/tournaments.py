@@ -5,10 +5,6 @@ from sqlmodel import Session, select
 from app.models.course import Course
 from app.models.division import Division, TournamentDivision
 from app.models.golfer import Golfer
-from app.models.hole import Hole
-from app.models.hole_result import HoleResult
-from app.models.match import Match
-from app.models.match_round_link import MatchRoundLink
 from app.models.query_helpers import get_hole_results_for_rounds, get_tournament_rounds
 from app.models.round import Round, RoundResults, RoundSummary
 from app.models.round_golfer_link import RoundGolferLink
@@ -314,74 +310,55 @@ def get_standings(session: Session, tournament_id: int) -> TournamentStandings:
 
 
 def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics:
-    match_summaries = get_round_summaries(session=session, tournament_id=tournament_id)
-    match_data = session.exec(
-        select(Match, Round, Golfer, TeamGolferLink)
-        .join(MatchRoundLink, onclause=MatchRoundLink.match_id == Match.id)
-        .join(Round, onclause=Round.id == MatchRoundLink.round_id)
-        .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
-        .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
-        .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
-        .where(Match.id.in_((match.match_id for match in match_summaries)))
-        .where(TeamGolferLink.team_id.in_((Match.home_team_id, Match.away_team_id)))
+    round_ids = session.exec(
+        select(Round.id)
+        .join(TournamentRoundLink, onclause=TournamentRoundLink.round_id == Round.id)
+        .where(TournamentRoundLink.tournament_id == tournament_id)
     ).all()
+    round_data = get_tournament_rounds(
+        session=session, tournament_id=tournament_id, round_ids=round_ids
+    )
 
     tournament_golfer_stats: dict[int, GolferStatistics] = {}
-    for match, match_round, match_golfer, match_tgl in match_data:
-        if match_golfer.id not in tournament_golfer_stats:
-            tournament_golfer_stats[match_golfer.id] = GolferStatistics(
-                golfer_id=match_golfer.id,
-                golfer_name=match_golfer.name,
-                golfer_team_id=match_tgl.team_id,
-                golfer_team_role=match_tgl.role,
+    for round in round_data:
+        if round.golfer_id not in tournament_golfer_stats:
+            tournament_golfer_stats[round.golfer_id] = GolferStatistics(
+                golfer_id=round.golfer_id,
+                golfer_name=round.golfer_name,
+                golfer_team_id=round.team_id,
+                golfer_team_role=round.role,
             )
-        golfer_stats = tournament_golfer_stats[match_golfer.id]
+        golfer_stats = tournament_golfer_stats[round.golfer_id]
 
-        golfer_stats.num_matches += 1
-        golfer_stats.num_rounds += 1  # TODO: track repeat rounds
-
-        points_won = 0
-        if golfer_stats.golfer_team_id == match.home_team_id:
-            points_won = match.home_score
-        elif golfer_stats.golfer_team_id == match.away_team_id:
-            points_won = match.away_score
-        golfer_stats.points_won += points_won
-        golfer_stats.avg_points_won += (
-            points_won - golfer_stats.avg_points_won
-        ) / golfer_stats.num_matches
+        golfer_stats.num_rounds += 1  # TODO: remove from generic golfer stats?
 
         par = 0
         gross_score = 0
         net_score = 0
 
-        round_data = session.exec(
-            select(HoleResult, Hole)
-            .join(Hole, onclause=Hole.id == HoleResult.hole_id)
-            .where(HoleResult.round_id == match_round.id)
-        ).all()
-        for hole_result, hole in round_data:
+        for hole_result in round.holes:
             golfer_stats.num_holes += 1
 
-            par += hole.par
+            par += hole_result.par
 
             # Gross scoring (hole)
             gross_score += hole_result.gross_score
 
             if hole_result.gross_score <= 1:
                 golfer_stats.gross_scoring.num_aces += 1
-            elif hole_result.gross_score == (hole.par - 3):
+            elif hole_result.gross_score == (hole_result.par - 3):
                 golfer_stats.gross_scoring.num_albatrosses += 1
-            elif hole_result.gross_score == (hole.par - 2):
+            elif hole_result.gross_score == (hole_result.par - 2):
                 golfer_stats.gross_scoring.num_eagles += 1
-            elif hole_result.gross_score == (hole.par - 1):
+            elif hole_result.gross_score == (hole_result.par - 1):
                 golfer_stats.gross_scoring.num_birdies += 1
-            elif hole_result.gross_score == hole.par:
+            elif hole_result.gross_score == hole_result.par:
                 golfer_stats.gross_scoring.num_pars += 1
-            elif hole_result.gross_score == (hole.par + 1):
+            elif hole_result.gross_score == (hole_result.par + 1):
                 golfer_stats.gross_scoring.num_bogeys += 1
-            elif hole_result.gross_score == (hole.par + 2):
+            elif hole_result.gross_score == (hole_result.par + 2):
                 golfer_stats.gross_scoring.num_double_bogeys += 1
-            elif hole_result.gross_score > (hole.par + 2):
+            elif hole_result.gross_score > (hole_result.par + 2):
                 golfer_stats.gross_scoring.num_others += 1
 
             # Gross scoring (hole)
@@ -389,23 +366,23 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
 
             if hole_result.net_score <= 1:
                 golfer_stats.net_scoring.num_aces += 1
-            elif hole_result.net_score == (hole.par - 3):
+            elif hole_result.net_score == (hole_result.par - 3):
                 golfer_stats.net_scoring.num_albatrosses += 1
-            elif hole_result.net_score == (hole.par - 2):
+            elif hole_result.net_score == (hole_result.par - 2):
                 golfer_stats.net_scoring.num_eagles += 1
-            elif hole_result.net_score == (hole.par - 1):
+            elif hole_result.net_score == (hole_result.par - 1):
                 golfer_stats.net_scoring.num_birdies += 1
-            elif hole_result.net_score == hole.par:
+            elif hole_result.net_score == hole_result.par:
                 golfer_stats.net_scoring.num_pars += 1
-            elif hole_result.net_score == (hole.par + 1):
+            elif hole_result.net_score == (hole_result.par + 1):
                 golfer_stats.net_scoring.num_bogeys += 1
-            elif hole_result.net_score == (hole.par + 2):
+            elif hole_result.net_score == (hole_result.par + 2):
                 golfer_stats.net_scoring.num_double_bogeys += 1
-            elif hole_result.net_score > (hole.par + 2):
+            elif hole_result.net_score > (hole_result.par + 2):
                 golfer_stats.net_scoring.num_others += 1
 
             # Scoring by hole type
-            if hole.par == 3:
+            if hole_result.par == 3:
                 golfer_stats.num_par_3_holes += 1
                 golfer_stats.gross_scoring.avg_par_3_score += (
                     hole_result.gross_score - golfer_stats.gross_scoring.avg_par_3_score
@@ -413,7 +390,7 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
                 golfer_stats.net_scoring.avg_par_3_score += (
                     hole_result.net_score - golfer_stats.net_scoring.avg_par_3_score
                 ) / golfer_stats.num_par_3_holes
-            elif hole.par == 4:
+            elif hole_result.par == 4:
                 golfer_stats.num_par_4_holes += 1
                 golfer_stats.gross_scoring.avg_par_4_score += (
                     hole_result.gross_score - golfer_stats.gross_scoring.avg_par_4_score
@@ -421,7 +398,7 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
                 golfer_stats.net_scoring.avg_par_4_score += (
                     hole_result.net_score - golfer_stats.net_scoring.avg_par_4_score
                 ) / golfer_stats.num_par_4_holes
-            elif hole.par == 5:
+            elif hole_result.par == 5:
                 golfer_stats.num_par_5_holes += 1
                 golfer_stats.gross_scoring.avg_par_5_score += (
                     hole_result.gross_score - golfer_stats.gross_scoring.avg_par_5_score
@@ -430,7 +407,7 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
                     hole_result.net_score - golfer_stats.net_scoring.avg_par_5_score
                 ) / golfer_stats.num_par_5_holes
 
-        # Gross scoring (round)
+        # Gross scoring (round) # TODO: Remove from generic stats?
         golfer_stats.gross_scoring.avg_score += (
             gross_score - golfer_stats.gross_scoring.avg_score
         ) / golfer_stats.num_rounds
@@ -438,7 +415,7 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
             (gross_score - par) - golfer_stats.gross_scoring.avg_score_to_par
         ) / golfer_stats.num_rounds
 
-        # Net scoring (round)
+        # Net scoring (round) # TODO: Remove from generic stats?
         golfer_stats.net_scoring.avg_score += (
             net_score - golfer_stats.net_scoring.avg_score
         ) / golfer_stats.num_rounds

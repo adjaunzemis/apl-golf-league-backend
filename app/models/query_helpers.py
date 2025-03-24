@@ -1053,7 +1053,7 @@ def get_tournament_rounds(
 
     """
     round_query_data = session.exec(
-        select(Round, RoundGolferLink, Golfer, Team, Course, Track, Tee)
+        select(Round, RoundGolferLink, Golfer, TeamGolferLink, Team, Course, Track, Tee)
         .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
         .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
         .join(TeamGolferLink, onclause=TeamGolferLink.golfer_id == Golfer.id)
@@ -1077,6 +1077,7 @@ def get_tournament_rounds(
             golfer_id=round_golfer_link.golfer_id,
             golfer_name=golfer.name,
             golfer_playing_handicap=round_golfer_link.playing_handicap,
+            role=team_golfer_link.role,
             team_name=team.name,
             course_id=course.id,
             course_name=course.name,
@@ -1090,7 +1091,7 @@ def get_tournament_rounds(
             tee_slope=tee.slope,
             tee_color=tee.color if tee.color else "none",
         )
-        for round, round_golfer_link, golfer, team, course, track, tee in round_query_data
+        for round, round_golfer_link, golfer, team_golfer_link, team, course, track, tee in round_query_data
     ]
 
     # Query hole data for selected rounds
