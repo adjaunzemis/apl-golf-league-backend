@@ -168,7 +168,7 @@ async def delete_team(
 
     # Commit database changes
     session.commit()
-    return {"ok": True}
+    return team_db
 
 
 def validate_team_signup_data(
