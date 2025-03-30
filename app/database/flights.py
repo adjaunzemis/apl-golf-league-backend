@@ -144,7 +144,7 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
     return sorted(teams.values(), key=lambda t: t.team_id)
 
 
-def get_substitutes(session: Session, flight_id: int) -> list[FlightTeam]:
+def get_substitutes(session: Session, flight_id: int) -> list[FlightTeamGolfer]:
     results = session.exec(
         select(Golfer, Division)
         .join(Substitute, onclause=Substitute.golfer_id == Golfer.id)
