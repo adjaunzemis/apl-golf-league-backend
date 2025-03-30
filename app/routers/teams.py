@@ -512,10 +512,32 @@ def update_team_signups(
             session.delete(team_golfer_link_db)
 
             if team_data.flight_id:  # delete flight dues record if unpaid and golfer not on other flight teams
-                # TODO: Implement find/delete of unpaid and unneeded flight dues records
-                print(
-                    f"WARNING: Flight dues payment record deleting not implemented yet!"
-                )
+                flight_year = session.exec(
+                    select(Flight.year).where(Flight.id == team_data.flight_id)
+                ).one()
+                other_teams_db = session.exec(
+                    select(TeamGolferLink)
+                    .join(
+                        FlightTeamLink,
+                        onclause=FlightTeamLink.team_id == TeamGolferLink.team_id,
+                    )
+                    .join(Flight, onclause=Flight.id == FlightTeamLink.flight_id)
+                    .where(TeamGolferLink.golfer_id == existing_golfer.id)
+                    .where(TeamGolferLink.team_id != team_db.id)
+                    .where(Flight.year == flight_year)
+                ).all()
+                if len(other_teams_db) == 0:
+                    payment_db = session.exec(
+                        select(LeagueDuesPayment)
+                        .join(Flight, onclause=Flight.year == LeagueDuesPayment.year)
+                        .where(Flight.id == team_data.flight_id)
+                        .where(LeagueDuesPayment.golfer_id == existing_golfer.id)
+                    ).one_or_none()
+                    if (payment_db is not None) and (payment_db.amount_paid == 0):
+                        print(
+                            f"Deleting league dues payment record: golfer_id={payment_db.golfer_id}, year={flight_year}"
+                        )
+                        session.delete(payment_db)
             elif team_data.tournament_id:  # delete tournament entry fee if unpaid
                 payment_db = session.exec(
                     select(TournamentEntryFeePayment)
