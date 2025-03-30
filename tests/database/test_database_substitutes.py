@@ -14,7 +14,7 @@ def session_with_substitutes(session: Session):
     yield session
 
 
-def test_get_substitute_not_found(session_with_substitutes):
+def test_get_substitute(session_with_substitutes):
     substitute_db = db_substitutes.get_substitute(
         session_with_substitutes, flight_id=1, golfer_id=1
     )

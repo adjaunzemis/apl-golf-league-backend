@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, Path, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session
 
@@ -14,17 +14,9 @@ router = APIRouter(prefix="/substitutes", tags=["Substitutes"])
 async def get_substitutes(
     *,
     session: Session = Depends(get_sql_db_session),
+    flight_id: int | None = Query(None, description="Flight identifier"),
 ):
-    return db_substitutes.get_substitutes(session)
-
-
-@router.get("/{year}", response_model=Substitute)
-async def get_substitute_for_flight(
-    *,
-    session: Session = Depends(get_sql_db_session),
-    flight_id: int = Path(..., description="Flight identifier"),
-):
-    return db_substitutes.get_substitutes(session, flight_id)
+    return db_substitutes.get_substitutes(session, flight_id=flight_id)
 
 
 @router.post("/", response_model=Substitute)
@@ -33,10 +25,12 @@ async def create_substitute(
     session: Session = Depends(get_sql_db_session),
     new_substitute: SubstituteCreate = Body(..., description="New substitute to add"),
 ):
-    substitute_db = db_substitutes.create_substitute(session, new_substitute)
+    substitute_db = db_substitutes.create_substitute(
+        session, new_substitute=new_substitute
+    )
     if substitute_db is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_409_CONFLICT,
             detail=f"Unable to create substitute",
         )
     return substitute_db
@@ -55,10 +49,12 @@ async def delete_substitute(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Insufficient privileges to delete substitute",
         )
-    substitute_db = db_substitutes.delete_substitute(session, flight_id, golfer_id)
+    substitute_db = db_substitutes.delete_substitute(
+        session, flight_id=flight_id, golfer_id=golfer_id
+    )
     if substitute_db is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Unable to delete substitute",
         )
     return substitute_db
