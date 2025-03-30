@@ -6,7 +6,7 @@ from sqlmodel import Session
 
 from app.database import seasons as db_seasons
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.seasons import Season, SeasonCreate
+from app.models.season import Season, SeasonCreate
 from app.models.user import User
 
 router = APIRouter(prefix="/seasons", tags=["Seasons"])

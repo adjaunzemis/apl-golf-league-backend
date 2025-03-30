@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from sqlmodel import Session
 
-from app.models.seasons import Season
+from app.models.season import Season
 
 
 @pytest.fixture()

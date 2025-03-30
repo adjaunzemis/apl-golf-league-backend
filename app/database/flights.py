@@ -22,8 +22,9 @@ from app.models.match import Match, MatchSummary
 from app.models.match_round_link import MatchRoundLink
 from app.models.round import Round
 from app.models.round_golfer_link import RoundGolferLink
+from app.models.substitute import Substitute
 from app.models.team import Team
-from app.models.team_golfer_link import TeamGolferLink
+from app.models.team_golfer_link import TeamGolferLink, TeamRole
 from app.models.tee import Tee
 from app.models.track import Track
 
@@ -141,6 +142,27 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
         team.golfers.sort(key=lambda g: g.role)
 
     return sorted(teams.values(), key=lambda t: t.team_id)
+
+
+def get_substitutes(session: Session, flight_id: int) -> list[FlightTeam]:
+    results = session.exec(
+        select(Golfer, Division)
+        .join(Substitute, onclause=Substitute.golfer_id == Golfer.id)
+        .join(Division, onclause=Division.id == Substitute.division_id)
+        .where(Substitute.flight_id == flight_id)
+    ).all()
+
+    substitutes = [
+        FlightTeamGolfer(
+            golfer_id=golfer.id,
+            name=golfer.name,
+            role=TeamRole.SUBSTITUTE,
+            division=division.name,
+        )
+        for golfer, division in results
+    ]
+
+    return sorted(substitutes, key=lambda s: s.name)
 
 
 def get_match_summaries(session: Session, flight_id: int) -> list[MatchSummary]:

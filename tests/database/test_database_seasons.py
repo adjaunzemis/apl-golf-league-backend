@@ -2,7 +2,7 @@ import pytest
 from sqlmodel import Session, select
 
 from app.database import seasons as db_seasons
-from app.models.seasons import Season, SeasonCreate
+from app.models.season import Season, SeasonCreate
 
 
 @pytest.fixture()
