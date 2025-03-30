@@ -140,7 +140,7 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
     for team in teams.values():
         team.golfers.sort(key=lambda g: g.role)
 
-    return list(teams.values())
+    return sorted(teams.values(), key=lambda t: t.team_id)
 
 
 def get_match_summaries(session: Session, flight_id: int) -> list[MatchSummary]:

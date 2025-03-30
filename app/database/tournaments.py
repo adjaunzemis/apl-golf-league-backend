@@ -150,7 +150,7 @@ def get_teams(session: Session, tournament_id: int) -> list[TournamentTeam]:
     for team in teams.values():
         team.golfers.sort(key=lambda g: g.role)
 
-    return list(teams.values())
+    return sorted(teams.values(), key=lambda t: t.team_id)
 
 
 def get_round_summaries(

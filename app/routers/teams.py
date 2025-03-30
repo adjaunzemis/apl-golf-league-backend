@@ -1,4 +1,5 @@
 import copy
+import re
 from http import HTTPStatus
 from typing import List, Optional
 
@@ -134,33 +135,53 @@ async def delete_team(
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
 
-    # Find and remove all team-golfer links
-    team_golfer_links_db = session.exec(
-        select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)
-    ).all()
-    for team_golfer_link_db in team_golfer_links_db:
-        print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
-        session.delete(team_golfer_link_db)
-
-    # Find and remove all flight-team links
-    flight_team_links_db = session.exec(
-        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
-    ).all()
-    for flight_team_link_db in flight_team_links_db:
-        print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
-        session.delete(flight_team_link_db)
-
-    # Find and remove all tournament-team links
-    tournament_team_links_db = session.exec(
-        select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
-    ).all()
-    for tournament_team_link_db in tournament_team_links_db:
-        print(
-            f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+    # Remove all golfer, flight, and tournament team links
+    if flight_id := session.exec(
+        select(Flight.id)
+        .join(FlightTeamLink, onclause=FlightTeamLink.flight_id == Flight.id)
+        .where(FlightTeamLink.team_id == team_id)
+    ).one_or_none():
+        update_team_signups(
+            session=session,
+            team_data=TeamSignupData(
+                flight_id=flight_id, name=team_db.name, golfer_data=[]
+            ),
+            team_db=team_db,
         )
-        session.delete(tournament_team_link_db)
 
-    # TODO: Find and remove all non-paid dues/entry fees for this team
+        flight_team_links_db = session.exec(
+            select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
+        ).all()
+        for flight_team_link_db in flight_team_links_db:
+            print(
+                f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}"
+            )
+            session.delete(flight_team_link_db)
+
+    if tournament_id := session.exec(
+        select(Tournament.id)
+        .join(
+            TournamentTeamLink,
+            onclause=TournamentTeamLink.tournament_id == Tournament.id,
+        )
+        .where(TournamentTeamLink.team_id == team_id)
+    ).one_or_none():
+        update_team_signups(
+            session=session,
+            team_data=TeamSignupData(
+                tournament_id=tournament_id, name=team_db.name, golfer_data=[]
+            ),
+            team_db=team_db,
+        )
+
+        tournament_team_links_db = session.exec(
+            select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
+        ).all()
+        for tournament_team_link_db in tournament_team_links_db:
+            print(
+                f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+            )
+            session.delete(tournament_team_link_db)
 
     # Remove team
     print(f"Deleting team: id={team_db.id}")
@@ -168,7 +189,7 @@ async def delete_team(
 
     # Commit database changes
     session.commit()
-    return {"ok": True}
+    return team_db
 
 
 def validate_team_signup_data(
@@ -187,7 +208,7 @@ def validate_team_signup_data(
             detail=f"Invalid team data, must specify exactly one flight or tournament id",
         )
 
-    # Check if team name is valid
+    # Check if team name is unique
     if team_data.flight_id:
         if exclude_team_id is None:
             team_db = session.exec(
@@ -244,6 +265,25 @@ def validate_team_signup_data(
                 status_code=HTTPStatus.CONFLICT,
                 detail=f"Team '{team_data.name}' already exists in this tournament",
             )
+
+    # Check valid length and allowed characters for name
+    if len(team_data.name) < 3:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, too short (min: 3 characters)",
+        )
+
+    if len(team_data.name) > 20:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, too long (max: 20 characters)",
+        )
+
+    if not bool(re.fullmatch(r"[a-zA-Z0-9\s\-\']+", team_data.name)):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, alphanumeric characters only",
+        )
 
     # Check for duplicate golfers in signup
     golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
@@ -510,13 +550,34 @@ def update_team_signups(
                 f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}, team_id={team_golfer_link_db.team_id}"
             )
             session.delete(team_golfer_link_db)
-            session.commit()
 
             if team_data.flight_id:  # delete flight dues record if unpaid and golfer not on other flight teams
-                # TODO: Implement find/delete of unpaid and unneeded flight dues records
-                print(
-                    f"WARNING: Flight dues payment record deleting not implemented yet!"
-                )
+                flight_year = session.exec(
+                    select(Flight.year).where(Flight.id == team_data.flight_id)
+                ).one()
+                other_teams_db = session.exec(
+                    select(TeamGolferLink)
+                    .join(
+                        FlightTeamLink,
+                        onclause=FlightTeamLink.team_id == TeamGolferLink.team_id,
+                    )
+                    .join(Flight, onclause=Flight.id == FlightTeamLink.flight_id)
+                    .where(TeamGolferLink.golfer_id == existing_golfer.id)
+                    .where(TeamGolferLink.team_id != team_db.id)
+                    .where(Flight.year == flight_year)
+                ).all()
+                if len(other_teams_db) == 0:
+                    payment_db = session.exec(
+                        select(LeagueDuesPayment)
+                        .join(Flight, onclause=Flight.year == LeagueDuesPayment.year)
+                        .where(Flight.id == team_data.flight_id)
+                        .where(LeagueDuesPayment.golfer_id == existing_golfer.id)
+                    ).one_or_none()
+                    if (payment_db is not None) and (payment_db.amount_paid == 0):
+                        print(
+                            f"Deleting league dues payment record: golfer_id={payment_db.golfer_id}, year={flight_year}"
+                        )
+                        session.delete(payment_db)
             elif team_data.tournament_id:  # delete tournament entry fee if unpaid
                 payment_db = session.exec(
                     select(TournamentEntryFeePayment)
@@ -531,7 +592,6 @@ def update_team_signups(
                         f"Deleting tournament entry fee payment record: tournament_id={payment_db.tournament_id}, golfer_id={payment_db.golfer_id}"
                     )
                     session.delete(payment_db)
-                    session.commit()
             else:
                 raise HTTPException(
                     status_code=HTTPStatus.BAD_REQUEST,
@@ -543,7 +603,6 @@ def update_team_signups(
                     setattr(team_golfer_link_db, "division_id", golfer_data.division_id)
                     setattr(team_golfer_link_db, "role", golfer_data.role)
                     session.add(team_golfer_link_db)
-                    session.commit()
 
     # Add new golfers on team
     for golfer_data in team_data.golfer_data:
@@ -571,8 +630,8 @@ def update_team_signups(
     # Update team name
     setattr(team_db, "name", team_data.name)
     session.add(team_db)
-    session.commit()
 
-    # Return updated team
+    # Commit updates and return updated team
+    session.commit()
     session.refresh(team_db)
     return team_db
