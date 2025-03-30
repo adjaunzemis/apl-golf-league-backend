@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 
-from app.models.substitutes import Substitute, SubstituteCreate
+from app.models.substitute import Substitute, SubstituteCreate
 
 
 def get_substitute(

@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from sqlmodel import Session
 
-from app.models.substitutes import Substitute
+from app.models.substitute import Substitute
 
 
 @pytest.fixture()

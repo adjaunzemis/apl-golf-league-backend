@@ -1,6 +1,6 @@
 from sqlmodel import Session, desc, select
 
-from app.models.seasons import Season, SeasonCreate
+from app.models.season import Season, SeasonCreate
 
 
 def get_seasons(session: Session) -> list[Season]:

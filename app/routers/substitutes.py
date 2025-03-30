@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from app.database import substitutes as db_substitutes
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.substitutes import Substitute, SubstituteCreate
+from app.models.substitute import Substitute, SubstituteCreate
 from app.models.user import User
 
 router = APIRouter(prefix="/substitutes", tags=["Substitutes"])

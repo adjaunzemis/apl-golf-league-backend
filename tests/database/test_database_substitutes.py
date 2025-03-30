@@ -2,7 +2,7 @@ import pytest
 from sqlmodel import Session
 
 from app.database import substitutes as db_substitutes
-from app.models.substitutes import Substitute, SubstituteCreate
+from app.models.substitute import Substitute, SubstituteCreate
 
 
 @pytest.fixture()
