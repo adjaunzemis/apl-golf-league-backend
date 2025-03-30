@@ -1,4 +1,5 @@
 import copy
+import re
 from http import HTTPStatus
 from typing import List, Optional
 
@@ -207,7 +208,7 @@ def validate_team_signup_data(
             detail=f"Invalid team data, must specify exactly one flight or tournament id",
         )
 
-    # Check if team name is valid
+    # Check if team name is unique
     if team_data.flight_id:
         if exclude_team_id is None:
             team_db = session.exec(
@@ -264,6 +265,25 @@ def validate_team_signup_data(
                 status_code=HTTPStatus.CONFLICT,
                 detail=f"Team '{team_data.name}' already exists in this tournament",
             )
+
+    # Check valid length and allowed characters for name
+    if len(team_data.name) < 3:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, too short (min: 3 characters)",
+        )
+
+    if len(team_data.name) > 20:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, too long (max: 20 characters)",
+        )
+
+    if not bool(re.fullmatch(r"[a-zA-Z0-9\s\-\']+", team_data.name)):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid team name, alphanumeric characters only",
+        )
 
     # Check for duplicate golfers in signup
     golfer_id_list = [team_golfer.golfer_id for team_golfer in team_data.golfer_data]
