@@ -134,33 +134,53 @@ async def delete_team(
     if not team_db:
         raise HTTPException(status_code=404, detail="Team not found")
 
-    # Find and remove all team-golfer links
-    team_golfer_links_db = session.exec(
-        select(TeamGolferLink).where(TeamGolferLink.team_id == team_id)
-    ).all()
-    for team_golfer_link_db in team_golfer_links_db:
-        print(f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}")
-        session.delete(team_golfer_link_db)
-
-    # Find and remove all flight-team links
-    flight_team_links_db = session.exec(
-        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
-    ).all()
-    for flight_team_link_db in flight_team_links_db:
-        print(f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}")
-        session.delete(flight_team_link_db)
-
-    # Find and remove all tournament-team links
-    tournament_team_links_db = session.exec(
-        select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
-    ).all()
-    for tournament_team_link_db in tournament_team_links_db:
-        print(
-            f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+    # Remove all golfer, flight, and tournament team links
+    if flight_id := session.exec(
+        select(Flight.id)
+        .join(FlightTeamLink, onclause=FlightTeamLink.flight_id == Flight.id)
+        .where(FlightTeamLink.team_id == team_id)
+    ).one_or_none():
+        update_team_signups(
+            session=session,
+            team_data=TeamSignupData(
+                flight_id=flight_id, name=team_db.name, golfer_data=[]
+            ),
+            team_db=team_db,
         )
-        session.delete(tournament_team_link_db)
 
-    # TODO: Find and remove all non-paid dues/entry fees for this team
+        flight_team_links_db = session.exec(
+            select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
+        ).all()
+        for flight_team_link_db in flight_team_links_db:
+            print(
+                f"Deleting flight-team link: flight_id={flight_team_link_db.flight_id}"
+            )
+            session.delete(flight_team_link_db)
+
+    if tournament_id := session.exec(
+        select(Tournament.id)
+        .join(
+            TournamentTeamLink,
+            onclause=TournamentTeamLink.tournament_id == Tournament.id,
+        )
+        .where(TournamentTeamLink.team_id == team_id)
+    ).one_or_none():
+        update_team_signups(
+            session=session,
+            team_data=TeamSignupData(
+                tournament_id=tournament_id, name=team_db.name, golfer_data=[]
+            ),
+            team_db=team_db,
+        )
+
+        tournament_team_links_db = session.exec(
+            select(TournamentTeamLink).where(TournamentTeamLink.team_id == team_id)
+        ).all()
+        for tournament_team_link_db in tournament_team_links_db:
+            print(
+                f"Deleting tournament-team link: tournament_id={tournament_team_link_db.tournament_id}"
+            )
+            session.delete(tournament_team_link_db)
 
     # Remove team
     print(f"Deleting team: id={team_db.id}")
