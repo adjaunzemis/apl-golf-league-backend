@@ -510,7 +510,6 @@ def update_team_signups(
                 f"Deleting team-golfer link: golfer_id={team_golfer_link_db.golfer_id}, team_id={team_golfer_link_db.team_id}"
             )
             session.delete(team_golfer_link_db)
-            session.commit()
 
             if team_data.flight_id:  # delete flight dues record if unpaid and golfer not on other flight teams
                 # TODO: Implement find/delete of unpaid and unneeded flight dues records
@@ -531,7 +530,6 @@ def update_team_signups(
                         f"Deleting tournament entry fee payment record: tournament_id={payment_db.tournament_id}, golfer_id={payment_db.golfer_id}"
                     )
                     session.delete(payment_db)
-                    session.commit()
             else:
                 raise HTTPException(
                     status_code=HTTPStatus.BAD_REQUEST,
@@ -543,7 +541,6 @@ def update_team_signups(
                     setattr(team_golfer_link_db, "division_id", golfer_data.division_id)
                     setattr(team_golfer_link_db, "role", golfer_data.role)
                     session.add(team_golfer_link_db)
-                    session.commit()
 
     # Add new golfers on team
     for golfer_data in team_data.golfer_data:
@@ -571,8 +568,8 @@ def update_team_signups(
     # Update team name
     setattr(team_db, "name", team_data.name)
     session.add(team_db)
-    session.commit()
 
-    # Return updated team
+    # Commit updates and return updated team
+    session.commit()
     session.refresh(team_db)
     return team_db
