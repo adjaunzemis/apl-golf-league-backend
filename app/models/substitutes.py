@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.flight import Flight
@@ -16,10 +14,5 @@ class Substitute(SubstituteBase, table=True):
     flight: Flight = Relationship()
 
 
-class SubsituteCreate(SubstituteBase):
+class SubstituteCreate(SubstituteBase):
     pass
-
-
-class SubstituteUpdate(SQLModel):
-    golfer_id: Optional[int] = None
-    flight_id: Optional[int] = None
