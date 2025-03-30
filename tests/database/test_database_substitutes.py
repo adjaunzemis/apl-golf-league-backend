@@ -7,9 +7,9 @@ from app.models.substitutes import Substitute, SubstituteCreate
 
 @pytest.fixture()
 def session_with_substitutes(session: Session):
-    session.add(Substitute(flight_id=1, golfer_id=1))
-    session.add(Substitute(flight_id=1, golfer_id=2))
-    session.add(Substitute(flight_id=2, golfer_id=3))
+    session.add(Substitute(flight_id=1, golfer_id=1, division_id=1))
+    session.add(Substitute(flight_id=1, golfer_id=2, division_id=1))
+    session.add(Substitute(flight_id=2, golfer_id=3, division_id=1))
     session.commit()
     yield session
 
@@ -49,7 +49,7 @@ def test_get_substitutes_for_flight(
 
 
 def test_create_substitute(session_with_substitutes):
-    new_substitute = SubstituteCreate(flight_id=1, golfer_id=3)
+    new_substitute = SubstituteCreate(flight_id=1, golfer_id=3, division_id=1)
     substitute_db = db_substitutes.create_substitute(
         session_with_substitutes, new_substitute
     )
@@ -58,7 +58,7 @@ def test_create_substitute(session_with_substitutes):
 
 
 def test_create_substitute_conflict(session_with_substitutes):
-    new_substitute = SubstituteCreate(flight_id=1, golfer_id=1)
+    new_substitute = SubstituteCreate(flight_id=1, golfer_id=1, division_id=1)
     substitute_db = db_substitutes.create_substitute(
         session_with_substitutes, new_substitute
     )
