@@ -273,10 +273,10 @@ def validate_team_signup_data(
             detail=f"Invalid team name, too short (min: 3 characters)",
         )
 
-    if len(team_data.name) > 20:
+    if len(team_data.name) > 25:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Invalid team name, too long (max: 20 characters)",
+            detail=f"Invalid team name, too long (max: 25 characters)",
         )
 
     if not bool(re.fullmatch(r"[a-zA-Z0-9\s\-\']+", team_data.name)):
