@@ -2,14 +2,27 @@ import pytest
 from fastapi import status
 from sqlmodel import Session
 
+from app.models.flight import FreeAgentCadence
 from app.models.free_agent import FreeAgent
 
 
 @pytest.fixture()
 def session_with_free_agents(session: Session):
-    session.add(FreeAgent(flight_id=1, golfer_id=1, division_id=1))
-    session.add(FreeAgent(flight_id=1, golfer_id=2, division_id=1))
-    session.add(FreeAgent(flight_id=2, golfer_id=3, division_id=1))
+    session.add(
+        FreeAgent(
+            flight_id=1, golfer_id=1, division_id=1, cadence=FreeAgentCadence.WEEKLY
+        )
+    )
+    session.add(
+        FreeAgent(
+            flight_id=1, golfer_id=2, division_id=1, cadence=FreeAgentCadence.WEEKLY
+        )
+    )
+    session.add(
+        FreeAgent(
+            flight_id=2, golfer_id=3, division_id=1, cadence=FreeAgentCadence.WEEKLY
+        )
+    )
     session.commit()
     yield session
 
@@ -44,7 +57,8 @@ def test_get_free_agents_for_flight_empty(
 
 def test_create_free_agent(session_with_free_agents, client_unauthorized):
     response = client_unauthorized.post(
-        "/free_agents/", json={"flight_id": 1, "golfer_id": 5, "division_id": 1}
+        "/free_agents/",
+        json={"flight_id": 1, "golfer_id": 5, "division_id": 1, "cadence": "Weekly"},
     )
     assert response.status_code == status.HTTP_200_OK
     free_agent_api = FreeAgent(**response.json())
@@ -55,7 +69,8 @@ def test_create_free_agent(session_with_free_agents, client_unauthorized):
 
 def test_create_free_agent_duplicate(session_with_free_agents, client_admin):
     response = client_admin.post(
-        "/free_agents/", json={"flight_id": 1, "golfer_id": 1, "division_id": 1}
+        "/free_agents/",
+        json={"flight_id": 1, "golfer_id": 1, "division_id": 1, "cadence": "Weekly"},
     )
     assert response.status_code == status.HTTP_409_CONFLICT
 

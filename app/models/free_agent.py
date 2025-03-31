@@ -1,17 +1,8 @@
-from enum import StrEnum
-
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.division import Division
-from app.models.flight import Flight
+from app.models.flight import Flight, FreeAgentCadence
 from app.models.golfer import Golfer
-
-
-class FreeAgentCadence(StrEnum):
-    WEEKLY = "Weekly"
-    BIWEEKLY = "Biweekly"
-    MONTHLY = "Monthly"
-    OCCASIONALLY = "Occasionally"
 
 
 class FreeAgentBase(SQLModel):

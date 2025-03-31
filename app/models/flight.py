@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
@@ -7,7 +8,6 @@ from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.free_agent import FreeAgentCadence
 from app.models.golfer import GolferStatistics
 from app.models.team import Team
 from app.models.team_golfer_link import TeamRole
@@ -85,6 +85,13 @@ class FlightGolfer(BaseModel):
     role: TeamRole
     division: str
     email: str | None
+
+
+class FreeAgentCadence(StrEnum):
+    WEEKLY = "Weekly"
+    BIWEEKLY = "Biweekly"
+    MONTHLY = "Monthly"
+    OCCASIONALLY = "Occasionally"
 
 
 class FlightFreeAgent(FlightGolfer):

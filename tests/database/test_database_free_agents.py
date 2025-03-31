@@ -2,14 +2,27 @@ import pytest
 from sqlmodel import Session
 
 from app.database import free_agents as db_free_agents
+from app.models.flight import FreeAgentCadence
 from app.models.free_agent import FreeAgent, FreeAgentCreate
 
 
 @pytest.fixture()
 def session_with_free_agents(session: Session):
-    session.add(FreeAgent(flight_id=1, golfer_id=1, division_id=1))
-    session.add(FreeAgent(flight_id=1, golfer_id=2, division_id=1))
-    session.add(FreeAgent(flight_id=2, golfer_id=3, division_id=1))
+    session.add(
+        FreeAgent(
+            flight_id=1, golfer_id=1, division_id=1, cadence=FreeAgentCadence.WEEKLY
+        )
+    )
+    session.add(
+        FreeAgent(
+            flight_id=1, golfer_id=2, division_id=1, cadence=FreeAgentCadence.BIWEEKLY
+        )
+    )
+    session.add(
+        FreeAgent(
+            flight_id=2, golfer_id=3, division_id=1, cadence=FreeAgentCadence.MONTHLY
+        )
+    )
     session.commit()
     yield session
 
@@ -49,7 +62,9 @@ def test_get_free_agents_for_flight(
 
 
 def test_create_free_agent(session_with_free_agents):
-    new_free_agent = FreeAgentCreate(flight_id=1, golfer_id=3, division_id=1)
+    new_free_agent = FreeAgentCreate(
+        flight_id=1, golfer_id=3, division_id=1, cadence=FreeAgentCadence.WEEKLY
+    )
     free_agent_db = db_free_agents.create_free_agent(
         session_with_free_agents, new_free_agent
     )
@@ -58,7 +73,9 @@ def test_create_free_agent(session_with_free_agents):
 
 
 def test_create_free_agent_conflict(session_with_free_agents):
-    new_free_agent = FreeAgentCreate(flight_id=1, golfer_id=1, division_id=1)
+    new_free_agent = FreeAgentCreate(
+        flight_id=1, golfer_id=1, division_id=1, cadence=FreeAgentCadence.WEEKLY
+    )
     free_agent_db = db_free_agents.create_free_agent(
         session_with_free_agents, new_free_agent
     )
