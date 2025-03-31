@@ -5,6 +5,7 @@ from app.models.course import Course
 from app.models.division import Division, FlightDivision
 from app.models.flight import (
     Flight,
+    FlightFreeAgent,
     FlightGolfer,
     FlightGolferStatistics,
     FlightInfo,
@@ -168,23 +169,24 @@ def get_substitutes(session: Session, flight_id: int) -> list[FlightGolfer]:
     return sorted(substitutes, key=lambda s: s.name)
 
 
-def get_free_agents(session: Session, flight_id: int) -> list[FlightGolfer]:
+def get_free_agents(session: Session, flight_id: int) -> list[FlightFreeAgent]:
     results = session.exec(
-        select(Golfer, Division)
+        select(Golfer, Division, FreeAgent)
         .join(FreeAgent, onclause=FreeAgent.golfer_id == Golfer.id)
         .join(Division, onclause=Division.id == FreeAgent.division_id)
         .where(FreeAgent.flight_id == flight_id)
     ).all()
 
     free_agents = [
-        FlightGolfer(
+        FlightFreeAgent(
             golfer_id=golfer.id,
             name=golfer.name,
             role=TeamRole.SUBSTITUTE,
             division=division.name,
             email=golfer.email,
+            cadence=free_agent.cadence,
         )
-        for golfer, division in results
+        for golfer, division, free_agent in results
     ]
 
     return sorted(free_agents, key=lambda s: s.name)
