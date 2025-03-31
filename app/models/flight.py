@@ -78,18 +78,19 @@ class FlightInfo(SQLModel):
     num_teams: int
 
 
-class FlightTeamGolfer(BaseModel):
+class FlightGolfer(BaseModel):
     golfer_id: int
     name: str
     role: TeamRole
     division: str
+    email: str | None
 
 
 class FlightTeam(BaseModel):
     flight_id: int
     team_id: int
     name: str
-    golfers: list[FlightTeamGolfer] = Field(default_factory=list)
+    golfers: list[FlightGolfer] = Field(default_factory=list)
 
 
 class FlightStandingsTeam(BaseModel):

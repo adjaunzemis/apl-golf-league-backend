@@ -5,16 +5,17 @@ from app.models.course import Course
 from app.models.division import Division, FlightDivision
 from app.models.flight import (
     Flight,
+    FlightGolfer,
     FlightGolferStatistics,
     FlightInfo,
     FlightStandings,
     FlightStandingsTeam,
     FlightStatistics,
     FlightTeam,
-    FlightTeamGolfer,
 )
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
+from app.models.free_agent import FreeAgent
 from app.models.golfer import Golfer
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
@@ -130,11 +131,12 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
                 flight_id=flight_id, team_id=team.id, name=team.name
             )
         teams[team.id].golfers.append(
-            FlightTeamGolfer(
+            FlightGolfer(
                 golfer_id=golfer.id,
                 name=golfer.name,
                 role=teamgolferlink.role,
                 division=division.name,
+                email=golfer.email,
             )
         )
 
@@ -144,7 +146,7 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
     return sorted(teams.values(), key=lambda t: t.team_id)
 
 
-def get_substitutes(session: Session, flight_id: int) -> list[FlightTeamGolfer]:
+def get_substitutes(session: Session, flight_id: int) -> list[FlightGolfer]:
     results = session.exec(
         select(Golfer, Division)
         .join(Substitute, onclause=Substitute.golfer_id == Golfer.id)
@@ -153,16 +155,39 @@ def get_substitutes(session: Session, flight_id: int) -> list[FlightTeamGolfer]:
     ).all()
 
     substitutes = [
-        FlightTeamGolfer(
+        FlightGolfer(
             golfer_id=golfer.id,
             name=golfer.name,
             role=TeamRole.SUBSTITUTE,
             division=division.name,
+            email=golfer.email,
         )
         for golfer, division in results
     ]
 
     return sorted(substitutes, key=lambda s: s.name)
+
+
+def get_free_agents(session: Session, flight_id: int) -> list[FlightGolfer]:
+    results = session.exec(
+        select(Golfer, Division)
+        .join(FreeAgent, onclause=FreeAgent.golfer_id == Golfer.id)
+        .join(Division, onclause=Division.id == FreeAgent.division_id)
+        .where(FreeAgent.flight_id == flight_id)
+    ).all()
+
+    free_agents = [
+        FlightGolfer(
+            golfer_id=golfer.id,
+            name=golfer.name,
+            role=TeamRole.SUBSTITUTE,
+            division=division.name,
+            email=golfer.email,
+        )
+        for golfer, division in results
+    ]
+
+    return sorted(free_agents, key=lambda s: s.name)
 
 
 def get_match_summaries(session: Session, flight_id: int) -> list[MatchSummary]:
