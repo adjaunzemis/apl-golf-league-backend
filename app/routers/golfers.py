@@ -77,6 +77,9 @@ async def create_golfer(
             detail=f"Invalid golfer registration, email is required",
         )
 
+    # Convert name to title case
+    golfer.name = golfer.name.title()
+
     # Add to database
     golfer_db = Golfer.model_validate(golfer)
     session.add(golfer_db)
