@@ -1,4 +1,6 @@
+import re
 from datetime import date, timedelta
+from http import HTTPStatus
 from typing import List
 
 from fastapi import APIRouter, Depends, Query
@@ -44,6 +46,41 @@ async def read_all_golfers(*, session: Session = Depends(get_sql_db_session)):
 async def create_golfer(
     *, session: Session = Depends(get_sql_db_session), golfer: GolferCreate
 ):
+    # Validate entries
+    if len(golfer.name) < 3:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid golfer name, too short (min: 3 characters)",
+        )
+
+    if len(golfer.name) > 25:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid golfer name, too long (max: 25 characters)",
+        )
+
+    if not bool(re.fullmatch(r"[a-zA-Z0-9\s\-\']+", golfer.name)):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid characters in golfer name",
+        )
+
+    if golfer.affiliation is None:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid golfer registration, affiliation is required",
+        )
+
+    if golfer.email is None:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Invalid golfer registration, email is required",
+        )
+
+    # Convert name to title case
+    golfer.name = golfer.name.title()
+
+    # Add to database
     golfer_db = Golfer.model_validate(golfer)
     session.add(golfer_db)
     session.commit()
