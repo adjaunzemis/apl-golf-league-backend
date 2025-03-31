@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
@@ -78,18 +79,30 @@ class FlightInfo(SQLModel):
     num_teams: int
 
 
-class FlightTeamGolfer(BaseModel):
+class FlightGolfer(BaseModel):
     golfer_id: int
     name: str
     role: TeamRole
     division: str
+    email: str | None
+
+
+class FreeAgentCadence(StrEnum):
+    WEEKLY = "Weekly"
+    BIWEEKLY = "Biweekly"
+    MONTHLY = "Monthly"
+    OCCASIONALLY = "Occasionally"
+
+
+class FlightFreeAgent(FlightGolfer):
+    cadence: FreeAgentCadence
 
 
 class FlightTeam(BaseModel):
     flight_id: int
     team_id: int
     name: str
-    golfers: list[FlightTeamGolfer] = Field(default_factory=list)
+    golfers: list[FlightGolfer] = Field(default_factory=list)
 
 
 class FlightStandingsTeam(BaseModel):

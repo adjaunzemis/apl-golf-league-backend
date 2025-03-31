@@ -22,6 +22,7 @@ from app.dependencies import (
 from app.routers import (
     courses,
     flights,
+    free_agents,
     golfers,
     handicaps,
     matches,
@@ -138,6 +139,7 @@ app.include_router(courses.router, dependencies=[Depends(log_request_data)])
 app.include_router(golfers.router, dependencies=[Depends(log_request_data)])
 app.include_router(teams.router, dependencies=[Depends(log_request_data)])
 app.include_router(substitutes.router, dependencies=[Depends(log_request_data)])
+app.include_router(free_agents.router, dependencies=[Depends(log_request_data)])
 app.include_router(flights.router, dependencies=[Depends(log_request_data)])
 app.include_router(tournaments.router, dependencies=[Depends(log_request_data)])
 app.include_router(rounds.router, dependencies=[Depends(log_request_data)])
