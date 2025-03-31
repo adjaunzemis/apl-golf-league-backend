@@ -7,22 +7,57 @@ from app.models.golfer import Golfer, GolferAffiliation
 
 
 @pytest.mark.parametrize(
-    "name, affiliation",
+    "name, affiliation, email, phone",
     [
-        ("Test Golfer", GolferAffiliation.APL_EMPLOYEE),
-        ("Test Golfer", None),
+        ("Test Golfer", GolferAffiliation.APL_EMPLOYEE, "test@email.com", None),
+        (
+            "Test Golfer",
+            GolferAffiliation.APL_EMPLOYEE,
+            "test@email.com",
+            "123-456-7890",
+        ),
     ],
 )
-def test_create_golfer(client_unauthorized: TestClient, name: str, affiliation: str):
+def test_create_golfer(
+    client_unauthorized: TestClient, name: str, affiliation: str, email: str, phone: str
+):
     response = client_unauthorized.post(
-        "/golfers/", json={"name": name, "affiliation": affiliation}
+        "/golfers/",
+        json={"name": name, "affiliation": affiliation, "email": email, "phone": phone},
     )
     assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == name
     assert data["affiliation"] == affiliation
+    assert data["email"] == email
+    assert data["phone"] == phone
     assert data["id"] is not None
+
+
+@pytest.mark.parametrize(
+    "name, affiliation, email, phone",
+    [
+        (
+            "Test Golfer With Name Much Too Long",
+            GolferAffiliation.APL_EMPLOYEE,
+            "test@email.com",
+            None,
+        ),
+        ("A", GolferAffiliation.APL_EMPLOYEE, "test@email.com", None),
+        ("!nvalid CH@RS!", GolferAffiliation.APL_EMPLOYEE, "test@email.com", None),
+        ("Missing Affiliation", None, "test@email.com", None),
+        ("Missing Email", GolferAffiliation.APL_EMPLOYEE, None, None),
+    ],
+)
+def test_create_golfer_invalid(
+    client_unauthorized: TestClient, name: str, affiliation: str, email: str, phone: str
+):
+    response = client_unauthorized.post(
+        "/golfers/",
+        json={"name": name, "affiliation": affiliation, "email": email, "phone": phone},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_create_golfer_incomplete(client_unauthorized: TestClient):
