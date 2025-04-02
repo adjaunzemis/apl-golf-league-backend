@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from app.models.match import MatchHoleResult, MatchHoleWinner
@@ -108,7 +110,7 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
         else:
             score_diffs_avg = np.mean(record_sorted[0:5])
         return min(
-            np.floor((0.96 * score_diffs_avg) * 10.0) / 10.0,
+            math.floor((0.96 * score_diffs_avg) * 10.0) / 10.0,
             self.maximum_handicap_index,
         )  # truncate to nearest tenth
 
