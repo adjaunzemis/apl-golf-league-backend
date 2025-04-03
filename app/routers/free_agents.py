@@ -7,7 +7,7 @@ from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.free_agent import FreeAgent, FreeAgentCreate
 from app.models.user import User
 
-router = APIRouter(prefix="/free_agents", tags=["FreeAgents"])
+router = APIRouter(prefix="/free-agents", tags=["Free Agents"])
 
 
 @router.get("/", response_model=list[FreeAgent])
