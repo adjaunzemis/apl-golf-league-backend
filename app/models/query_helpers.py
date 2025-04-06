@@ -74,10 +74,11 @@ class GolferDataWithCount(SQLModel):
     golfers: List[GolferData]
 
 
-class TeamWithMatchData(SQLModel):
+class FlightTeamWithMatchData(SQLModel):
     id: int
     name: str
     year: int
+    flight_id: int
     golfers: List[GolferTeamData] = []
     matches: List[MatchData] = []
 
