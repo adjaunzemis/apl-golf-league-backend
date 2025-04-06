@@ -3,7 +3,7 @@ import re
 from http import HTTPStatus
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, SQLModel, select
 
@@ -19,7 +19,7 @@ from app.models.payment import (
     TournamentEntryFeeType,
 )
 from app.models.query_helpers import (
-    TeamWithMatchData,
+    FlightTeamWithMatchData,
     compute_golfer_statistics_for_matches,
     get_flight_team_golfers_for_teams,
     get_matches_for_teams,
@@ -57,11 +57,23 @@ async def read_teams(
     return session.exec(select(Team).offset(offset).limit(limit)).all()
 
 
-@router.get("/{team_id}", response_model=TeamWithMatchData)
+@router.get("/{team_id}", response_model=FlightTeamWithMatchData)
 async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: int):
     team_db = session.exec(select(Team).where(Team.id == team_id)).one_or_none()
-    if not team_db:
-        raise HTTPException(status_code=404, detail="Team not found")
+    if team_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+
+    flight_id = session.exec(
+        select(FlightTeamLink.flight_id).where(FlightTeamLink.team_id == team_id)
+    ).one_or_none()
+    if flight_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Team '{team_db.name}' is not on a flight",
+        )
+
     team_matches = get_matches_for_teams(session=session, team_ids=(team_id,))
     team_golfers = get_flight_team_golfers_for_teams(
         session=session, team_ids=(team_id,)
@@ -70,10 +82,11 @@ async def read_team(*, session: Session = Depends(get_sql_db_session), team_id: 
         golfer.statistics = compute_golfer_statistics_for_matches(
             golfer.golfer_id, team_matches
         )
-    return TeamWithMatchData(
+    return FlightTeamWithMatchData(
         id=team_db.id,
         name=team_db.name,
         year=team_golfers[0].year,
+        flight_id=flight_id,
         golfers=team_golfers,
         matches=team_matches,
     )
