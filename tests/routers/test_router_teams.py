@@ -8,6 +8,7 @@ from sqlmodel import Session
 from app.models.division import Division
 from app.models.flight import Flight
 from app.models.flight_division_link import FlightDivisionLink
+from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
 from app.models.payment import LeagueDues, LeagueDuesType
 from app.models.team import Team
@@ -184,6 +185,8 @@ def test_read_team_flight(session: Session, client_unauthorized: TestClient):
 
     team = Team(name="Test Team 1", flight_id=1, id=1)
     session.add(team)
+
+    session.add(FlightTeamLink(flight_id=1, team_id=1))
 
     session.add(
         TeamGolferLink(team_id=1, golfer_id=1, division_id=1, role=TeamRole.CAPTAIN)
