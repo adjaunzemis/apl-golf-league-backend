@@ -38,6 +38,10 @@ def get_ids(session: Session, year: int | None = None) -> list[int]:
     return session.exec(query.order_by(Flight.id)).all()
 
 
+def get_by_id(session: Session, flight_id: int) -> Flight | None:
+    return session.get(Flight, flight_id)
+
+
 def get_info(session: Session, flight_id: int) -> FlightInfo:
     flight = session.exec(select(Flight).where(Flight.id == flight_id)).one()
     teams = get_teams(session=session, flight_id=flight_id)
@@ -411,3 +415,9 @@ def get_statistics(session: Session, flight_id: int) -> FlightStatistics:
     flight_stats.golfers.sort(key=lambda g: g.gross_scoring.avg_score)
 
     return flight_stats
+
+
+def get_team_link(session: Session, team_id: int) -> FlightTeamLink | None:
+    return session.exec(
+        select(FlightTeamLink).where(FlightTeamLink.team_id == team_id)
+    ).one_or_none()
