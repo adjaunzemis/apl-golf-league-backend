@@ -257,8 +257,15 @@ class MoveTeamRequest(BaseModel):
 async def move_team(
     *,
     session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
     request: MoveTeamRequest,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not authorized to move teams between flights",
+        )
+
     team_db = db_teams.get_by_id(session=session, team_id=request.team_id)
     if team_db is None:
         raise HTTPException(
