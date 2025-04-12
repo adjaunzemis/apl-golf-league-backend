@@ -1,13 +1,16 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi.exceptions import HTTPException
+from pydantic.v1 import BaseModel
 from sqlmodel import Session, select
 
 from app.database import flights as db_flights
+from app.database import teams as db_teams
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.flight import Flight, FlightCreate, FlightInfo, FlightRead
 from app.models.flight_division_link import FlightDivisionLink
+from app.models.flight_team_link import FlightTeamLink
 from app.models.match import MatchSummary
 from app.models.query_helpers import (
     FlightData,
@@ -16,6 +19,7 @@ from app.models.query_helpers import (
     get_matches_for_teams,
     get_teams_in_flights,
 )
+from app.models.team_golfer_link import TeamGolferLink
 from app.models.user import User
 from app.routers.utilities import upsert_division
 
@@ -242,3 +246,101 @@ async def get_statistics(
     flight_id: int = Path(..., description="Flight identifier"),
 ):
     return db_flights.get_statistics(session=session, flight_id=flight_id)
+
+
+class MoveTeamRequest(BaseModel):
+    team_id: int
+    flight_id: int
+
+
+@router.patch("/move-team")
+async def move_team(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    request: MoveTeamRequest,
+):
+    team_db = db_teams.get_by_id(session=session, team_id=request.team_id)
+    if team_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+
+    matches_db = db_teams.get_matches(session=session, team_id=request.team_id)
+    if len(matches_db) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot move team with allocated matches",
+        )
+
+    if team_db.flight.id == request.flight_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Team is already on requested flight",
+        )
+
+    new_flight_db = db_flights.get_by_id(session=session, flight_id=request.flight_id)
+    if new_flight_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="New flight not found"
+        )
+
+    if new_flight_db.year != team_db.flight.year:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot move team between flights from different years",
+        )
+
+    ftl_db = db_flights.get_team_link(session=session, team_id=team_db.id)
+    if ftl_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unable to link team id={team_db.id} to a flight",
+        )
+    session.delete(ftl_db)
+    session.add(FlightTeamLink(flight_id=new_flight_db.id, team_id=team_db.id))
+
+    tgls_db = session.exec(
+        select(TeamGolferLink).where(TeamGolferLink.team_id == request.team_id)
+    ).all()
+
+    new_flight_divisions = {
+        division_db.name: division_db
+        for division_db in db_flights.get_divisions(
+            session=session, flight_id=request.flight_id
+        )
+    }
+
+    team_golfers = {
+        golfer_db.golfer_id: golfer_db
+        for golfer_db in db_teams.get_golfers(session=session, team_id=request.team_id)
+    }
+
+    for tgl_db in tgls_db:
+        golfer_db = team_golfers.get(tgl_db.golfer_id)
+        if golfer_db is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Unable to find golfer id={tgl_db.golfer_id} in team id={tgl_db.team_id}",
+            )
+
+        new_division_db = new_flight_divisions.get(golfer_db.division_name)
+        if new_division_db is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Unable to find division with name={golfer_db.division_name} in flight id={request.flight_id}",
+            )
+
+        session.add(
+            TeamGolferLink(
+                team_id=team_db.id,
+                golfer_id=tgl_db.golfer_id,
+                role=tgl_db.role,
+                division_id=new_division_db.id,
+            )
+        )
+
+        session.delete(tgl_db)
+
+    session.commit()
+    session.refresh(team_db)
+    return team_db
