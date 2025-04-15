@@ -33,10 +33,11 @@ async def read_flights(
     year: int = Query(default=None, ge=2000),
 ):
     flight_ids = db_flights.get_ids(session=session, year=year)
-    return [
+    infos = [
         db_flights.get_info(session=session, flight_id=flight_id)
         for flight_id in flight_ids
     ]
+    return sorted(infos, key=lambda info: info.name)
 
 
 @router.get("/{flight_id}", response_model=FlightData)
