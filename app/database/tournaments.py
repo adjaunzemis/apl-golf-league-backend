@@ -62,6 +62,8 @@ def get_info(session: Session, tournament_id: int) -> TournamentInfo:
         .replace(microsecond=0)
         .isoformat(),
         date=tournament.date.astimezone().replace(microsecond=0).isoformat(),
+        members_entry_fee=tournament.members_entry_fee,
+        non_members_entry_fee=tournament.non_members_entry_fee,
         shotgun=tournament.shotgun,
         strokeplay=tournament.strokeplay,
         bestball=tournament.bestball,
