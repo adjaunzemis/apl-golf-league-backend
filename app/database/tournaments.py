@@ -146,6 +146,8 @@ def get_teams(session: Session, tournament_id: int) -> list[TournamentTeam]:
                 name=golfer.name,
                 role=teamgolferlink.role,
                 division=division.name,
+                handicap_index=golfer.handicap_index,
+                email=golfer.email,
             )
         )
 

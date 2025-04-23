@@ -141,6 +141,7 @@ def get_teams(session: Session, flight_id: int) -> list[FlightTeam]:
                 name=golfer.name,
                 role=teamgolferlink.role,
                 division=division.name,
+                handicap_index=golfer.handicap_index,
                 email=golfer.email,
             )
         )
@@ -165,6 +166,7 @@ def get_substitutes(session: Session, flight_id: int) -> list[FlightGolfer]:
             name=golfer.name,
             role=TeamRole.SUBSTITUTE,
             division=division.name,
+            handicap_index=golfer.handicap_index,
             email=golfer.email,
         )
         for golfer, division in results

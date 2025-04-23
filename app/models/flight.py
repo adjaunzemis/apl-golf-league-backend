@@ -84,6 +84,7 @@ class FlightGolfer(BaseModel):
     name: str
     role: TeamRole
     division: str
+    handicap_index: float | None
     email: str | None
 
 
