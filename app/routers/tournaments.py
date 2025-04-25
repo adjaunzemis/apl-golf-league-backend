@@ -340,6 +340,15 @@ async def get_teams(
     return db_tournaments.get_teams(session=session, tournament_id=tournament_id)
 
 
+@router.get("/free_agents/{flight_id}")
+async def get_free_agents(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    flight_id: int = Path(..., description="Flight identifier"),
+):
+    return db_tournaments.get_free_agents(session=session, flight_id=flight_id)
+
+
 @router.get("/rounds/{tournament_id}")
 async def get_rounds(
     *,
