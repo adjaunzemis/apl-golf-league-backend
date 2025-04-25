@@ -11,7 +11,7 @@ from app.models.user import User
 router = APIRouter(prefix="/free-agents", tags=["Free Agents"])
 
 
-@router.get("/flight", response_model=list[FlightFreeAgent])
+@router.get("/flight/", response_model=list[FlightFreeAgent])
 async def get_flight_free_agents(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -20,7 +20,7 @@ async def get_flight_free_agents(
     return db_free_agents.get_flight_free_agents(session, flight_id=flight_id)
 
 
-@router.post("/flight", response_model=FlightFreeAgent)
+@router.post("/flight/", response_model=FlightFreeAgent)
 async def create_flight_free_agent(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -39,7 +39,7 @@ async def create_flight_free_agent(
     return free_agent_db
 
 
-@router.delete("/flight")
+@router.delete("/flight/")
 async def delete_flight_free_agent(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -63,7 +63,7 @@ async def delete_flight_free_agent(
     return free_agent_db
 
 
-@router.get("/tournament", response_model=list[TournamentFreeAgent])
+@router.get("/tournament/", response_model=list[TournamentFreeAgent])
 async def get_tournament_free_agents(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -74,7 +74,7 @@ async def get_tournament_free_agents(
     )
 
 
-@router.post("/tournament", response_model=TournamentFreeAgent)
+@router.post("/tournament/", response_model=TournamentFreeAgent)
 async def create_tournament_free_agent(
     *,
     session: Session = Depends(get_sql_db_session),
@@ -93,7 +93,7 @@ async def create_tournament_free_agent(
     return free_agent_db
 
 
-@router.delete("/tournament")
+@router.delete("/tournament/")
 async def delete_tournament_free_agent(
     *,
     session: Session = Depends(get_sql_db_session),
