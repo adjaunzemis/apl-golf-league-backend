@@ -213,7 +213,7 @@ async def get_substitutes(
     return db_flights.get_substitutes(session=session, flight_id=flight_id)
 
 
-@router.get("/free_agents/{flight_id}")
+@router.get("/free-agents/{flight_id}")
 async def get_free_agents(
     *,
     session: Session = Depends(get_sql_db_session),

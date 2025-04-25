@@ -9,11 +9,13 @@ from app.models.query_helpers import get_hole_results_for_rounds, get_tournament
 from app.models.round import Round, RoundResults, RoundSummary
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.team import Team
-from app.models.team_golfer_link import TeamGolferLink
+from app.models.team_golfer_link import TeamGolferLink, TeamRole
 from app.models.tee import Tee
 from app.models.tournament import (
     GolferStatistics,
     Tournament,
+    TournamentFreeAgent,
+    TournamentFreeAgentGolfer,
     TournamentInfo,
     TournamentStandings,
     TournamentStandingsGolfer,
@@ -62,6 +64,8 @@ def get_info(session: Session, tournament_id: int) -> TournamentInfo:
         .replace(microsecond=0)
         .isoformat(),
         date=tournament.date.astimezone().replace(microsecond=0).isoformat(),
+        members_entry_fee=tournament.members_entry_fee,
+        non_members_entry_fee=tournament.non_members_entry_fee,
         shotgun=tournament.shotgun,
         strokeplay=tournament.strokeplay,
         bestball=tournament.bestball,
@@ -144,6 +148,8 @@ def get_teams(session: Session, tournament_id: int) -> list[TournamentTeam]:
                 name=golfer.name,
                 role=teamgolferlink.role,
                 division=division.name,
+                handicap_index=golfer.handicap_index,
+                email=golfer.email,
             )
         )
 
@@ -151,6 +157,28 @@ def get_teams(session: Session, tournament_id: int) -> list[TournamentTeam]:
         team.golfers.sort(key=lambda g: g.role)
 
     return sorted(teams.values(), key=lambda t: t.team_id)
+
+
+def get_free_agents(session: Session, tournament_id: int) -> list[TournamentFreeAgent]:
+    results = session.exec(
+        select(Golfer, Division, TournamentFreeAgent)
+        .join(TournamentFreeAgent, onclause=TournamentFreeAgent.golfer_id == Golfer.id)
+        .join(Division, onclause=Division.id == TournamentFreeAgent.division_id)
+        .where(TournamentFreeAgent.tournament_id == tournament_id)
+    ).all()
+
+    free_agents = [
+        TournamentFreeAgentGolfer(
+            golfer_id=golfer.id,
+            name=golfer.name,
+            role=TeamRole.SUBSTITUTE,
+            division=division.name,
+            email=golfer.email,
+        )
+        for golfer, division, free_agent in results
+    ]
+
+    return sorted(free_agents, key=lambda s: s.name)
 
 
 def get_round_summaries(

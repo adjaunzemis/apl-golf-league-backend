@@ -8,7 +8,7 @@ from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import GolferStatistics
+from app.models.golfer import Golfer, GolferStatistics
 from app.models.team import Team
 from app.models.team_golfer_link import TeamRole
 
@@ -84,18 +84,8 @@ class FlightGolfer(BaseModel):
     name: str
     role: TeamRole
     division: str
+    handicap_index: float | None
     email: str | None
-
-
-class FreeAgentCadence(StrEnum):
-    WEEKLY = "Weekly"
-    BIWEEKLY = "Biweekly"
-    MONTHLY = "Monthly"
-    OCCASIONALLY = "Occasionally"
-
-
-class FlightFreeAgent(FlightGolfer):
-    cadence: FreeAgentCadence
 
 
 class FlightTeam(BaseModel):
@@ -128,3 +118,31 @@ class FlightGolferStatistics(GolferStatistics):
 class FlightStatistics(BaseModel):
     flight_id: int
     golfers: list[FlightGolferStatistics] = Field(default_factory=list)
+
+
+class FlightFreeAgentCadence(StrEnum):
+    WEEKLY = "Weekly"
+    BIWEEKLY = "Biweekly"
+    MONTHLY = "Monthly"
+    OCCASIONALLY = "Occasionally"
+
+
+class FlightFreeAgentBase(SQLModel):
+    golfer_id: int = Field(foreign_key="golfer.id", primary_key=True)
+    flight_id: int = Field(foreign_key="flight.id", primary_key=True)
+    division_id: int = Field(foreign_key="division.id")
+    cadence: FlightFreeAgentCadence
+
+
+class FlightFreeAgent(FlightFreeAgentBase, table=True):
+    golfer: Golfer = Relationship()
+    flight: Flight = Relationship()
+    division: Division = Relationship()
+
+
+class FlightFreeAgentCreate(FlightFreeAgentBase):
+    pass
+
+
+class FlightFreeAgentGolfer(FlightGolfer):
+    cadence: FlightFreeAgentCadence
