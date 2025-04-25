@@ -340,7 +340,7 @@ async def get_teams(
     return db_tournaments.get_teams(session=session, tournament_id=tournament_id)
 
 
-@router.get("/free_agents/{flight_id}")
+@router.get("/free-agents/{flight_id}")
 async def get_free_agents(
     *,
     session: Session = Depends(get_sql_db_session),
