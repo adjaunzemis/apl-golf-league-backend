@@ -2,25 +2,37 @@ import pytest
 from sqlmodel import Session
 
 from app.database import free_agents as db_free_agents
-from app.models.flight import FreeAgentCadence
-from app.models.free_agent import FreeAgent, FreeAgentCreate
+from app.models.flight import (
+    FlightFreeAgent,
+    FlightFreeAgentCadence,
+    FlightFreeAgentCreate,
+)
 
 
 @pytest.fixture()
 def session_with_free_agents(session: Session):
     session.add(
-        FreeAgent(
-            flight_id=1, golfer_id=1, division_id=1, cadence=FreeAgentCadence.WEEKLY
+        FlightFreeAgent(
+            flight_id=1,
+            golfer_id=1,
+            division_id=1,
+            cadence=FlightFreeAgentCadence.WEEKLY,
         )
     )
     session.add(
-        FreeAgent(
-            flight_id=1, golfer_id=2, division_id=1, cadence=FreeAgentCadence.BIWEEKLY
+        FlightFreeAgent(
+            flight_id=1,
+            golfer_id=2,
+            division_id=1,
+            cadence=FlightFreeAgentCadence.BIWEEKLY,
         )
     )
     session.add(
-        FreeAgent(
-            flight_id=2, golfer_id=3, division_id=1, cadence=FreeAgentCadence.MONTHLY
+        FlightFreeAgent(
+            flight_id=2,
+            golfer_id=3,
+            division_id=1,
+            cadence=FlightFreeAgentCadence.MONTHLY,
         )
     )
     session.commit()
@@ -28,7 +40,7 @@ def session_with_free_agents(session: Session):
 
 
 def test_get_free_agent(session_with_free_agents):
-    free_agent_db = db_free_agents.get_free_agent(
+    free_agent_db = db_free_agents.get_flight_free_agent(
         session_with_free_agents, flight_id=1, golfer_id=1
     )
     assert free_agent_db is not None
@@ -37,14 +49,14 @@ def test_get_free_agent(session_with_free_agents):
 
 
 def test_get_free_agent_not_found(session_with_free_agents):
-    free_agent_db = db_free_agents.get_free_agent(
+    free_agent_db = db_free_agents.get_flight_free_agent(
         session_with_free_agents, flight_id=1, golfer_id=5
     )
     assert free_agent_db is None
 
 
 def test_get_free_agents(session_with_free_agents):
-    result = db_free_agents.get_free_agents(session_with_free_agents)
+    result = db_free_agents.get_flight_free_agents(session_with_free_agents)
     assert len(result) == 3
 
 
@@ -52,7 +64,7 @@ def test_get_free_agents(session_with_free_agents):
 def test_get_free_agents_for_flight(
     session_with_free_agents, flight_id, num_free_agents
 ):
-    results = db_free_agents.get_free_agents(
+    results = db_free_agents.get_flight_free_agents(
         session_with_free_agents, flight_id=flight_id
     )
     assert len(results) == num_free_agents
@@ -62,10 +74,10 @@ def test_get_free_agents_for_flight(
 
 
 def test_create_free_agent(session_with_free_agents):
-    new_free_agent = FreeAgentCreate(
-        flight_id=1, golfer_id=3, division_id=1, cadence=FreeAgentCadence.WEEKLY
+    new_free_agent = FlightFreeAgentCreate(
+        flight_id=1, golfer_id=3, division_id=1, cadence=FlightFreeAgentCadence.WEEKLY
     )
-    free_agent_db = db_free_agents.create_free_agent(
+    free_agent_db = db_free_agents.create_flight_free_agent(
         session_with_free_agents, new_free_agent
     )
     assert free_agent_db.flight_id == new_free_agent.flight_id
@@ -73,23 +85,23 @@ def test_create_free_agent(session_with_free_agents):
 
 
 def test_create_free_agent_conflict(session_with_free_agents):
-    new_free_agent = FreeAgentCreate(
-        flight_id=1, golfer_id=1, division_id=1, cadence=FreeAgentCadence.WEEKLY
+    new_free_agent = FlightFreeAgentCreate(
+        flight_id=1, golfer_id=1, division_id=1, cadence=FlightFreeAgentCadence.WEEKLY
     )
-    free_agent_db = db_free_agents.create_free_agent(
+    free_agent_db = db_free_agents.create_flight_free_agent(
         session_with_free_agents, new_free_agent
     )
     assert free_agent_db is None
 
 
 def test_delete_free_agent(session_with_free_agents):
-    free_agent_db = db_free_agents.delete_free_agent(
+    free_agent_db = db_free_agents.delete_flight_free_agent(
         session_with_free_agents, flight_id=1, golfer_id=1
     )
     assert free_agent_db.flight_id == 1
     assert free_agent_db.golfer_id == 1
     assert (
-        db_free_agents.get_free_agent(
+        db_free_agents.get_flight_free_agent(
             session_with_free_agents, flight_id=1, golfer_id=1
         )
         is None
@@ -97,7 +109,7 @@ def test_delete_free_agent(session_with_free_agents):
 
 
 def test_delete_free_agent_not_found(session_with_free_agents):
-    free_agent = db_free_agents.delete_free_agent(
+    free_agent = db_free_agents.delete_flight_free_agent(
         session_with_free_agents, flight_id=1, golfer_id=5
     )
     assert free_agent is None

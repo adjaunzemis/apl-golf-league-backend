@@ -6,6 +6,7 @@ from app.models.division import Division, FlightDivision
 from app.models.flight import (
     Flight,
     FlightFreeAgent,
+    FlightFreeAgentGolfer,
     FlightGolfer,
     FlightGolferStatistics,
     FlightInfo,
@@ -16,7 +17,6 @@ from app.models.flight import (
 )
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.free_agent import FreeAgent
 from app.models.golfer import Golfer
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
@@ -175,16 +175,16 @@ def get_substitutes(session: Session, flight_id: int) -> list[FlightGolfer]:
     return sorted(substitutes, key=lambda s: s.name)
 
 
-def get_free_agents(session: Session, flight_id: int) -> list[FlightFreeAgent]:
+def get_free_agents(session: Session, flight_id: int) -> list[FlightFreeAgentGolfer]:
     results = session.exec(
-        select(Golfer, Division, FreeAgent)
-        .join(FreeAgent, onclause=FreeAgent.golfer_id == Golfer.id)
-        .join(Division, onclause=Division.id == FreeAgent.division_id)
-        .where(FreeAgent.flight_id == flight_id)
+        select(Golfer, Division, FlightFreeAgent)
+        .join(FlightFreeAgent, onclause=FlightFreeAgent.golfer_id == Golfer.id)
+        .join(Division, onclause=Division.id == FlightFreeAgent.division_id)
+        .where(FlightFreeAgent.flight_id == flight_id)
     ).all()
 
     free_agents = [
-        FlightFreeAgent(
+        FlightFreeAgentGolfer(
             golfer_id=golfer.id,
             name=golfer.name,
             role=TeamRole.SUBSTITUTE,
