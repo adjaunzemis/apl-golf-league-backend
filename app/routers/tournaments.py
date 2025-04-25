@@ -317,7 +317,7 @@ def upsert_tournament(
 async def get_info(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_info(session=session, tournament_id=tournament_id)
 
@@ -326,7 +326,7 @@ async def get_info(
 async def get_divisions(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_divisions(session=session, tournament_id=tournament_id)
 
@@ -335,25 +335,25 @@ async def get_divisions(
 async def get_teams(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_teams(session=session, tournament_id=tournament_id)
 
 
-@router.get("/free-agents/{flight_id}")
+@router.get("/free-agents/{tournament_id}")
 async def get_free_agents(
     *,
     session: Session = Depends(get_sql_db_session),
-    flight_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
-    return db_tournaments.get_free_agents(session=session, flight_id=flight_id)
+    return db_tournaments.get_free_agents(session=session, tournament_id=tournament_id)
 
 
 @router.get("/rounds/{tournament_id}")
 async def get_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_round_summaries(
         session=session, tournament_id=tournament_id
@@ -373,7 +373,7 @@ async def get_rounds_for_team(
 async def get_standings(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_standings(session=session, tournament_id=tournament_id)
 
@@ -382,6 +382,6 @@ async def get_standings(
 async def get_statistics(
     *,
     session: Session = Depends(get_sql_db_session),
-    tournament_id: int = Path(..., description="Flight identifier"),
+    tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_statistics(session=session, tournament_id=tournament_id)
