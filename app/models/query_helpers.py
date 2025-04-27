@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy.orm import aliased
-from sqlmodel import Session, SQLModel, and_, desc, or_, select
+from sqlmodel import Session, SQLModel, desc, or_, select
 
 from app.models.course import Course
 from app.models.division import Division, DivisionData
@@ -914,20 +914,7 @@ def get_flight_rounds(session: Session, round_ids: List[int]) -> List[RoundResul
         .join(Track)
         .join(Course)
         .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
-        .join(Match, onclause=Match.id == MatchRoundLink.match_id)
-        .join(
-            TeamGolferLink,
-            onclause=(
-                and_(
-                    TeamGolferLink.golfer_id == Golfer.id,
-                    or_(
-                        TeamGolferLink.team_id == Match.home_team_id,
-                        TeamGolferLink.team_id == Match.away_team_id,
-                    ),
-                )
-            ),
-        )
-        .join(Team, onclause=Team.id == TeamGolferLink.team_id)
+        .join(Team, onclause=Team.id == MatchRoundLink.team_id)
         .where(Round.id.in_(round_ids))
     )
     round_data = [

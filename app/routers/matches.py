@@ -152,6 +152,7 @@ async def post_match_rounds(
 ):
     # TODO: Check user credentials
     ahs = APLHandicapSystem()
+
     match_db = session.get(Match, match_input.match_id)
     if not match_db:
         raise HTTPException(
@@ -163,12 +164,14 @@ async def post_match_rounds(
             status_code=HTTPStatus.NOT_ACCEPTABLE,
             detail=f"Match input (week={match_input.week}) does not match database (week={match_db.week})",
         )
+
     flight_db = session.get(Flight, match_input.flight_id)
     if not flight_db:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail=f"Flight (id={match_input.flight_id}) not found",
         )
+
     match_rounds_db = session.exec(
         select(Round)
         .join(MatchRoundLink, onclause=MatchRoundLink.round_id == Round.id)
@@ -179,6 +182,7 @@ async def post_match_rounds(
             status_code=HTTPStatus.NOT_ACCEPTABLE,
             detail=f"Rounds already submitted for match (id={match_input.match_id})",
         )
+
     for round_input in match_input.rounds:
         golfer_db = session.get(Golfer, round_input.golfer_id)
         if not golfer_db:
@@ -186,18 +190,21 @@ async def post_match_rounds(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Golfer (id={round_input.golfer_id}) not found",
             )
+
         team_db = session.get(Team, round_input.team_id)
         if not team_db:
             raise HTTPException(
                 status_code=HTTPStatus,
                 detail=f"Team (id={round_input.team_id}) not found",
             )
+
         tee_db = session.get(Tee, round_input.tee_id)
         if not tee_db:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tee (id={round_input.tee_id}) not found",
             )
+
         round_db = Round(
             tee_id=tee_db.id,
             type=RoundType.FLIGHT,
@@ -208,10 +215,14 @@ async def post_match_rounds(
         session.add(round_db)
         session.commit()
         session.refresh(round_db)
-        match_round_link_db = MatchRoundLink(match_id=match_db.id, round_id=round_db.id)
+
+        match_round_link_db = MatchRoundLink(
+            match_id=match_db.id, round_id=round_db.id, team_id=team_db.id
+        )
         session.add(match_round_link_db)
         session.commit()
         session.refresh(match_round_link_db)
+
         round_golfer_link_db = RoundGolferLink(
             round_id=round_db.id,
             golfer_id=golfer_db.id,
@@ -220,6 +231,7 @@ async def post_match_rounds(
         session.add(round_golfer_link_db)
         session.commit()
         session.refresh(round_golfer_link_db)
+
         for hole_result_input in round_input.holes:
             hole_db = session.get(Hole, hole_result_input.hole_id)
             if not hole_db:
@@ -227,9 +239,11 @@ async def post_match_rounds(
                     status_code=HTTPStatus.NOT_FOUND,
                     detail=f"Hole (id={hole_result_input.hole_id}) not found",
                 )
+
             handicap_strokes = ahs.compute_hole_handicap_strokes(
                 hole_db.stroke_index, round_input.golfer_playing_handicap
             )
+
             hole_result_db = HoleResult(
                 round_id=round_db.id,
                 hole_id=hole_result_input.hole_id,
@@ -244,11 +258,12 @@ async def post_match_rounds(
                 net_score=(hole_result_input.gross_score - handicap_strokes),
             )
             session.add(hole_result_db)
-        session.commit()
+
     match_db.home_score = match_input.home_score
     match_db.away_score = match_input.away_score
     session.add(match_db)
     session.commit()
+
     return get_matches(session=session, match_ids=(match_input.match_id,))[0]
 
 
