@@ -41,8 +41,8 @@ class RoundBase(SQLModel):
 class Round(RoundBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     tee: Tee = Relationship()
-    golfers: List[Golfer] = Relationship(link_model=RoundGolferLink)
-    hole_results: List[HoleResult] = Relationship(back_populates="round")
+    golfers: list[Golfer] = Relationship(link_model=RoundGolferLink)
+    hole_results: list[HoleResult] = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
@@ -63,7 +63,7 @@ class RoundRead(RoundBase):
 
 class RoundReadWithData(RoundRead):
     tee: TeeRead | None = None
-    golfers: List[GolferRead] | None = None
+    golfers: list[GolferRead] | None = None
     hole_results: list[HoleResultReadWithHole] | None = None
 
 
