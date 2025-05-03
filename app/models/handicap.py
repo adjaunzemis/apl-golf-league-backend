@@ -39,7 +39,7 @@ class HandicapIndexRead(HandicapIndexBase):
 
 class ScoringRecordRound(SQLModel):
     golfer_id: int
-    round_id: int
+    round_id: int | None
     date_played: datetime
     round_type: RoundType
     scoring_type: ScoringType
@@ -49,7 +49,7 @@ class ScoringRecordRound(SQLModel):
     tee_par: int
     tee_rating: float
     tee_slope: int
-    playing_handicap: int
+    playing_handicap: int | None
     gross_score: int
     adjusted_gross_score: int
     net_score: int | None

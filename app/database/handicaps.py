@@ -4,7 +4,8 @@ from app.models.course import Course
 from app.models.golfer import Golfer
 from app.models.handicap import HandicapIndex, ScoringRecordRound
 from app.models.hole_result import HoleResult
-from app.models.round import Round, ScoringType
+from app.models.qualifying_score import QualifyingScore
+from app.models.round import Round, RoundType, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
 from app.models.tee import Tee
 from app.models.track import Track
@@ -42,8 +43,35 @@ def get_scoring_record_rounds_for_golfer(
     if golfer_db is None:
         return scoring_record
 
-    # TODO: Add qualifying scores first
+    # Qualifying scores
+    quals_db = session.exec(
+        select(QualifyingScore).where(QualifyingScore.golfer_id == golfer_id)
+    ).all()
 
+    for qual_db in quals_db:
+        scoring_record.append(
+            ScoringRecordRound(
+                golfer_id=golfer_id,
+                round_id=None,
+                date_played=qual_db.date_played,
+                round_type=RoundType.QUALIFYING,
+                scoring_type=ScoringType.INDIVIDUAL,
+                course_name=qual_db.course_name,
+                track_name=qual_db.track_name,
+                tee_name=qual_db.tee_name,
+                tee_par=qual_db.tee_par,
+                tee_rating=qual_db.tee_rating,
+                tee_slope=qual_db.tee_slope,
+                playing_handicap=None,
+                gross_score=qual_db.gross_score,
+                adjusted_gross_score=qual_db.adjusted_gross_score,
+                net_score=None,
+                score_differential=qual_db.score_differential,
+                handicap_index=None,  # TODO: Set this too?
+            )
+        )
+
+    # League rounds
     round_data_db: list[tuple[Round, RoundGolferLink, Tee, Track, Course]] = (
         session.exec(
             select(Round, RoundGolferLink, Tee, Track, Course)
