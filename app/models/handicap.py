@@ -39,19 +39,20 @@ class HandicapIndexRead(HandicapIndexBase):
 
 class ScoringRecordRound(SQLModel):
     golfer_id: int
+    golfer_name: str
     round_id: int | None
     date_played: datetime
     round_type: RoundType
     scoring_type: ScoringType
-    course_name: str
-    track_name: str
-    tee_name: str
-    tee_par: int
-    tee_rating: float
-    tee_slope: int
+    course_name: str | None
+    track_name: str | None
+    tee_name: str | None
+    tee_par: int | None
+    tee_rating: float | None
+    tee_slope: int | None
     playing_handicap: int | None
-    gross_score: int
-    adjusted_gross_score: int
+    gross_score: int | None
+    adjusted_gross_score: int | None
     net_score: int | None
     score_differential: float
     handicap_index: float | None
