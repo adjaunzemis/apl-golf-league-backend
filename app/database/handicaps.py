@@ -32,9 +32,9 @@ def get_handicap_history_for_golfer(
 
 
 def get_scoring_record_rounds_for_golfer(
-    session: Session, golfer_id: int
+    session: Session, golfer_id: int, year: int | None = None
 ) -> list[ScoringRecordRound]:
-    """ """
+    """Gathers list of scoring record rounds for"""
     ahs = APLHandicapSystem()  # TODO: Inject? Determine by time range?
 
     scoring_record: list[ScoringRecordRound] = []
@@ -107,9 +107,10 @@ def get_scoring_record_rounds_for_golfer(
         if len(hcp_scoring_record) < 1:  # include qualifying scores
             hcp_scoring_record = scoring_record
 
-        hcp_score_differentials = [srr.score_differential for srr in hcp_scoring_record]
-        if len(hcp_scoring_record) > 9:  # only include latest 9 scores (and )
-            hcp_score_differentials = hcp_score_differentials[-9:]
+        # Note: only include up to prior 9 scores
+        hcp_score_differentials = [
+            srr.score_differential for srr in hcp_scoring_record[-9:]
+        ]
         hcp_score_differentials.append(score_differential)
 
         scoring_record.append(
@@ -137,4 +138,18 @@ def get_scoring_record_rounds_for_golfer(
             )
         )
 
-    return scoring_record
+    # Filter by year
+    if year is None:
+        return scoring_record
+
+    scoring_record_limit = list(
+        filter(lambda srr: srr.date_played.year <= year, scoring_record)
+    )
+    scoring_record_year = list(
+        filter(lambda srr: srr.date_played.year == year, scoring_record)
+    )
+
+    if len(scoring_record_year) < 10:
+        return scoring_record_limit[-10:]
+
+    return scoring_record_year
