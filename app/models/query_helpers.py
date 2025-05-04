@@ -78,8 +78,8 @@ class FlightTeamWithMatchData(SQLModel):
     name: str
     year: int
     flight_id: int
-    golfers: list[GolferTeamData] = Field(default_factory=[])
-    matches: list[MatchData] = Field(default_factory=[])
+    golfers: list[GolferTeamData] = Field(default_factory=list)
+    matches: list[MatchData] = Field(default_factory=list)
 
 
 class FlightTeamReadWithGolfers(TeamRead):
@@ -93,7 +93,7 @@ class TournamentTeamData(TeamRead):
     year: int
     tournament_id: int
     golfers: list[GolferTeamData]
-    rounds: list[RoundResults] | None = Field(default_factory=[])
+    rounds: list[RoundResults] | None = Field(default_factory=list)
 
 
 class FlightData(SQLModel):
@@ -112,9 +112,9 @@ class FlightData(SQLModel):
     weeks: int | None = None
     tee_times: str | None = None
     locked: bool = False
-    divisions: list[DivisionData] = Field(default_factory=[])
-    teams: list[FlightTeamReadWithGolfers] = Field(default_factory=[])
-    matches: list[MatchSummary] = Field(default_factory=[])
+    divisions: list[DivisionData] = Field(default_factory=list)
+    teams: list[FlightTeamReadWithGolfers] = Field(default_factory=list)
+    matches: list[MatchSummary] = Field(default_factory=list)
 
 
 class TournamentData(SQLModel):
@@ -133,8 +133,8 @@ class TournamentData(SQLModel):
     members_entry_fee: float = None
     non_members_entry_fee: float = None
     locked: bool = False
-    divisions: list[DivisionData] = Field(default_factory=[])
-    teams: list[TournamentTeamData] = Field(default_factory=[])
+    divisions: list[DivisionData] = Field(default_factory=list)
+    teams: list[TournamentTeamData] = Field(default_factory=list)
     shotgun: bool = False
     strokeplay: bool = False
     bestball: int = 0
