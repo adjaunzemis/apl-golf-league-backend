@@ -200,7 +200,8 @@ async def get_golfer_scoring_record_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int = Path(..., description="Golfer identifier"),
+    year: int | None = Query(None, description="Year for filtering scoring record"),
 ) -> list[ScoringRecordRound]:
     return db_handicap.get_scoring_record_rounds_for_golfer(
-        session=session, golfer_id=golfer_id
+        session=session, golfer_id=golfer_id, year=year
     )
