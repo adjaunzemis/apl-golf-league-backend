@@ -117,7 +117,7 @@ class RoundResults(SQLModel):
     adjusted_gross_score: int = None
     net_score: int = None
     score_differential: float = None
-    holes: list[HoleResultData] = Field(default_factory=[])
+    holes: list[HoleResultData] = Field(default_factory=list)
 
 
 class RoundResultsWithCount(SQLModel):
@@ -128,13 +128,13 @@ class RoundResultsWithCount(SQLModel):
 class RoundValidationRequest(BaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: list[HoleResultValidationRequest] = Field(default_factory=[])
+    holes: list[HoleResultValidationRequest] = Field(default_factory=list)
 
 
 class RoundValidationResponse(BaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: list[HoleResultValidationResponse] = Field(default_factory=[])
+    holes: list[HoleResultValidationResponse] = Field(default_factory=list)
     is_valid: bool = False
 
 
@@ -153,5 +153,5 @@ class RoundSubmissionResponse(BaseModel):
     scoring_type: ScoringType
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: list[HoleResultSubmissionResponse] = Field(default_factory=[])
+    holes: list[HoleResultSubmissionResponse] = Field(default_factory=list)
     is_valid: bool = False
