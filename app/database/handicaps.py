@@ -52,6 +52,7 @@ def get_scoring_record_rounds_for_golfer(
         scoring_record.append(
             ScoringRecordRound(
                 golfer_id=golfer_id,
+                golfer_name=golfer_db.name,
                 round_id=None,
                 date_played=qual_db.date_played,
                 round_type=RoundType.QUALIFYING,
@@ -100,14 +101,21 @@ def get_scoring_record_rounds_for_golfer(
             rating=tee_db.rating, slope=tee_db.slope, score=adjusted_gross_score
         )
 
-        hcp_score_differentials = [srr.score_differential for srr in scoring_record]
-        if len(scoring_record) > 9:
+        hcp_scoring_record = list(
+            filter(lambda srr: srr.round_type != RoundType.QUALIFYING, scoring_record)
+        )
+        if len(hcp_scoring_record) < 1:  # include qualifying scores
+            hcp_scoring_record = scoring_record
+
+        hcp_score_differentials = [srr.score_differential for srr in hcp_scoring_record]
+        if len(hcp_scoring_record) > 9:  # only include latest 9 scores (and )
             hcp_score_differentials = hcp_score_differentials[-9:]
         hcp_score_differentials.append(score_differential)
 
         scoring_record.append(
             ScoringRecordRound(
                 golfer_id=golfer_id,
+                golfer_name=golfer_db.name,
                 round_id=round_db.id,
                 date_played=round_db.date_played,
                 round_type=round_db.type,
