@@ -97,7 +97,7 @@ def initialize_matches_for_flight(
             [5, 6, 7, 5, 1, 2, 3],  # week 8 (extra: 5 vs 4)
             [4, 3, 2, 1, 7, 1, 5],  # week 9 (extra: 1 vs 6)
             [7, 4, 6, 2, None, 3, 1],  # week 10
-            [None, 7, 4, 3, 1, 5, 2],  # week 11
+            [None, 7, 4, 3, 6, 5, 2],  # week 11
             [2, 1, None, 6, 7, 4, 5],  # week 12
             [7, None, 6, 5, 4, 3, 1],  # week 13
             [None, 6, 5, 7, 3, 2, 4],  # week 14
