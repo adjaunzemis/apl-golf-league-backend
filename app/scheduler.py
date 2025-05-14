@@ -14,7 +14,14 @@ from app.utilities.notifications import EmailSchema, send_email
 app = Rocketry(execution="async")
 
 
-@app.task(parameters={"flight_id": -1, "bye_weeks_by_team": None, "dry_run": False})
+@app.task(
+    parameters={
+        "flight_id": -1,
+        "bye_weeks_by_team": None,
+        "dry_run": False,
+        "force": False,
+    }
+)
 async def initialize_flight_schedule(
     flight_id: int, bye_weeks_by_team: str | None, dry_run: bool, force: bool
 ):
