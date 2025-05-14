@@ -16,7 +16,7 @@ app = Rocketry(execution="async")
 
 @app.task(parameters={"flight_id": -1, "bye_weeks_by_team": None, "dry_run": False})
 async def initialize_flight_schedule(
-    flight_id: int, bye_weeks_by_team: str | None, dry_run: bool
+    flight_id: int, bye_weeks_by_team: str | None, dry_run: bool, force: bool
 ):
     if bye_weeks_by_team is None:
         bye_week_requests = None
@@ -31,6 +31,7 @@ async def initialize_flight_schedule(
             flight_id=flight_id,
             bye_weeks_by_team=bye_week_requests,
             dry_run=dry_run,
+            force=force,
         )
 
 

@@ -11,6 +11,7 @@ def initialize_matches_for_flight(
     flight_id: int,
     bye_weeks_by_team: dict[int, int] | None = None,
     dry_run: bool = False,
+    force: bool = False,
 ):
     flight_db = session.get(Flight, flight_id)
     if flight_db is None:
@@ -37,7 +38,7 @@ def initialize_matches_for_flight(
     existing_matches = session.exec(
         select(Match).where(Match.flight_id == flight_id)
     ).all()
-    if len(existing_matches) > 0:
+    if not force and len(existing_matches) > 0:
         raise ValueError(
             f"Matches already exist for flight: '{flight_db.name} ({flight_db.year})' (id={flight_id})"
         )
