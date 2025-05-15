@@ -75,9 +75,10 @@ def get_scoring_record_rounds_for_golfer(
         )
 
     # Set handicap index on last qualifying score
-    scoring_record[-1].handicap_index = ahs.compute_handicap_index(
-        record=[sr.score_differential for sr in scoring_record]
-    )
+    if len(scoring_record) > 0:
+        scoring_record[-1].handicap_index = ahs.compute_handicap_index(
+            record=[sr.score_differential for sr in scoring_record]
+        )
 
     # League rounds
     round_data_db: list[tuple[Round, RoundGolferLink, Tee, Track, Course]] = (
@@ -148,15 +149,14 @@ def get_scoring_record_rounds_for_golfer(
     # Filter by year
     if year is None:
         return scoring_record
-
-    scoring_record_limit = list(
-        filter(lambda srr: srr.date_played.year <= year, scoring_record)
-    )
     scoring_record_year = list(
         filter(lambda srr: srr.date_played.year == year, scoring_record)
     )
 
-    if len(scoring_record_year) < 10:
+    if len(scoring_record_year) < 10:  # ensure at least 10 rounds are shown
+        scoring_record_limit = list(
+            filter(lambda srr: srr.date_played.year <= year, scoring_record)
+        )
         return scoring_record_limit[-10:]
 
     return scoring_record_year
