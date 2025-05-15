@@ -5,7 +5,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.course import Course
 from app.models.division import Division, DivisionCreate
-from app.models.golfer import Golfer, GolferStatistics
+from app.models.golfer import Golfer, TeamGolferStatistics
 from app.models.team import Team
 from app.models.team_golfer_link import TeamRole
 from app.models.tournament_division_link import TournamentDivisionLink
@@ -142,7 +142,7 @@ class TournamentStandings(BaseModel):
 
 class TournamentStatistics(BaseModel):
     tournament_id: int
-    golfers: list[GolferStatistics] = Field(default_factory=list)
+    golfers: list[TeamGolferStatistics] = Field(default_factory=list)
 
 
 class TournamentFreeAgentBase(SQLModel):

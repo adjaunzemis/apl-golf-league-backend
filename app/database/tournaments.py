@@ -12,7 +12,7 @@ from app.models.team import Team
 from app.models.team_golfer_link import TeamGolferLink, TeamRole
 from app.models.tee import Tee
 from app.models.tournament import (
-    GolferStatistics,
+    TeamGolferStatistics,
     Tournament,
     TournamentFreeAgent,
     TournamentFreeAgentGolfer,
@@ -374,10 +374,10 @@ def get_statistics(session: Session, tournament_id: int) -> TournamentStatistics
         session=session, tournament_id=tournament_id, round_ids=round_ids
     )
 
-    tournament_golfer_stats: dict[int, GolferStatistics] = {}
+    tournament_golfer_stats: dict[int, TeamGolferStatistics] = {}
     for round in round_data:
         if round.golfer_id not in tournament_golfer_stats:
-            tournament_golfer_stats[round.golfer_id] = GolferStatistics(
+            tournament_golfer_stats[round.golfer_id] = TeamGolferStatistics(
                 golfer_id=round.golfer_id,
                 golfer_name=round.golfer_name,
                 golfer_team_id=round.team_id,

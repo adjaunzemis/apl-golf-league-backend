@@ -8,7 +8,7 @@ from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import Golfer, GolferStatistics
+from app.models.golfer import Golfer, TeamGolferStatistics
 from app.models.team import Team
 from app.models.team_golfer_link import TeamRole
 
@@ -109,7 +109,7 @@ class FlightStandings(BaseModel):
     teams: list[FlightStandingsTeam]
 
 
-class FlightGolferStatistics(GolferStatistics):
+class FlightGolferStatistics(TeamGolferStatistics):
     num_matches: int = 0
     points_won: float = 0
     avg_points_won: float = 0

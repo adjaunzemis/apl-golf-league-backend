@@ -7,8 +7,15 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
+from app.database import golfers as db_golfers
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.golfer import Golfer, GolferCreate, GolferRead, GolferUpdate
+from app.models.golfer import (
+    Golfer,
+    GolferCreate,
+    GolferRead,
+    GolferStatistics,
+    GolferUpdate,
+)
 from app.models.query_helpers import (
     GolferData,
     GolferDataWithCount,
@@ -151,6 +158,19 @@ async def read_golfer_team_data(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
-    year: int = Query(default=None),
+    year: int | None = Query(default=None),
 ):
     return get_golfer_team_data(session=session, golfer_ids=(golfer_id,), year=year)
+
+
+@router.get("/{golfer_id}/statistics", response_model=GolferStatistics)
+async def get_statistics(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    golfer_id: int,
+    year: int | None = Query(default=None),
+):
+    stats = db_golfers.get_statistics(session=session, golfer_id=golfer_id, year=year)
+    if stats is None:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Golfer not found")
+    return stats

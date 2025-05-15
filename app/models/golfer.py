@@ -78,8 +78,6 @@ class GolferStatisticsScoring(BaseModel):
 class GolferStatistics(BaseModel):
     golfer_id: int
     golfer_name: str
-    golfer_team_id: int
-    golfer_team_role: TeamRole
     num_rounds: int = 0
     num_holes: int = 0
     num_par_3_holes: int = 0
@@ -87,6 +85,11 @@ class GolferStatistics(BaseModel):
     num_par_5_holes: int = 0
     gross_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
     net_scoring: GolferStatisticsScoring = GolferStatisticsScoring()
+
+
+class TeamGolferStatistics(GolferStatistics):
+    golfer_team_id: int
+    golfer_team_role: TeamRole
 
 
 class GolferTeamData(BaseModel):
