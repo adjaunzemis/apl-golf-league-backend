@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Union
 
 from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
@@ -33,16 +33,16 @@ class ScoringType(str, Enum):
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
     type: RoundType
-    scoring_type: Optional[ScoringType] = None
+    scoring_type: ScoringType | None = None
     date_played: datetime
     date_updated: datetime
 
 
 class Round(RoundBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tee: Tee = Relationship()
-    golfers: List[Golfer] = Relationship(link_model=RoundGolferLink)
-    hole_results: List[HoleResult] = Relationship(back_populates="round")
+    golfers: list[Golfer] = Relationship(link_model=RoundGolferLink)
+    hole_results: list[HoleResult] = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
@@ -50,11 +50,11 @@ class RoundCreate(RoundBase):
 
 
 class RoundUpdate(SQLModel):
-    tee_id: Optional[int] = None
-    type: Optional[RoundType] = None
-    scoring_type: Optional[ScoringType] = None
-    date_played: Optional[datetime] = None
-    date_updated: Optional[datetime] = None
+    tee_id: int | None = None
+    type: RoundType | None = None
+    scoring_type: ScoringType | None = None
+    date_played: datetime | None = None
+    date_updated: datetime | None = None
 
 
 class RoundRead(RoundBase):
@@ -62,42 +62,46 @@ class RoundRead(RoundBase):
 
 
 class RoundReadWithData(RoundRead):
-    tee: Optional[TeeRead] = None
-    golfers: Optional[List[GolferRead]] = None
-    hole_results: Optional[List[HoleResultReadWithHole]] = None
+    tee: TeeRead | None = None
+    golfers: list[GolferRead] | None = None
+    hole_results: list[HoleResultReadWithHole] | None = None
 
 
 class RoundSummary(SQLModel):
-    round_id: Optional[int] = None
-    date_played: Optional[datetime] = None
-    round_type: Optional[RoundType] = None
-    golfer_name: Optional[str] = None
-    golfer_playing_handicap: Optional[int] = None
-    course_name: Optional[str] = None
-    track_name: Optional[str] = None
-    tee_name: Optional[str] = None
-    tee_gender: Optional[TeeGender] = None
-    tee_par: Optional[int] = None
-    tee_rating: Optional[float] = None
-    tee_slope: Optional[float] = None
-    gross_score: Optional[int] = None
-    adjusted_gross_score: Optional[int] = None
-    net_score: Optional[int] = None
-    score_differential: Optional[float] = None
+    round_id: int | None = None
+    date_played: datetime | None = None
+    round_type: RoundType | None = None
+    golfer_name: str | None = None
+    golfer_playing_handicap: int | None = None
+    course_name: str | None = None
+    track_name: str | None = None
+    tee_name: str | None = None
+    tee_gender: TeeGender | None = None
+    tee_par: int | None = None
+    tee_rating: float | None = None
+    tee_slope: float | None = None
+    gross_score: int | None = None
+    adjusted_gross_score: int | None = None
+    net_score: int | None = None
+    score_differential: float | None = None
+
+
+class RoundSummaryHandicap(RoundSummary):
+    is_counting: bool
 
 
 class RoundResults(SQLModel):
     round_id: int
-    match_id: Optional[int] = None
-    team_id: Optional[int] = None
+    match_id: int | None = None
+    team_id: int | None = None
     round_type: RoundType
     date_played: datetime
     date_updated: datetime
     golfer_id: int
     golfer_name: str
-    golfer_playing_handicap: Optional[int] = None
+    golfer_playing_handicap: int | None = None
     role: str | None = None
-    team_name: Optional[str] = None
+    team_name: str | None = None
     course_id: int
     course_name: str
     track_id: int
@@ -113,24 +117,24 @@ class RoundResults(SQLModel):
     adjusted_gross_score: int = None
     net_score: int = None
     score_differential: float = None
-    holes: List[HoleResultData] = []
+    holes: list[HoleResultData] = Field(default_factory=list)
 
 
 class RoundResultsWithCount(SQLModel):
     num_rounds: int
-    rounds: List[RoundResults]
+    rounds: list[RoundResults]
 
 
 class RoundValidationRequest(BaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: List[HoleResultValidationRequest] = []
+    holes: list[HoleResultValidationRequest] = Field(default_factory=list)
 
 
 class RoundValidationResponse(BaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: List[HoleResultValidationResponse] = []
+    holes: list[HoleResultValidationResponse] = Field(default_factory=list)
     is_valid: bool = False
 
 
@@ -149,5 +153,5 @@ class RoundSubmissionResponse(BaseModel):
     scoring_type: ScoringType
     date_played: Union[datetime, date]
     course_handicap: int
-    holes: List[HoleResultSubmissionResponse] = []
+    holes: list[HoleResultSubmissionResponse] = Field(default_factory=list)
     is_valid: bool = False

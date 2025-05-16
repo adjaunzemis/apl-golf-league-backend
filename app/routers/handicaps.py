@@ -2,12 +2,13 @@ from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlmodel import Session, select
 
 from app.database import handicaps as db_handicap
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import Golfer
+from app.models.handicap import ScoringRecordRound
 from app.models.qualifying_score import (
     QualifyingScore,
     QualifyingScoreCreate,
@@ -192,3 +193,15 @@ async def get_golfer_handicap_index(
             HTTPStatus.NOT_FOUND, "No handicap history found for golfer"
         )
     return handicap_history[-1].handicap_index
+
+
+@router.get("/scoring-record-rounds/{golfer_id}")
+async def get_golfer_scoring_record_rounds(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    golfer_id: int = Path(..., description="Golfer identifier"),
+    year: int | None = Query(None, description="Year for filtering scoring record"),
+) -> list[ScoringRecordRound]:
+    return db_handicap.get_scoring_record_rounds_for_golfer(
+        session=session, golfer_id=golfer_id, year=year
+    )

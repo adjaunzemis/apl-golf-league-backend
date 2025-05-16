@@ -59,15 +59,17 @@ def compute_team_handicap_scramble(
 if __name__ == "__main__":
     # TODO: Make this a runnable task
 
-    # TOURNAMENT_ID = 24  # Musket Ridge (2023) TODO: un-hardcode id
-    # TOURNAMENT_ID = 27  # Worthington Manor (2023) TODO: un-hardcode id
-    # TOURNAMENT_ID = 31  # Lake Presidential (2023) TODO: un-hardcode id
-    # TOURNAMENT_ID = 29  # Maryland National (2023) TODO: un-hardcode id
-    # TOURNAMENT_ID = 32  # Musket Ridge (2024) TODO: un-hardcode id
-    # TOURNAMENT_ID = 33  # Lake Presidential (2024) TODO: un-hardcode id
-    # TOURNAMENT_ID = 34  # Eagle's Nest (2024) TODO: un-hardcode id
-    # TOURNAMENT_ID = 35  # Montgomery CC (2024) TODO: un-hardcode id
-    TOURNAMENT_ID = 36  # PB Dye (2024) TODO: un-hardcode id
+    # TODO: un-hardcode ids
+    # TOURNAMENT_ID = 24  # Musket Ridge (2023)
+    # TOURNAMENT_ID = 27  # Worthington Manor (2023)
+    # TOURNAMENT_ID = 31  # Lake Presidential (2023)
+    # TOURNAMENT_ID = 29  # Maryland National (2023)
+    # TOURNAMENT_ID = 32  # Musket Ridge (2024)
+    # TOURNAMENT_ID = 33  # Lake Presidential (2024)
+    # TOURNAMENT_ID = 34  # Eagle's Nest (2024)
+    # TOURNAMENT_ID = 35  # Montgomery CC (2024)
+    # TOURNAMENT_ID = 36  # PB Dye (2024)
+    TOURNAMENT_ID = 38  # Maryland National (2025)
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 

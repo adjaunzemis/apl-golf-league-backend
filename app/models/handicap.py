@@ -4,7 +4,7 @@ from typing import Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer
-from app.models.round import Round
+from app.models.round import Round, RoundType, ScoringType
 
 
 class HandicapIndexBase(SQLModel):
@@ -35,3 +35,24 @@ class HandicapIndexUpdate(SQLModel):
 
 class HandicapIndexRead(HandicapIndexBase):
     id: int
+
+
+class ScoringRecordRound(SQLModel):
+    golfer_id: int
+    golfer_name: str
+    round_id: int | None
+    date_played: datetime
+    round_type: RoundType
+    scoring_type: ScoringType
+    course_name: str | None
+    track_name: str | None
+    tee_name: str | None
+    tee_par: int | None
+    tee_rating: float | None
+    tee_slope: int | None
+    playing_handicap: int | None
+    gross_score: int | None
+    adjusted_gross_score: int | None
+    net_score: int | None
+    score_differential: float
+    handicap_index: float | None
