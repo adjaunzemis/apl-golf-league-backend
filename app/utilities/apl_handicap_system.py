@@ -50,3 +50,17 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
 
         """
         return 2 * par + handicap_strokes
+
+    def get_handicap_allowance(self, is_shamble: bool = False) -> float:
+        """
+        Determines the handicap allowance for a round given the type of event being played.
+
+        Returns
+        -------
+        allowance : float
+            scaling factor for handicaps in this scoring mode, in range [0, 1]
+
+        """
+        if is_shamble:
+            return 0.7
+        return 1.0
