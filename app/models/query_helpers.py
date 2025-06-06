@@ -139,6 +139,7 @@ class TournamentData(SQLModel):
     strokeplay: bool = False
     bestball: int = 0
     scramble: bool = False
+    shamble: bool = False
     ryder_cup: bool = False
     individual: bool = False
     chachacha: bool = False
@@ -277,6 +278,7 @@ def get_tournaments(
             strokeplay=tournament.strokeplay,
             bestball=tournament.bestball,
             scramble=tournament.scramble,
+            shamble=tournament.shamble,
             ryder_cup=tournament.ryder_cup,
             individual=tournament.individual,
             chachacha=tournament.chachacha,

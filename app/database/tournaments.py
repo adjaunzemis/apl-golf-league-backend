@@ -70,6 +70,7 @@ def get_info(session: Session, tournament_id: int) -> TournamentInfo:
         strokeplay=tournament.strokeplay,
         bestball=tournament.bestball,
         scramble=tournament.scramble,
+        shamble=tournament.shamble,
         ryder_cup=tournament.ryder_cup,
         individual=tournament.individual,
         chachacha=tournament.chachacha,

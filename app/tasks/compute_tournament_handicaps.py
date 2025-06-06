@@ -97,6 +97,11 @@ if __name__ == "__main__":
             select(Course).where(Course.id == tournament_db.course_id)
         ).one()
 
+        # Get handicap allowance
+        handicap_allowance = ahs.get_handicap_allowance(
+            is_shamble=(not (tournament_db.shamble is None) and tournament_db.shamble)
+        )
+
         # Get divisions and associated tees for this tournament
         divisions_list = session.exec(
             select(Division)
@@ -178,7 +183,10 @@ if __name__ == "__main__":
                     handicap_index=golfer_db.handicap_index,
                 )
 
-            course_handicap = round(course_handicap_primary + course_handicap_secondary)
+            course_handicap = round(
+                handicap_allowance
+                * (course_handicap_primary + course_handicap_secondary)
+            )
 
             GOLFER_DATA.append(
                 [

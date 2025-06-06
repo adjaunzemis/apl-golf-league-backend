@@ -29,6 +29,7 @@ class TournamentBase(SQLModel):
     strokeplay: bool | None = False
     bestball: int | None = 0
     scramble: bool | None = False
+    shamble: bool | None = False
     ryder_cup: bool | None = False
     individual: bool | None = False
     chachacha: bool | None = False
@@ -64,6 +65,7 @@ class TournamentUpdate(SQLModel):
     strokeplay: bool | None = None
     bestball: int | None = None
     scramble: bool | None = None
+    shamble: bool | None = None
     ryder_cup: bool | None = None
     individual: bool | None = None
     chachacha: bool | None = None
@@ -94,6 +96,7 @@ class TournamentInfo(SQLModel):
     strokeplay: bool = False
     bestball: int = 0
     scramble: bool = False
+    shamble: bool = False
     ryder_cup: bool = False
     individual: bool = False
     chachacha: bool = False
