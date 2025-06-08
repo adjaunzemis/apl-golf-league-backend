@@ -69,7 +69,8 @@ if __name__ == "__main__":
     # TOURNAMENT_ID = 34  # Eagle's Nest (2024)
     # TOURNAMENT_ID = 35  # Montgomery CC (2024)
     # TOURNAMENT_ID = 36  # PB Dye (2024)
-    TOURNAMENT_ID = 38  # Maryland National (2025)
+    # TOURNAMENT_ID = 38  # Maryland National (2025)
+    TOURNAMENT_ID = 43  # Waverly Woods (2025)
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
