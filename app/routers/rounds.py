@@ -487,6 +487,10 @@ async def update_round_golfer_playing_handicap(
         )
         session.add(hole_result_db)
 
+    # Update playing handicap in round golfer link
+    round_golfer_link_db.playing_handicap = playing_handicap
+    session.add(round_golfer_link_db)
+
     session.commit()
     session.refresh(round_db)
     return round_db
