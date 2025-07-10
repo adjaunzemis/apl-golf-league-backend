@@ -264,7 +264,7 @@ def get_rounds_for_team(session: Session, team_id: int) -> list[RoundResults]:
 
 def _compute_team_scores_best_ball(
     rounds: list[RoundResults], num_balls: int = 1
-) -> tuple[float, float]:
+) -> tuple[int, int]:
     gross_score = 0
     net_score = 0
     for hole_num in np.unique([h.number for r in rounds for h in r.holes]):
@@ -293,12 +293,12 @@ def _compute_team_scores_best_ball(
     return gross_score, net_score
 
 
-def _compute_team_scores_scramble(rounds: list[RoundResults]) -> tuple[float, float]:
+def _compute_team_scores_scramble(rounds: list[RoundResults]) -> tuple[int, int]:
     # NOTE: should only be one score per hole per team anyway
     return _compute_team_scores_best_ball(rounds=rounds, num_balls=1)
 
 
-def _compute_individual_scores(rounds: list[RoundResults]) -> tuple[float, float]:
+def _compute_individual_scores(rounds: list[RoundResults]) -> tuple[int, int]:
     gross_score = sum([r.gross_score for r in rounds])
     net_score = sum([r.net_score for r in rounds])
     return gross_score, net_score
@@ -354,7 +354,13 @@ def get_standings(session: Session, tournament_id: int) -> TournamentStandings:
                 TournamentStandingsGolfer(
                     golfer_id=golfer_rounds[0].golfer_id,
                     golfer_name=golfer_rounds[0].golfer_name,
-                    golfer_playing_handicap=golfer_rounds[0].golfer_playing_handicap,
+                    golfer_playing_handicap=sum(
+                        [
+                            r.golfer_playing_handicap
+                            for r in golfer_rounds
+                            if r.golfer_playing_handicap is not None
+                        ]
+                    ),
                     gross_score=indiv_gross,
                     net_score=indiv_net,
                 )
