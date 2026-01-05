@@ -9,5 +9,6 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/generic-build-and-push.yml
+    secrets: inherit
     with:
       tag: ${{ github.ref_name }}

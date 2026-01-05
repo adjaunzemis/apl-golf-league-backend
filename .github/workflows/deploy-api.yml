@@ -19,6 +19,7 @@ on:
 jobs:
   deploy:
     uses: ./.github/workflows/generic-deploy.yml
+    secrets: inherit
     with:
       environment: ${{ inputs.environment }}
       image_tag: ${{ inputs.image_tag }}
