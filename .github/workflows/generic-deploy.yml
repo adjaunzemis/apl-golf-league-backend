@@ -1,0 +1,97 @@
+name: Deploy Docker Image to Digital Ocean
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+      image_tag:
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Validate image tag format
+        run: |
+          TAG="${{ inputs.image_tag }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$ ]]; then
+            echo "Invalid tag format: $TAG"
+            exit 1
+          fi
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ${{ env.REGISTRY }} \
+              -u ${{ github.actor }} \
+              --password-stdin
+
+      - name: Verify image exists in GHCR
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}"
+          echo "Checking image: $IMAGE"
+
+          if ! docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "Image not found in GHCR"
+            exit 1
+          fi
+
+          echo "Image found"
+
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            set -e
+
+            ENV="${{ inputs.environment }}"
+            TAG="${{ inputs.image_tag }}"
+            APP_DIR=~/apl-golf-league-backend
+
+            cd "$APP_DIR"
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ${{ env.REGISTRY }} \
+                -u ${{ github.actor }} \
+                --password-stdin
+
+            IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+            ENV_FILE=".env.$ENV"
+            CONTAINER="aplgolfapi-$ENV"
+
+            echo "Pulling $IMAGE"
+            docker pull "$IMAGE"
+
+            if grep -q "^IMAGE_TAG=" "$ENV_FILE"; then
+              sed -i.bak "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" "$ENV_FILE"
+            else
+              echo "IMAGE_TAG=$TAG" >> "$ENV_FILE"
+            fi
+
+            echo "Stopping $CONTAINER"
+            docker container stop "$CONTAINER" || true
+
+            echo "Deploying $TAG to $ENV"
+            docker-compose --env-file "$ENV_FILE" up -d
+
+            echo "Cleanup"
+            sleep 5
+            docker container prune -f
+            docker image prune -af

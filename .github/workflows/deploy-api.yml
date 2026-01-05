@@ -1,0 +1,24 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/generic-deploy.yml
+    with:
+      environment: ${{ inputs.environment }}
+      image_tag: ${{ inputs.image_tag }}
