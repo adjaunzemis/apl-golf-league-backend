@@ -1,4 +1,4 @@
-name: Deploy Docker Image to Digital Ocean
+name: Generic Deploy Docker Image to Digital Ocean
 
 on:
   workflow_call:
