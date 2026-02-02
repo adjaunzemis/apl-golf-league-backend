@@ -10,6 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
+from migrations.utils.enums import add_enum_values
 ${imports if imports else ""}
 
 # revision identifiers, used by Alembic.

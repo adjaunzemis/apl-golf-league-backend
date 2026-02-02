@@ -1,6 +1,5 @@
-from sqlalchemy import text
-
 from alembic import op
+from sqlalchemy import text
 
 
 def add_enum_values(enum_name: str, values: list[str]):
