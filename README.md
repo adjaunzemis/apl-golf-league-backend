@@ -38,3 +38,8 @@ Similarly, the production environment uses GitHub Actions for deploying new APIs
 git tag vX.Y.Z
 git push --tags
 ```
+
+## Migrations
+
+This project uses `alembic` for database migrations.
+TODO: Document common commands/procedures for generating and applying migrations.

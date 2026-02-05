@@ -1,8 +1,10 @@
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Union
 
 from pydantic.v1 import BaseModel
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer, GolferRead
@@ -18,22 +20,42 @@ from app.models.round_golfer_link import RoundGolferLink
 from app.models.tee import Tee, TeeGender, TeeRead
 
 
-class RoundType(str, Enum):
+class RoundType(StrEnum):
     QUALIFYING = "Qualifying"
     FLIGHT = "Flight"
     PLAYOFF = "Playoff"
     TOURNAMENT = "Tournament"
 
 
-class ScoringType(str, Enum):
+class ScoringType(StrEnum):
     INDIVIDUAL = "Individual"
     GROUP = "Group"
 
 
 class RoundBase(SQLModel):
     tee_id: int = Field(foreign_key="tee.id")
-    type: RoundType
-    scoring_type: ScoringType | None = None
+    type: RoundType = Field(
+        sa_column=Column(
+            SAEnum(
+                RoundType,
+                name="round_type_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
+    scoring_type: ScoringType | None = Field(
+        sa_column=Column(
+            SAEnum(
+                ScoringType,
+                name="scoring_type_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=True,
+        )
+    )
     date_played: datetime
     date_updated: datetime
 

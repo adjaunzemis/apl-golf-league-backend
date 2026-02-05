@@ -1,10 +1,12 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 
-class Committee(str, Enum):
+class Committee(StrEnum):
     LEAGUE = "LEAGUE"
     EXECUTIVE = "EXECUTIVE"
     RULES = "RULES"
@@ -17,7 +19,17 @@ class Committee(str, Enum):
 class OfficerBase(SQLModel):
     name: str
     year: int
-    committee: Committee
+    committee: Committee = Field(
+        sa_column=Column(
+            SAEnum(
+                Committee,
+                name="committee_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
     role: str
     email: Optional[str]
     phone: Optional[str]
