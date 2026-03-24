@@ -386,14 +386,14 @@ async def update_round_golfer_link(
     )
     if len(round_golfer_links_db) != 1:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
         )
 
     round_golfer_link_db = round_golfer_links_db[0]
     if round_golfer_link_db.golfer_id == golfer_id:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Golfer already assigned to this round",
         )
 
@@ -443,19 +443,19 @@ async def update_round_golfer_playing_handicap(
     )
     if len(round_golfer_links_db) != 1:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Expected 1 round-golfer link, found {len(round_golfer_links_db)}",
         )
 
     round_golfer_link_db = round_golfer_links_db[0]
     if round_golfer_link_db.golfer_id != golfer_id:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Golfer is not assigned to this round",
         )
     if round_golfer_link_db.playing_handicap == playing_handicap:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Playing handicap is already {round_golfer_link_db.playing_handicap}",
         )
 

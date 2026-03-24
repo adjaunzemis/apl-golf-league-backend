@@ -98,7 +98,7 @@ def test_create_match_incomplete(
             "away_score": away_score,
         },
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest.mark.parametrize(
@@ -133,7 +133,7 @@ def test_create_match_invalid(
             "away_score": away_score,
         },
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_update_match(session: Session, client_admin: TestClient):

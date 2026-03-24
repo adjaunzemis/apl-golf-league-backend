@@ -87,7 +87,7 @@ def test_create_team_flight_incomplete(
         "/teams/",
         json={"name": name, "flight_id": flight_id, "golfer_data": golfer_data},
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest.mark.parametrize(
@@ -105,7 +105,7 @@ def test_create_team_flight_invalid(
         "/teams/",
         json={"name": name, "flight_id": flight_id, "golfer_data": golfer_data},
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_read_teams(session: Session, client_unauthorized: TestClient):

@@ -54,7 +54,7 @@ def test_create_season(session_with_seasons, client_admin):
 
 def test_create_season_duplicate(session_with_seasons, client_admin):
     response = client_admin.post("/seasons/", json={"year": 2024})
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_get_active_season(session_with_seasons, client_unauthorized):
@@ -112,9 +112,9 @@ def test_delete_season(session_with_seasons, client_admin):
 
 def test_delete_season_active(session_with_seasons, client_admin):
     response = client_admin.delete("/seasons/2024")
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_delete_season_not_found(session_with_seasons, client_admin):
     response = client_admin.delete("/seasons/1900")
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT

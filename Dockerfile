@@ -1,16 +1,45 @@
-FROM python:3.12@sha256:c4c9e439bf98d5c20453156194f937aefb4a633555d93a1960d612052c4b3436
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:e49fde5daf002023f0a2e2643861ce9ca8a8da5b73d0e6db83ef82ff99969baf /uv /uvx /bin/
+# ---------- Builder ----------
+FROM python:3.12-slim AS builder
+
+# Install build dependencies (only needed here)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Copy dependency files first (for caching)
+COPY pyproject.toml uv.lock ./
 
 ARG VERSION=v0.0.0
-COPY ./pyproject.toml pyproject.toml
 RUN sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 
-COPY ./uv.lock uv.lock
+# Install dependencies into /app/.venv
 RUN uv sync --frozen
 
-COPY ./app /app/
+# ---------- Runtime ----------
+FROM python:3.12-slim
+
+# Install runtime dependency for postgres
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy virtualenv from builder
+COPY --from=builder /app/.venv /.venv
+
+# Copy application code
+COPY ./app /app/app
+COPY ./pyproject.toml /app/pyproject.toml
 COPY ./alembic.ini /alembic.ini
 COPY ./migrations /migrations
 
 ENV PATH="/.venv/bin:$PATH"
+
 CMD ["python", "-m", "app.main"]
