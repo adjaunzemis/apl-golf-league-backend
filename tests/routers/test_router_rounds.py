@@ -271,10 +271,17 @@ def test_submit_round_invalid(
             1,
             "invalid",
             ScoringType.INDIVIDUAL,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             None,
         ),
-        (1, 1, RoundType.FLIGHT, "invalid", status.HTTP_422_UNPROCESSABLE_ENTITY, None),
+        (
+            1,
+            1,
+            RoundType.FLIGHT,
+            "invalid",
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            None,
+        ),
     ],
 )
 def test_submit_round_error(

@@ -64,7 +64,7 @@ def test_create_golfer_incomplete(client_unauthorized: TestClient):
     response = client_unauthorized.post(
         "/golfers/", json={"affiliation": GolferAffiliation.NON_APL_EMPLOYEE}
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest.mark.parametrize(
@@ -81,7 +81,7 @@ def test_create_golfer_invalid(
     response = client_unauthorized.post(
         "/golfers/", json={"name": name, "affiliation": affiliation}
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_read_golfers(session: Session, client_unauthorized: TestClient):

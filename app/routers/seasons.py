@@ -49,7 +49,7 @@ async def create_season(
     season_db = db_seasons.create_season(session, new_season)
     if season_db is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Unable to create season",
         )
     return season_db
@@ -101,7 +101,7 @@ async def delete_season(
     season_db = db_seasons.delete_season(session, year)
     if season_db is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Unable to delete season",
         )
     return season_db

@@ -109,7 +109,7 @@ def test_create_course_incomplete(
             "website": website,
         },
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest.mark.parametrize(
@@ -164,7 +164,7 @@ def test_create_course_invalid(
             "website": website,
         },
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_read_courses(session: Session, client_unauthorized: TestClient):
