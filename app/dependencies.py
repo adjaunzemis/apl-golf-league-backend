@@ -22,14 +22,20 @@ def get_settings():
 
 
 @lru_cache()
-def get_sql_db_engine() -> Engine:
+def get_sql_db_uri() -> str:
     settings = get_settings()
-    db_uri = (
+    return (
         "postgresql://"
         f"{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}"
         f"@{settings.apl_golf_league_api_database_url}:{settings.apl_golf_league_api_database_port_internal}"
         f"/{settings.apl_golf_league_api_database_name}"
     )
+
+
+@lru_cache()
+def get_sql_db_engine() -> Engine:
+    settings = get_settings()
+    db_uri = get_sql_db_uri()
     return create_engine(
         db_uri,
         connect_args={

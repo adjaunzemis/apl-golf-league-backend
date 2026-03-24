@@ -1,14 +1,16 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.golfer import Golfer
 from app.models.tee import TeeGender
 
 
-class QualifyingScoreType(str, Enum):
+class QualifyingScoreType(StrEnum):
     QUALIFYING_ROUND = "Qualifying Round"
     OFFICIAL_HANDICAP_INDEX = "Official Handicap Index"
 
@@ -16,7 +18,17 @@ class QualifyingScoreType(str, Enum):
 class QualifyingScoreBase(SQLModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
-    type: QualifyingScoreType
+    type: QualifyingScoreType = Field(
+        sa_column=Column(
+            SAEnum(
+                QualifyingScoreType,
+                name="qualifying_score_type_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
     score_differential: float
     date_updated: datetime
     date_played: Optional[datetime] = None

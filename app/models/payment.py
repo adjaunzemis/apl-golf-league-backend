@@ -1,20 +1,22 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 
-class LeagueDuesType(str, Enum):
+class LeagueDuesType(StrEnum):
     FLIGHT_DUES = "Flight Dues"
     TOURNAMENT_ONLY_DUES = "Tournament-Only Dues"
 
 
-class TournamentEntryFeeType(str, Enum):
+class TournamentEntryFeeType(StrEnum):
     MEMBER_FEE = "Member Fee"
     NON_MEMBER_FEE = "Non-Member Fee"
 
 
-class PaymentMethod(str, Enum):
+class PaymentMethod(StrEnum):
     CASH_OR_CHECK = "Cash or Check"
     PAYPAL = "PayPal"
     EXEMPT = "Exempt"
@@ -23,7 +25,17 @@ class PaymentMethod(str, Enum):
 
 class LeagueDuesBase(SQLModel):
     year: int
-    type: LeagueDuesType
+    type: LeagueDuesType = Field(
+        sa_column=Column(
+            SAEnum(
+                LeagueDuesType,
+                name="league_dues_type_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
     amount: float
 
 
@@ -53,7 +65,17 @@ class LeagueDuesPaymentBase(SQLModel):
     amount_paid: Optional[float] = 0
     is_paid: Optional[bool] = False
     linked_payment_id: Optional[int] = None
-    method: Optional[PaymentMethod] = None
+    method: Optional[PaymentMethod] = Field(
+        sa_column=Column(
+            SAEnum(
+                PaymentMethod,
+                name="payment_method_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=True,
+        )
+    )
     comment: Optional[str] = None
 
 
@@ -85,12 +107,32 @@ class TournamentEntryFeePaymentBase(SQLModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     tournament_id: int = Field(default=None, foreign_key="tournament.id")
-    type: TournamentEntryFeeType
+    type: TournamentEntryFeeType = Field(
+        sa_column=Column(
+            SAEnum(
+                TournamentEntryFeeType,
+                name="tournament_entry_fee_type_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
     amount_due: float
     amount_paid: Optional[float] = 0
     is_paid: Optional[bool] = False
     linked_payment_id: Optional[int] = None
-    method: Optional[PaymentMethod] = None
+    method: Optional[PaymentMethod] = Field(
+        sa_column=Column(
+            SAEnum(
+                PaymentMethod,
+                name="payment_method_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=True,
+        )
+    )
     comment: Optional[str] = None
 
 

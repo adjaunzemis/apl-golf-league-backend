@@ -1,13 +1,15 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic.v1 import BaseModel
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.models.team_golfer_link import TeamRole
 
 
-class GolferAffiliation(str, Enum):
+class GolferAffiliation(StrEnum):
     APL_EMPLOYEE = "APL Employee"
     APL_RETIREE = "APL Retiree"
     APL_FAMILY = "APL Family"
@@ -16,7 +18,17 @@ class GolferAffiliation(str, Enum):
 
 class GolferBase(SQLModel):
     name: str
-    affiliation: GolferAffiliation | None = None
+    affiliation: GolferAffiliation | None = Field(
+        sa_column=Column(
+            SAEnum(
+                GolferAffiliation,
+                name="golfer_affiliation_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=True,
+        )
+    )
     email: str | None = None
     phone: str | None = None
     handicap_index: float | None = None

@@ -2,6 +2,8 @@ from datetime import datetime
 from enum import StrEnum
 
 from pydantic.v1 import BaseModel
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.course import Course
@@ -131,7 +133,17 @@ class FlightFreeAgentBase(SQLModel):
     golfer_id: int = Field(foreign_key="golfer.id", primary_key=True)
     flight_id: int = Field(foreign_key="flight.id", primary_key=True)
     division_id: int = Field(foreign_key="division.id")
-    cadence: FlightFreeAgentCadence
+    cadence: FlightFreeAgentCadence = Field(
+        sa_column=Column(
+            SAEnum(
+                FlightFreeAgentCadence,
+                name="flight_free_agent_cadence_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
 
 
 class FlightFreeAgent(FlightFreeAgentBase, table=True):

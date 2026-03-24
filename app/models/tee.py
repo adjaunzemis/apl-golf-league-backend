@@ -1,19 +1,31 @@
-from enum import Enum
+from enum import StrEnum
 from typing import List, Optional
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.hole import Hole, HoleRead
 
 
-class TeeGender(str, Enum):
+class TeeGender(StrEnum):
     MENS = "Men's"
     LADIES = "Ladies'"
 
 
 class TeeBase(SQLModel):
     name: str
-    gender: TeeGender
+    gender: TeeGender = Field(
+        sa_column=Column(
+            SAEnum(
+                TeeGender,
+                name="tee_gender_enum",
+                native_enum=True,
+                create_constraint=True,
+            ),
+            nullable=False,
+        )
+    )
     rating: float
     slope: int
     color: Optional[str]
