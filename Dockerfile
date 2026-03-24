@@ -35,7 +35,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /.venv
 
 # Copy application code
-COPY ./app /app/
+COPY ./app /app/app
 COPY ./alembic.ini /alembic.ini
 COPY ./migrations /migrations
 
