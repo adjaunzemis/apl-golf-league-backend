@@ -9,7 +9,6 @@ from app.database import flights as db_flights
 from app.database import teams as db_teams
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.flight import Flight, FlightCreate, FlightInfo, FlightRead
-from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
 from app.models.match import MatchSummary
 from app.models.query_helpers import (
@@ -140,7 +139,9 @@ async def delete_flight(
 def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
     """Updates/inserts a flight data record."""
     if flight_data.id is None:  # create new flight
-        flight_db = Flight.model_validate(flight_data)
+        # Exclude divisions from initial validation
+        flight_dict = flight_data.model_dump(exclude={"divisions"})
+        flight_db = Flight.model_validate(flight_dict)
     else:  # update existing flight
         flight_db = session.get(Flight, flight_data.id)
         if not flight_db:
@@ -148,32 +149,25 @@ def upsert_flight(*, session: Session, flight_data: FlightCreate) -> FlightRead:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Flight (id={flight_data.id}) not found",
             )
-        flight_dict = flight_data.model_dump(exclude_unset=True)
+        flight_dict = flight_data.model_dump(exclude_unset=True, exclude={"divisions"})
         for key, value in flight_dict.items():
-            if key != "divisions":
-                setattr(flight_db, key, value)
+            setattr(flight_db, key, value)
     session.add(flight_db)
     session.commit()
     session.refresh(flight_db)
 
-    for division in flight_data.divisions:
-        division_db = upsert_division(session=session, division_data=division)
+    if flight_data.divisions is not None:
+        updated_divisions = []
+        for division in flight_data.divisions:
+            division_db = upsert_division(session=session, division_data=division)
+            updated_divisions.append(division_db)
 
-        # Create flight-division link (if needed)
-        flight_division_link_db = session.exec(
-            select(FlightDivisionLink)
-            .where(FlightDivisionLink.flight_id == flight_db.id)
-            .where(FlightDivisionLink.division_id == division_db.id)
-        ).one_or_none()
-        if not flight_division_link_db:
-            flight_division_link_db = FlightDivisionLink(
-                flight_id=flight_db.id, division_id=division_db.id
-            )
-            session.add(flight_division_link_db)
-            session.commit()
-            session.refresh(flight_division_link_db)
+        # Update the relationship - this will automatically manage FlightDivisionLink table
+        flight_db.divisions = updated_divisions
+        session.add(flight_db)
+        session.commit()
+        session.refresh(flight_db)
 
-    session.refresh(flight_db)
     return flight_db
 
 

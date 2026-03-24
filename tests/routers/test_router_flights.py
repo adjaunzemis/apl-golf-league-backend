@@ -3,10 +3,12 @@ from datetime import datetime
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models.course import Course
+from app.models.division import Division
 from app.models.flight import Flight
+from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
 from app.models.team import Team
 
@@ -357,3 +359,73 @@ def test_delete_flight_unauthorized(session: Session, client_unauthorized: TestC
 
     response = client_unauthorized.delete(f"/flights/{flight.id}")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_update_flight_divisions_sync(client_admin: TestClient, session: Session):
+    # 1. Create a flight with two divisions
+    flight_data = {
+        "name": "Initial Flight",
+        "year": 2025,
+        "course_id": 1,
+        "secretary": "Sec",
+        "signup_start_date": "2025-01-01T00:00:00",
+        "signup_stop_date": "2025-01-15T00:00:00",
+        "start_date": "2025-04-01T00:00:00",
+        "weeks": 10,
+        "divisions": [
+            {"name": "Div A", "gender": "Men's", "primary_tee_id": 1},
+            {"name": "Div B", "gender": "Men's", "primary_tee_id": 1},
+        ],
+    }
+    response = client_admin.post("/flights/", json=flight_data)
+    assert response.status_code == status.HTTP_200_OK
+    flight_id = response.json()["id"]
+
+    # Verify initial divisions
+    links = session.exec(
+        select(FlightDivisionLink).where(FlightDivisionLink.flight_id == flight_id)
+    ).all()
+    assert len(links) == 2
+
+    # 2. Update the flight: Remove Div A, Keep Div B, Add Div C
+    div_b_id = next(
+        link.division_id
+        for link in links
+        if session.get(Division, link.division_id).name == "Div B"
+    )
+
+    update_data = {
+        "id": flight_id,
+        "name": "Updated Flight",
+        "year": 2025,
+        "course_id": 1,
+        "secretary": "Sec",
+        "signup_start_date": "2025-01-01T00:00:00",
+        "signup_stop_date": "2025-01-15T00:00:00",
+        "start_date": "2025-04-01T00:00:00",
+        "weeks": 10,
+        "divisions": [
+            {
+                "id": div_b_id,
+                "name": "Div B Updated",
+                "gender": "Men's",
+                "primary_tee_id": 1,
+            },
+            {"name": "Div C", "gender": "Men's", "primary_tee_id": 1},
+        ],
+    }
+
+    response = client_admin.put(f"/flights/{flight_id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # 3. Verify divisions after update
+    session.expire_all()
+    links = session.exec(
+        select(FlightDivisionLink).where(FlightDivisionLink.flight_id == flight_id)
+    ).all()
+
+    division_names = [session.get(Division, link.division_id).name for link in links]
+    assert "Div A" not in division_names
+    assert "Div B Updated" in division_names
+    assert "Div C" in division_names
+    assert len(links) == 2

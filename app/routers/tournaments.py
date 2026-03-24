@@ -28,7 +28,6 @@ from app.models.tournament import (
     TournamentInfo,
     TournamentRead,
 )
-from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.tournament_round_link import TournamentRoundLink
 from app.models.tournament_team_link import TournamentTeamLink
 from app.models.user import User
@@ -276,7 +275,9 @@ def upsert_tournament(
 ) -> TournamentRead:
     """Updates/inserts a tournament data record."""
     if tournament_data.id is None:  # create new tournament
-        tournament_db = Tournament.model_validate(tournament_data)
+        # Exclude divisions from initial validation
+        tournament_dict = tournament_data.model_dump(exclude={"divisions"})
+        tournament_db = Tournament.model_validate(tournament_dict)
     else:  # update existing tournament
         tournament_db = session.get(Tournament, tournament_data.id)
         if not tournament_db:
@@ -284,32 +285,27 @@ def upsert_tournament(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f"Tournament (id={tournament_data.id}) not found",
             )
-        tournament_dict = tournament_data.model_dump(exclude_unset=True)
+        tournament_dict = tournament_data.model_dump(
+            exclude_unset=True, exclude={"divisions"}
+        )
         for key, value in tournament_dict.items():
-            if key != "divisions":
-                setattr(tournament_db, key, value)
+            setattr(tournament_db, key, value)
     session.add(tournament_db)
     session.commit()
     session.refresh(tournament_db)
 
-    for division in tournament_data.divisions:
-        division_db = upsert_division(session=session, division_data=division)
+    if tournament_data.divisions is not None:
+        updated_divisions = []
+        for division in tournament_data.divisions:
+            division_db = upsert_division(session=session, division_data=division)
+            updated_divisions.append(division_db)
 
-        # Create tournament-division link (if needed)
-        tournament_division_link_db = session.exec(
-            select(TournamentDivisionLink)
-            .where(TournamentDivisionLink.tournament_id == tournament_db.id)
-            .where(TournamentDivisionLink.division_id == division_db.id)
-        ).one_or_none()
-        if not tournament_division_link_db:
-            tournament_division_link_db = TournamentDivisionLink(
-                tournament_id=tournament_db.id, division_id=division_db.id
-            )
-            session.add(tournament_division_link_db)
-            session.commit()
-            session.refresh(tournament_division_link_db)
+        # Update the relationship - this will automatically manage TournamentDivisionLink table
+        tournament_db.divisions = updated_divisions
+        session.add(tournament_db)
+        session.commit()
+        session.refresh(tournament_db)
 
-    session.refresh(tournament_db)
     return tournament_db
 
 
