@@ -18,13 +18,13 @@ COPY pyproject.toml uv.lock ./
 ARG VERSION=v0.0.0
 RUN sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 
-# Create virtualenv + install deps
+# Install dependencies into /app/.venv
 RUN uv sync --frozen
 
 # ---------- Runtime ----------
 FROM python:3.12-slim
 
-# Install only runtime dependency for postgres
+# Install runtime dependency for postgres
 RUN apt-get update && apt-get install -y \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
@@ -32,9 +32,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy virtualenv from builder
-COPY --from=builder /.venv /.venv
+COPY --from=builder /app/.venv /.venv
 
-# Copy application code (small, changes often)
+# Copy application code
 COPY ./app /app/
 COPY ./alembic.ini /alembic.ini
 COPY ./migrations /migrations
