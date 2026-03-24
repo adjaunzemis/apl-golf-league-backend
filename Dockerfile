@@ -1,5 +1,5 @@
 # ---------- Builder ----------
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4 AS builder
 
 # Install build dependencies (only needed here)
 RUN apt-get update && apt-get install -y \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:e49fde5daf002023f0a2e2643861ce9ca8a8da5b73d0e6db83ef82ff99969baf /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 RUN uv sync --frozen
 
 # ---------- Runtime ----------
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4
 
 # Install runtime dependency for postgres
 RUN apt-get update && apt-get install -y \
