@@ -36,7 +36,7 @@ COPY --from=builder /app/.venv /.venv
 
 # Copy application code
 COPY ./app /app/app
-COPY ./pyproject.toml /app/pyproject.toml
+COPY --from=builder /app/pyproject.toml /app/pyproject.toml
 COPY ./alembic.ini /alembic.ini
 COPY ./migrations /migrations
 
