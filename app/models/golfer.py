@@ -10,10 +10,10 @@ from app.models.team_golfer_link import TeamRole
 
 
 class GolferAffiliation(StrEnum):
-    APL_EMPLOYEE = "APL Employee"
-    APL_RETIREE = "APL Retiree"
-    APL_FAMILY = "APL Family"
-    NON_APL_EMPLOYEE = "Non-APL Employee"
+    APL_EMPLOYEE = "APL_EMPLOYEE"
+    APL_RETIREE = "APL_RETIREE"
+    APL_FAMILY = "APL_FAMILY"
+    NON_APL_EMPLOYEE = "NON_APL_EMPLOYEE"
 
 
 class GolferBase(SQLModel):
