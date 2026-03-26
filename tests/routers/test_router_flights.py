@@ -373,8 +373,8 @@ def test_update_flight_divisions_sync(client_admin: TestClient, session: Session
         "start_date": "2025-04-01T00:00:00",
         "weeks": 10,
         "divisions": [
-            {"name": "Div A", "gender": "Men's", "primary_tee_id": 1},
-            {"name": "Div B", "gender": "Men's", "primary_tee_id": 1},
+            {"name": "Div A", "gender": "MENS", "primary_tee_id": 1},
+            {"name": "Div B", "gender": "MENS", "primary_tee_id": 1},
         ],
     }
     response = client_admin.post("/flights/", json=flight_data)
@@ -408,10 +408,10 @@ def test_update_flight_divisions_sync(client_admin: TestClient, session: Session
             {
                 "id": div_b_id,
                 "name": "Div B Updated",
-                "gender": "Men's",
+                "gender": "MENS",
                 "primary_tee_id": 1,
             },
-            {"name": "Div C", "gender": "Men's", "primary_tee_id": 1},
+            {"name": "Div C", "gender": "MENS", "primary_tee_id": 1},
         ],
     }
 
