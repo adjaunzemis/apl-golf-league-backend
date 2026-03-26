@@ -6,7 +6,7 @@
         "away_team_gross_score": 12,
         "away_team_net_score": 11,
         "away_team_handicap_strokes": 1,
-        "winner": "Home"
+        "winner": "HOME"
     },
     {
         "home_team_gross_score": 10,
@@ -15,7 +15,7 @@
         "away_team_gross_score": 10,
         "away_team_net_score": 9,
         "away_team_handicap_strokes": 1,
-        "winner": "Away"
+        "winner": "AWAY"
     },
     {
         "home_team_gross_score": 12,
@@ -24,7 +24,7 @@
         "away_team_gross_score": 14,
         "away_team_net_score": 13,
         "away_team_handicap_strokes": 1,
-        "winner": "Home"
+        "winner": "HOME"
     },
     {
         "home_team_gross_score": 8,
@@ -33,7 +33,7 @@
         "away_team_gross_score": 9,
         "away_team_net_score": 8,
         "away_team_handicap_strokes": 1,
-        "winner": "Tie"
+        "winner": "TIE"
     },
     {
         "home_team_gross_score": 8,
@@ -42,7 +42,7 @@
         "away_team_gross_score": 9,
         "away_team_net_score": 8,
         "away_team_handicap_strokes": 1,
-        "winner": "Tie"
+        "winner": "TIE"
     },
     {
         "home_team_gross_score": 8,
@@ -51,7 +51,7 @@
         "away_team_gross_score": 9,
         "away_team_net_score": 8,
         "away_team_handicap_strokes": 1,
-        "winner": "Tie"
+        "winner": "TIE"
     },
     {
         "home_team_gross_score": 11,
@@ -60,7 +60,7 @@
         "away_team_gross_score": 10,
         "away_team_net_score": 9,
         "away_team_handicap_strokes": 1,
-        "winner": "Away"
+        "winner": "AWAY"
     },
     {
         "home_team_gross_score": 8,
@@ -69,7 +69,7 @@
         "away_team_gross_score": 8,
         "away_team_net_score": 7,
         "away_team_handicap_strokes": 1,
-        "winner": "Away"
+        "winner": "AWAY"
     },
     {
         "home_team_gross_score": 11,
@@ -78,6 +78,6 @@
         "away_team_gross_score": 14,
         "away_team_net_score": 13,
         "away_team_handicap_strokes": 1,
-        "winner": "Home"
+        "winner": "HOME"
     }
 ]
