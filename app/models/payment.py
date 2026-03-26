@@ -7,20 +7,20 @@ from sqlmodel import Field, SQLModel
 
 
 class LeagueDuesType(StrEnum):
-    FLIGHT_DUES = "Flight Dues"
-    TOURNAMENT_ONLY_DUES = "Tournament-Only Dues"
+    FLIGHT_DUES = "FLIGHT_DUES"
+    TOURNAMENT_ONLY_DUES = "TOURNAMENT_ONLY_DUES"
 
 
 class TournamentEntryFeeType(StrEnum):
-    MEMBER_FEE = "Member Fee"
-    NON_MEMBER_FEE = "Non-Member Fee"
+    MEMBER_FEE = "MEMBER_FEE"
+    NON_MEMBER_FEE = "NON_MEMBER_FEE"
 
 
 class PaymentMethod(StrEnum):
-    CASH_OR_CHECK = "Cash or Check"
-    PAYPAL = "PayPal"
-    EXEMPT = "Exempt"
-    LINKED = "Linked"
+    CASH_OR_CHECK = "CASH_OR_CHECK"
+    PAYPAL = "PAYPAL"
+    EXEMPT = "EXEMPT"
+    LINKED = "LINKED"
 
 
 class LeagueDuesBase(SQLModel):

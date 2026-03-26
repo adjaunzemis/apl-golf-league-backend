@@ -123,10 +123,10 @@ class FlightStatistics(BaseModel):
 
 
 class FlightFreeAgentCadence(StrEnum):
-    WEEKLY = "Weekly"
-    BIWEEKLY = "Biweekly"
-    MONTHLY = "Monthly"
-    OCCASIONALLY = "Occasionally"
+    WEEKLY = "WEEKLY"
+    BIWEEKLY = "BIWEEKLY"
+    MONTHLY = "MONTHLY"
+    OCCASIONALLY = "OCCASIONALLY"
 
 
 class FlightFreeAgentBase(SQLModel):

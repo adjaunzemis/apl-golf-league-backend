@@ -84,9 +84,9 @@ class MatchDataWithCount(BaseModel):
 class MatchHoleWinner(StrEnum):
     """Indicates which team won the hole during the match."""
 
-    HOME = "Home"
-    AWAY = "Away"
-    TIE = "Tie"
+    HOME = "HOME"
+    AWAY = "AWAY"
+    TIE = "TIE"
 
 
 class MatchHoleResult(BaseModel):

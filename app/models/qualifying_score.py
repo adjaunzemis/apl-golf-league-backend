@@ -11,8 +11,8 @@ from app.models.tee import TeeGender
 
 
 class QualifyingScoreType(StrEnum):
-    QUALIFYING_ROUND = "Qualifying Round"
-    OFFICIAL_HANDICAP_INDEX = "Official Handicap Index"
+    QUALIFYING_ROUND = "QUALIFYING_ROUND"
+    OFFICIAL_HANDICAP_INDEX = "OFFICIAL_HANDICAP_INDEX"
 
 
 class QualifyingScoreBase(SQLModel):

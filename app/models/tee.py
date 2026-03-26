@@ -9,8 +9,8 @@ from app.models.hole import Hole, HoleRead
 
 
 class TeeGender(StrEnum):
-    MENS = "Men's"
-    LADIES = "Ladies'"
+    MENS = "MENS"
+    LADIES = "LADIES"
 
 
 class TeeBase(SQLModel):

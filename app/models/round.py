@@ -21,15 +21,15 @@ from app.models.tee import Tee, TeeGender, TeeRead
 
 
 class RoundType(StrEnum):
-    QUALIFYING = "Qualifying"
-    FLIGHT = "Flight"
-    PLAYOFF = "Playoff"
-    TOURNAMENT = "Tournament"
+    QUALIFYING = "QUALIFYING"
+    FLIGHT = "FLIGHT"
+    PLAYOFF = "PLAYOFF"
+    TOURNAMENT = "TOURNAMENT"
 
 
 class ScoringType(StrEnum):
-    INDIVIDUAL = "Individual"
-    GROUP = "Group"
+    INDIVIDUAL = "INDIVIDUAL"
+    GROUP = "GROUP"
 
 
 class RoundBase(SQLModel):

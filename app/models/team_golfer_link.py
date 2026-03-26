@@ -6,9 +6,9 @@ from sqlmodel import Field, SQLModel
 
 
 class TeamRole(StrEnum):
-    CAPTAIN = "Captain"
-    PLAYER = "Player"
-    SUBSTITUTE = "Substitute"
+    CAPTAIN = "CAPTAIN"
+    PLAYER = "PLAYER"
+    SUBSTITUTE = "SUBSTITUTE"
 
 
 class TeamGolferLink(SQLModel, table=True):
