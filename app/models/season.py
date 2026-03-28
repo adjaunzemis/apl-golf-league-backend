@@ -1,12 +1,12 @@
 from sqlmodel import Field
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 
 
-class Season(APLGLBase, table=True):
+class Season(APLGLBaseModel, table=True):
     year: int = Field(..., description="Year for this season", primary_key=True)
     is_active: bool = Field(False, description="True if this is the active season")
 
 
-class SeasonCreate(APLGLBase):
+class SeasonCreate(APLGLBaseModel):
     year: int = Field(..., description="Year for this season")

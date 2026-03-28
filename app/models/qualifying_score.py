@@ -5,7 +5,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.golfer import Golfer
 from app.models.tee import TeeGender
 
@@ -15,7 +15,7 @@ class QualifyingScoreType(DisplayEnum):
     OFFICIAL_HANDICAP_INDEX = "OFFICIAL_HANDICAP_INDEX"
 
 
-class QualifyingScoreBase(APLGLBase):
+class QualifyingScoreBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     type: QualifyingScoreType = Field(
@@ -53,7 +53,7 @@ class QualifyingScoreCreate(QualifyingScoreBase):
     pass
 
 
-class QualifyingScoreUpdate(APLGLBase):
+class QualifyingScoreUpdate(APLGLBaseModel):
     golfer_id: Optional[int] = None
     year: Optional[int] = None
     type: Optional[QualifyingScoreType] = None

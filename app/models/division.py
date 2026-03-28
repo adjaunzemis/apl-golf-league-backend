@@ -2,13 +2,13 @@ from typing import Optional
 
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.tee import TeeGender
 from app.models.tournament_division_link import TournamentDivisionLink
 
 
-class DivisionBase(APLGLBase):
+class DivisionBase(APLGLBaseModel):
     name: str
     gender: TeeGender
     primary_tee_id: int = Field(default=None, foreign_key="tee.id")
@@ -30,7 +30,7 @@ class DivisionCreate(DivisionBase):
     pass
 
 
-class DivisionUpdate(APLGLBase):
+class DivisionUpdate(APLGLBaseModel):
     name: Optional[str] = None
     gender: Optional[TeeGender] = None
     primary_tee_id: Optional[int] = None
@@ -41,7 +41,7 @@ class DivisionRead(DivisionBase):
     id: int
 
 
-class DivisionData(APLGLBase):
+class DivisionData(APLGLBaseModel):
     id: int
     flight_id: int = None
     tournament_id: int = None
@@ -63,7 +63,7 @@ class DivisionData(APLGLBase):
     secondary_tee_slope: int
 
 
-class FlightDivision(APLGLBase):
+class FlightDivision(APLGLBaseModel):
     id: int
     flight_id: int
     name: str
@@ -84,7 +84,7 @@ class FlightDivision(APLGLBase):
     secondary_tee_slope: int
 
 
-class TournamentDivision(APLGLBase):
+class TournamentDivision(APLGLBaseModel):
     id: int
     tournament_id: int
     name: str

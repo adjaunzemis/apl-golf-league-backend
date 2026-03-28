@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.hole import Hole, HoleRead
 
 
@@ -13,7 +13,7 @@ class TeeGender(DisplayEnum):
     LADIES = "LADIES"
 
 
-class TeeBase(APLGLBase):
+class TeeBase(APLGLBaseModel):
     name: str
     gender: TeeGender = Field(
         sa_column=Column(
@@ -46,7 +46,7 @@ class TeeCreate(TeeBase):
     pass
 
 
-class TeeUpdate(APLGLBase):
+class TeeUpdate(APLGLBaseModel):
     name: Optional[str] = None
     gender: Optional[TeeGender] = None
     rating: Optional[float] = None

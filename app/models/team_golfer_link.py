@@ -2,7 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 
 
 class TeamRole(DisplayEnum):
@@ -11,7 +11,7 @@ class TeamRole(DisplayEnum):
     SUBSTITUTE = "SUBSTITUTE"
 
 
-class TeamGolferLink(APLGLBase, table=True):
+class TeamGolferLink(APLGLBaseModel, table=True):
     team_id: int = Field(default=None, foreign_key="team.id", primary_key=True)
     golfer_id: int = Field(default=None, foreign_key="golfer.id", primary_key=True)
     division_id: int = Field(default=None, foreign_key="division.id")

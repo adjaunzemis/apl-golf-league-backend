@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.team_golfer_link import TeamRole
 
 
@@ -15,7 +15,7 @@ class GolferAffiliation(DisplayEnum):
     NON_APL_EMPLOYEE = "NON_APL_EMPLOYEE"
 
 
-class GolferBase(APLGLBase):
+class GolferBase(APLGLBaseModel):
     name: str
     affiliation: GolferAffiliation | None = Field(
         sa_column=Column(
@@ -42,7 +42,7 @@ class GolferCreate(GolferBase):
     pass
 
 
-class GolferUpdate(APLGLBase):
+class GolferUpdate(APLGLBaseModel):
     name: str | None = None
     affiliation: GolferAffiliation | None = None
     email: str | None = None
@@ -55,7 +55,7 @@ class GolferRead(GolferBase):
     id: int
 
 
-class GolferStatisticsOLD(APLGLBase):
+class GolferStatisticsOLD(APLGLBaseModel):
     num_rounds: int = 0
     num_holes: int = 0
     avg_gross_score: float = 0
@@ -70,7 +70,7 @@ class GolferStatisticsOLD(APLGLBase):
     num_others: int = 0
 
 
-class GolferStatisticsScoring(APLGLBase):
+class GolferStatisticsScoring(APLGLBaseModel):
     avg_score: float = 0
     avg_score_to_par: float = 0
     avg_par_3_score: float = 0
@@ -86,7 +86,7 @@ class GolferStatisticsScoring(APLGLBase):
     num_others: int = 0
 
 
-class GolferStatistics(APLGLBase):
+class GolferStatistics(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     num_rounds: int = 0
@@ -103,7 +103,7 @@ class TeamGolferStatistics(GolferStatistics):
     golfer_team_role: TeamRole
 
 
-class GolferTeamData(APLGLBase):
+class GolferTeamData(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     golfer_role: TeamRole

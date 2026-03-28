@@ -2,10 +2,10 @@ from typing import Optional
 
 from sqlmodel import Field
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 
 
-class UserBase(APLGLBase):
+class UserBase(APLGLBaseModel):
     username: str
     email: Optional[str] = None
     name: Optional[str] = None
@@ -25,7 +25,7 @@ class UserCreate(UserBase):
     pass
 
 
-class UserUpdate(APLGLBase):
+class UserUpdate(APLGLBaseModel):
     username: Optional[str] = None
     hashed_password: Optional[str] = None
     email: Optional[int] = None

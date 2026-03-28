@@ -29,7 +29,7 @@ class DisplayEnum(StrEnum):
         return self.value.replace("_", " ").title().replace("Apl", "APL")
 
 
-class APLGLBase(SQLModel):
+class APLGLBaseModel(SQLModel):
     class Config:
         use_enum_values = False
         json_encoders = {DisplayEnum: lambda v: v.label}

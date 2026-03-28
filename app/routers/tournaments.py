@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from app.database import tournaments as db_tournaments
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.golfer import Golfer
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
@@ -39,7 +39,7 @@ from app.utilities.apl_handicap_system import APLHandicapSystem
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
 
-class TournamentInput(APLGLBase):
+class TournamentInput(APLGLBaseModel):
     tournament_id: int
     date_played: datetime
     rounds: list[RoundInput]

@@ -1,6 +1,6 @@
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.flight import Flight, FlightRead
 from app.models.match_round_link import MatchRoundLink
 from app.models.round import (
@@ -13,7 +13,7 @@ from app.models.round import (
 from app.models.team import Team, TeamRead
 
 
-class MatchBase(APLGLBase):
+class MatchBase(APLGLBaseModel):
     flight_id: int = Field(default=None, foreign_key="flight.id")
     week: int
     home_team_id: int = Field(default=None, foreign_key="team.id")
@@ -38,7 +38,7 @@ class MatchCreate(MatchBase):
     pass
 
 
-class MatchUpdate(APLGLBase):
+class MatchUpdate(APLGLBaseModel):
     flight_id: int | None = None
     week: int | None = None
     home_team_id: int | None = None
@@ -58,7 +58,7 @@ class MatchReadWithData(MatchRead):
     rounds: list[RoundReadWithData] = Field(default_factory=list)
 
 
-class MatchSummary(APLGLBase):
+class MatchSummary(APLGLBaseModel):
     match_id: int
     home_team_id: int
     home_team_name: str
@@ -74,7 +74,7 @@ class MatchData(MatchSummary):
     rounds: list[RoundResults] | None = Field(default_factory=list)
 
 
-class MatchDataWithCount(APLGLBase):
+class MatchDataWithCount(APLGLBaseModel):
     num_matches: int
     matches: list[MatchData]
 
@@ -87,7 +87,7 @@ class MatchHoleWinner(DisplayEnum):
     TIE = "TIE"
 
 
-class MatchHoleResult(APLGLBase):
+class MatchHoleResult(APLGLBaseModel):
     """Container for results from a hole in a match."""
 
     home_team_gross_score: int
@@ -99,12 +99,12 @@ class MatchHoleResult(APLGLBase):
     winner: MatchHoleWinner
 
 
-class MatchValidationRequest(APLGLBase):
+class MatchValidationRequest(APLGLBaseModel):
     home_team_rounds: list[RoundValidationRequest]
     away_team_rounds: list[RoundValidationRequest]
 
 
-class MatchValidationResponse(APLGLBase):
+class MatchValidationResponse(APLGLBaseModel):
     home_team_rounds: list[RoundValidationResponse]
     away_team_rounds: list[RoundValidationResponse]
     home_team_score: float = 0.0

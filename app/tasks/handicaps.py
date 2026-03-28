@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from sqlmodel import Session, desc, select
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.course import Course
 from app.models.golfer import Golfer
 from app.models.hole import Hole
@@ -18,7 +18,7 @@ from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
-class HandicapIndexData(APLGLBase):
+class HandicapIndexData(APLGLBaseModel):
     active_date: str
     active_handicap_index: float = None
     active_rounds: Optional[List[RoundSummary]] = None

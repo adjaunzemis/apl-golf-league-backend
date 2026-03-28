@@ -6,10 +6,10 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic.v1 import EmailStr
 
 from app.dependencies import get_settings
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 
 
-class EmailSchema(APLGLBase):
+class EmailSchema(APLGLBaseModel):
     subject: str
     to_addresses: List[EmailStr]
     body: Dict[str, Any]

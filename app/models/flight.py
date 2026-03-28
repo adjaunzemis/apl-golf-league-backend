@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
@@ -14,7 +14,7 @@ from app.models.team import Team
 from app.models.team_golfer_link import TeamRole
 
 
-class FlightBase(APLGLBase):
+class FlightBase(APLGLBaseModel):
     name: str
     year: int
     course_id: int = Field(default=None, foreign_key="course.id")
@@ -42,7 +42,7 @@ class FlightCreate(FlightBase):
     divisions: list[DivisionCreate] = None
 
 
-class FlightUpdate(APLGLBase):
+class FlightUpdate(APLGLBaseModel):
     name: str | None = None
     year: int | None = None
     course_id: int | None = None
@@ -62,7 +62,7 @@ class FlightRead(FlightBase):
     id: int
 
 
-class FlightInfo(APLGLBase):
+class FlightInfo(APLGLBaseModel):
     id: int
     year: int
     name: str
@@ -80,7 +80,7 @@ class FlightInfo(APLGLBase):
     num_teams: int
 
 
-class FlightGolfer(APLGLBase):
+class FlightGolfer(APLGLBaseModel):
     golfer_id: int
     name: str
     role: TeamRole
@@ -89,14 +89,14 @@ class FlightGolfer(APLGLBase):
     email: str | None
 
 
-class FlightTeam(APLGLBase):
+class FlightTeam(APLGLBaseModel):
     flight_id: int
     team_id: int
     name: str
     golfers: list[FlightGolfer] = Field(default_factory=list)
 
 
-class FlightStandingsTeam(APLGLBase):
+class FlightStandingsTeam(APLGLBaseModel):
     team_id: int
     team_name: str
     points_won: float = 0
@@ -105,7 +105,7 @@ class FlightStandingsTeam(APLGLBase):
     position: str = ""
 
 
-class FlightStandings(APLGLBase):
+class FlightStandings(APLGLBaseModel):
     flight_id: int
     teams: list[FlightStandingsTeam]
 
@@ -116,7 +116,7 @@ class FlightGolferStatistics(TeamGolferStatistics):
     avg_points_won: float = 0
 
 
-class FlightStatistics(APLGLBase):
+class FlightStatistics(APLGLBaseModel):
     flight_id: int
     golfers: list[FlightGolferStatistics] = Field(default_factory=list)
 
@@ -128,7 +128,7 @@ class FlightFreeAgentCadence(DisplayEnum):
     OCCASIONALLY = "OCCASIONALLY"
 
 
-class FlightFreeAgentBase(APLGLBase):
+class FlightFreeAgentBase(APLGLBaseModel):
     golfer_id: int = Field(foreign_key="golfer.id", primary_key=True)
     flight_id: int = Field(foreign_key="flight.id", primary_key=True)
     division_id: int = Field(foreign_key="division.id")

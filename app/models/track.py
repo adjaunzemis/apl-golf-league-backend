@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.tee import Tee, TeeReadWithHoles
 
 
-class TrackBase(APLGLBase):
+class TrackBase(APLGLBaseModel):
     name: str
     course_id: Optional[int] = Field(default=None, foreign_key="course.id")
 
@@ -21,7 +21,7 @@ class TrackCreate(TrackBase):
     pass
 
 
-class TrackUpdate(APLGLBase):
+class TrackUpdate(APLGLBaseModel):
     name: Optional[str] = None
     course_id: Optional[int] = None
 

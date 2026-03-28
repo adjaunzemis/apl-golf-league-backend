@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.track import Track, TrackReadWithTees
 
 
-class CourseBase(APLGLBase):
+class CourseBase(APLGLBaseModel):
     name: str
     year: int
     address: Optional[str]
@@ -23,7 +23,7 @@ class CourseCreate(CourseBase):
     pass
 
 
-class CourseUpdate(APLGLBase):
+class CourseUpdate(APLGLBaseModel):
     name: Optional[str] = None
     year: Optional[int] = None
     address: Optional[str] = None

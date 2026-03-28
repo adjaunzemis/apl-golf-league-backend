@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.golfer import Golfer
 from app.models.payment import (
     LeagueDues,
@@ -31,7 +31,7 @@ class LeagueDuesPaymentData(LeagueDuesPaymentRead):
     golfer_email: Optional[str]
 
 
-class LeagueDuesPaymentInfo(APLGLBase):
+class LeagueDuesPaymentInfo(APLGLBaseModel):
     id: int
     golfer_id: int
     golfer_name: str
@@ -42,13 +42,13 @@ class LeagueDuesPaymentInfo(APLGLBase):
     is_paid: bool
 
 
-class LeagueDuesPaypalTransactionItem(APLGLBase):
+class LeagueDuesPaypalTransactionItem(APLGLBaseModel):
     id: Optional[int] = None
     golfer_id: int
     type: LeagueDuesType
 
 
-class LeagueDuesPaypalTransaction(APLGLBase):
+class LeagueDuesPaypalTransaction(APLGLBaseModel):
     year: int
     amount: float
     description: str
@@ -64,7 +64,7 @@ class TournamentEntryFeePaymentData(TournamentEntryFeePaymentRead):
     golfer_email: Optional[str]
 
 
-class TournamentEntryFeePaymentInfo(APLGLBase):
+class TournamentEntryFeePaymentInfo(APLGLBaseModel):
     id: int
     golfer_id: int
     golfer_name: str
@@ -76,13 +76,13 @@ class TournamentEntryFeePaymentInfo(APLGLBase):
     is_paid: bool
 
 
-class TournamentEntryFeePaypalTransactionItem(APLGLBase):
+class TournamentEntryFeePaypalTransactionItem(APLGLBaseModel):
     id: Optional[int] = None
     golfer_id: int
     type: TournamentEntryFeeType
 
 
-class TournamentEntryFeePaypalTransaction(APLGLBase):
+class TournamentEntryFeePaypalTransaction(APLGLBaseModel):
     year: int
     tournament_id: int
     amount: float

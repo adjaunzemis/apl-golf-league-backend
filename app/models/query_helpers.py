@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import aliased
 from sqlmodel import Field, Session, desc, or_, select
 
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.course import Course
 from app.models.division import Division, DivisionData
 from app.models.flight import Flight
@@ -32,7 +32,7 @@ from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 # TODO: Move custom route data models elsewhere
-class HandicapIndexData(APLGLBase):
+class HandicapIndexData(APLGLBaseModel):
     active_date: str
     active_handicap_index: float | None = None
     active_rounds: list[RoundSummary] = Field(default_factory=list)
@@ -40,7 +40,7 @@ class HandicapIndexData(APLGLBase):
     pending_rounds: list[RoundSummary] = Field(default_factory=list)
 
 
-class GolferTeamData(APLGLBase):
+class GolferTeamData(APLGLBaseModel):
     team_id: int
     golfer_id: int
     golfer_name: str
@@ -59,7 +59,7 @@ class GolferTeamData(APLGLBase):
     handicap_index_updated: str | None = None
 
 
-class GolferData(APLGLBase):
+class GolferData(APLGLBaseModel):
     golfer_id: int
     name: str
     affiliation: str | None = None
@@ -69,12 +69,12 @@ class GolferData(APLGLBase):
     handicap_index_data: HandicapIndexData = None
 
 
-class GolferDataWithCount(APLGLBase):
+class GolferDataWithCount(APLGLBaseModel):
     num_golfers: int
     golfers: list[GolferData]
 
 
-class FlightTeamWithMatchData(APLGLBase):
+class FlightTeamWithMatchData(APLGLBaseModel):
     id: int
     name: str
     year: int
@@ -97,7 +97,7 @@ class TournamentTeamData(TeamRead):
     rounds: list[RoundResults] | None = Field(default_factory=list)
 
 
-class FlightData(APLGLBase):
+class FlightData(APLGLBaseModel):
     id: int
     year: int
     name: str
@@ -118,7 +118,7 @@ class FlightData(APLGLBase):
     matches: list[MatchSummary] = Field(default_factory=list)
 
 
-class TournamentData(APLGLBase):
+class TournamentData(APLGLBaseModel):
     id: int
     year: int
     name: str

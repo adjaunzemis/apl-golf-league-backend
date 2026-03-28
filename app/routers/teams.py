@@ -8,7 +8,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.flight import Flight
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
@@ -34,14 +34,14 @@ from app.models.user import User
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
 
-class TeamGolferSignupData(APLGLBase):
+class TeamGolferSignupData(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     role: TeamRole
     division_id: int
 
 
-class TeamSignupData(APLGLBase):
+class TeamSignupData(APLGLBaseModel):
     flight_id: Optional[int] = None
     tournament_id: Optional[int] = None
     name: str

@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 
 
 class Committee(DisplayEnum):
@@ -17,7 +17,7 @@ class Committee(DisplayEnum):
     PLANNING = "PLANNING"
 
 
-class OfficerBase(APLGLBase):
+class OfficerBase(APLGLBaseModel):
     name: str
     year: int
     committee: Committee = Field(
@@ -44,7 +44,7 @@ class OfficerCreate(OfficerBase):
     pass
 
 
-class OfficerUpdate(APLGLBase):
+class OfficerUpdate(APLGLBaseModel):
     name: Optional[str] = None
     year: Optional[int] = None
     committee: Optional[Committee] = None

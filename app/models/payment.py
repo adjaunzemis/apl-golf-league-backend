@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 
 
 class LeagueDuesType(DisplayEnum):
@@ -24,7 +24,7 @@ class PaymentMethod(DisplayEnum):
     LINKED = "LINKED"
 
 
-class LeagueDuesBase(APLGLBase):
+class LeagueDuesBase(APLGLBaseModel):
     year: int
     type: LeagueDuesType = Field(
         sa_column=Column(
@@ -48,7 +48,7 @@ class LeagueDuesCreate(LeagueDuesBase):
     pass
 
 
-class LeagueDuesUpdate(APLGLBase):
+class LeagueDuesUpdate(APLGLBaseModel):
     year: Optional[int] = None
     type: Optional[LeagueDuesType] = None
     amount: Optional[float] = None
@@ -58,7 +58,7 @@ class LeagueDuesRead(LeagueDuesBase):
     id: int
 
 
-class LeagueDuesPaymentBase(APLGLBase):
+class LeagueDuesPaymentBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     type: LeagueDuesType
@@ -88,7 +88,7 @@ class LeagueDuesPaymentCreate(LeagueDuesPaymentBase):
     pass
 
 
-class LeagueDuesPaymentUpdate(APLGLBase):
+class LeagueDuesPaymentUpdate(APLGLBaseModel):
     golfer_id: Optional[int] = None
     year: Optional[int] = None
     type: Optional[LeagueDuesType] = None
@@ -104,7 +104,7 @@ class LeagueDuesPaymentRead(LeagueDuesPaymentBase):
     id: int
 
 
-class TournamentEntryFeePaymentBase(APLGLBase):
+class TournamentEntryFeePaymentBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     tournament_id: int = Field(default=None, foreign_key="tournament.id")

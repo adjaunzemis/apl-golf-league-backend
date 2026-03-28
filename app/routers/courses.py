@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
-from app.models.base import APLGLBase
+from app.models.base import APLGLBaseModel
 from app.models.course import (
     Course,
     CourseRead,
@@ -20,7 +20,7 @@ from app.models.user import User
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
 
-class HoleData(APLGLBase):
+class HoleData(APLGLBaseModel):
     id: Optional[int] = None
     number: int
     par: int
@@ -28,7 +28,7 @@ class HoleData(APLGLBase):
     stroke_index: int
 
 
-class TeeData(APLGLBase):
+class TeeData(APLGLBaseModel):
     id: Optional[int] = None
     name: str
     gender: TeeGender
@@ -38,13 +38,13 @@ class TeeData(APLGLBase):
     holes: List[HoleData] = []
 
 
-class TrackData(APLGLBase):
+class TrackData(APLGLBaseModel):
     id: Optional[int] = None
     name: str
     tees: List[TeeData] = []
 
 
-class CourseData(APLGLBase):
+class CourseData(APLGLBaseModel):
     id: Optional[int] = None
     name: str
     year: int

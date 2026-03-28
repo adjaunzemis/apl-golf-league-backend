@@ -5,7 +5,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship
 
-from app.models.base import APLGLBase, DisplayEnum
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.golfer import Golfer, GolferRead
 from app.models.hole_result import (
     HoleResult,
@@ -31,7 +31,7 @@ class ScoringType(DisplayEnum):
     GROUP = "GROUP"
 
 
-class RoundBase(APLGLBase):
+class RoundBase(APLGLBaseModel):
     tee_id: int = Field(foreign_key="tee.id")
     type: RoundType = Field(
         sa_column=Column(
@@ -70,7 +70,7 @@ class RoundCreate(RoundBase):
     pass
 
 
-class RoundUpdate(APLGLBase):
+class RoundUpdate(APLGLBaseModel):
     tee_id: int | None = None
     type: RoundType | None = None
     scoring_type: ScoringType | None = None
@@ -88,7 +88,7 @@ class RoundReadWithData(RoundRead):
     hole_results: list[HoleResultReadWithHole] | None = None
 
 
-class RoundSummary(APLGLBase):
+class RoundSummary(APLGLBaseModel):
     round_id: int | None = None
     date_played: datetime | None = None
     round_type: RoundType | None = None
@@ -111,7 +111,7 @@ class RoundSummaryHandicap(RoundSummary):
     is_counting: bool
 
 
-class RoundResults(APLGLBase):
+class RoundResults(APLGLBaseModel):
     round_id: int
     match_id: int | None = None
     team_id: int | None = None
@@ -141,18 +141,18 @@ class RoundResults(APLGLBase):
     holes: list[HoleResultData] = Field(default_factory=list)
 
 
-class RoundResultsWithCount(APLGLBase):
+class RoundResultsWithCount(APLGLBaseModel):
     num_rounds: int
     rounds: list[RoundResults]
 
 
-class RoundValidationRequest(APLGLBase):
+class RoundValidationRequest(APLGLBaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
     holes: list[HoleResultValidationRequest] = Field(default_factory=list)
 
 
-class RoundValidationResponse(APLGLBase):
+class RoundValidationResponse(APLGLBaseModel):
     date_played: Union[datetime, date]
     course_handicap: int
     holes: list[HoleResultValidationResponse] = Field(default_factory=list)
@@ -166,7 +166,7 @@ class RoundSubmissionRequest(RoundValidationRequest):
     scoring_type: ScoringType
 
 
-class RoundSubmissionResponse(APLGLBase):
+class RoundSubmissionResponse(APLGLBaseModel):
     round_id: int
     golfer_id: int
     tee_id: int
