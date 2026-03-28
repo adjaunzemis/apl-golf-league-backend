@@ -1,9 +1,11 @@
 from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
+
+from app.models.base import APLGLBase
 
 
-class HoleBase(SQLModel):
+class HoleBase(APLGLBase):
     number: int
     par: int
     yardage: Optional[int] = None
@@ -20,7 +22,7 @@ class HoleCreate(HoleBase):
     pass
 
 
-class HoleUpdate(SQLModel):
+class HoleUpdate(APLGLBase):
     number: Optional[int] = None
     par: Optional[int] = None
     yardage: Optional[int] = None

@@ -1,12 +1,11 @@
 from datetime import date, datetime
 from typing import Union
 
-from pydantic.v1 import BaseModel
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
-from app.models.base import DisplayEnum
+from app.models.base import APLGLBase, DisplayEnum
 from app.models.golfer import Golfer, GolferRead
 from app.models.hole_result import (
     HoleResult,
@@ -32,7 +31,7 @@ class ScoringType(DisplayEnum):
     GROUP = "GROUP"
 
 
-class RoundBase(SQLModel):
+class RoundBase(APLGLBase):
     tee_id: int = Field(foreign_key="tee.id")
     type: RoundType = Field(
         sa_column=Column(
@@ -71,7 +70,7 @@ class RoundCreate(RoundBase):
     pass
 
 
-class RoundUpdate(SQLModel):
+class RoundUpdate(APLGLBase):
     tee_id: int | None = None
     type: RoundType | None = None
     scoring_type: ScoringType | None = None
@@ -89,7 +88,7 @@ class RoundReadWithData(RoundRead):
     hole_results: list[HoleResultReadWithHole] | None = None
 
 
-class RoundSummary(SQLModel):
+class RoundSummary(APLGLBase):
     round_id: int | None = None
     date_played: datetime | None = None
     round_type: RoundType | None = None
@@ -112,7 +111,7 @@ class RoundSummaryHandicap(RoundSummary):
     is_counting: bool
 
 
-class RoundResults(SQLModel):
+class RoundResults(APLGLBase):
     round_id: int
     match_id: int | None = None
     team_id: int | None = None
@@ -142,18 +141,18 @@ class RoundResults(SQLModel):
     holes: list[HoleResultData] = Field(default_factory=list)
 
 
-class RoundResultsWithCount(SQLModel):
+class RoundResultsWithCount(APLGLBase):
     num_rounds: int
     rounds: list[RoundResults]
 
 
-class RoundValidationRequest(BaseModel):
+class RoundValidationRequest(APLGLBase):
     date_played: Union[datetime, date]
     course_handicap: int
     holes: list[HoleResultValidationRequest] = Field(default_factory=list)
 
 
-class RoundValidationResponse(BaseModel):
+class RoundValidationResponse(APLGLBase):
     date_played: Union[datetime, date]
     course_handicap: int
     holes: list[HoleResultValidationResponse] = Field(default_factory=list)
@@ -167,7 +166,7 @@ class RoundSubmissionRequest(RoundValidationRequest):
     scoring_type: ScoringType
 
 
-class RoundSubmissionResponse(BaseModel):
+class RoundSubmissionResponse(APLGLBase):
     round_id: int
     golfer_id: int
     tee_id: int

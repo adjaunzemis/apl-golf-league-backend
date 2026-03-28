@@ -1,11 +1,10 @@
 from datetime import datetime
 
-from pydantic.v1 import BaseModel
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-from app.models.base import DisplayEnum
+from app.models.base import APLGLBase, DisplayEnum
 from app.models.team_golfer_link import TeamRole
 
 
@@ -16,7 +15,7 @@ class GolferAffiliation(DisplayEnum):
     NON_APL_EMPLOYEE = "NON_APL_EMPLOYEE"
 
 
-class GolferBase(SQLModel):
+class GolferBase(APLGLBase):
     name: str
     affiliation: GolferAffiliation | None = Field(
         sa_column=Column(
@@ -43,7 +42,7 @@ class GolferCreate(GolferBase):
     pass
 
 
-class GolferUpdate(SQLModel):
+class GolferUpdate(APLGLBase):
     name: str | None = None
     affiliation: GolferAffiliation | None = None
     email: str | None = None
@@ -56,7 +55,7 @@ class GolferRead(GolferBase):
     id: int
 
 
-class GolferStatisticsOLD(SQLModel):
+class GolferStatisticsOLD(APLGLBase):
     num_rounds: int = 0
     num_holes: int = 0
     avg_gross_score: float = 0
@@ -71,7 +70,7 @@ class GolferStatisticsOLD(SQLModel):
     num_others: int = 0
 
 
-class GolferStatisticsScoring(BaseModel):
+class GolferStatisticsScoring(APLGLBase):
     avg_score: float = 0
     avg_score_to_par: float = 0
     avg_par_3_score: float = 0
@@ -87,7 +86,7 @@ class GolferStatisticsScoring(BaseModel):
     num_others: int = 0
 
 
-class GolferStatistics(BaseModel):
+class GolferStatistics(APLGLBase):
     golfer_id: int
     golfer_name: str
     num_rounds: int = 0
@@ -104,7 +103,7 @@ class TeamGolferStatistics(GolferStatistics):
     golfer_team_role: TeamRole
 
 
-class GolferTeamData(BaseModel):
+class GolferTeamData(APLGLBase):
     golfer_id: int
     golfer_name: str
     golfer_role: TeamRole

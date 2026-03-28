@@ -1,14 +1,15 @@
 from typing import List, Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBase
 from app.models.flight_team_link import FlightTeamLink
 from app.models.golfer import Golfer
 from app.models.team_golfer_link import TeamGolferLink
 from app.models.tournament_team_link import TournamentTeamLink
 
 
-class TeamBase(SQLModel):
+class TeamBase(APLGLBase):
     name: str
 
 
@@ -27,7 +28,7 @@ class TeamCreate(TeamBase):
     pass
 
 
-class TeamUpdate(SQLModel):
+class TeamUpdate(APLGLBase):
     name: Optional[str] = None
 
 

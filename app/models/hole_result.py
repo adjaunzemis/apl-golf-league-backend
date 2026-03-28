@@ -1,12 +1,12 @@
 from typing import Optional
 
-from pydantic.v1 import BaseModel
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBase
 from app.models.hole import Hole, HoleRead
 
 
-class HoleResultBase(SQLModel):
+class HoleResultBase(APLGLBase):
     round_id: int = Field(foreign_key="round.id")
     hole_id: int = Field(foreign_key="hole.id")
     handicap_strokes: int
@@ -25,7 +25,7 @@ class HoleResultCreate(HoleResultBase):
     pass
 
 
-class HoleResultUpdate(SQLModel):
+class HoleResultUpdate(APLGLBase):
     round_id: Optional[int] = None
     hole_id: Optional[int] = None
     handicap_strokes: Optional[int] = None
@@ -43,7 +43,7 @@ class HoleResultReadWithHole(HoleResultRead):
 
 
 # TODO: Remove this custom data class, consolidate with HoleResultRead*
-class HoleResultData(SQLModel):
+class HoleResultData(APLGLBase):
     hole_result_id: int
     round_id: int
     hole_id: int
@@ -57,7 +57,7 @@ class HoleResultData(SQLModel):
     net_score: int = None
 
 
-class HoleResultValidationRequest(BaseModel):
+class HoleResultValidationRequest(APLGLBase):
     number: int
     par: int
     stroke_index: int

@@ -1,9 +1,11 @@
 from typing import Optional
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
+
+from app.models.base import APLGLBase
 
 
-class RoundGolferLink(SQLModel, table=True):
+class RoundGolferLink(APLGLBase, table=True):
     round_id: int = Field(default=None, foreign_key="round.id", primary_key=True)
     golfer_id: int = Field(default=None, foreign_key="golfer.id", primary_key=True)
     playing_handicap: Optional[int] = None

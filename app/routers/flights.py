@@ -2,12 +2,12 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi.exceptions import HTTPException
-from pydantic.v1 import BaseModel
 from sqlmodel import Session, select
 
 from app.database import flights as db_flights
 from app.database import teams as db_teams
 from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.base import APLGLBase
 from app.models.flight import Flight, FlightCreate, FlightInfo, FlightRead
 from app.models.flight_team_link import FlightTeamLink
 from app.models.match import MatchSummary
@@ -243,7 +243,7 @@ async def get_statistics(
     return db_flights.get_statistics(session=session, flight_id=flight_id)
 
 
-class MoveTeamRequest(BaseModel):
+class MoveTeamRequest(APLGLBase):
     team_id: int
     flight_id: int
 

@@ -1,9 +1,10 @@
 import csv
 from typing import List, Optional
 
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 from app.dependencies import get_settings
+from app.models.base import APLGLBase
 from app.models.course import Course
 from app.models.division import Division
 from app.models.golfer import Golfer
@@ -17,7 +18,7 @@ from app.models.tournament_team_link import TournamentTeamLink
 from app.utilities.apl_handicap_system import APLHandicapSystem
 
 
-class HandicapIndexData(SQLModel):
+class HandicapIndexData(APLGLBase):
     active_date: str
     active_handicap_index: float = None
     active_rounds: Optional[List[RoundSummary]] = None

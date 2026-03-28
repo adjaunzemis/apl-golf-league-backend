@@ -1,11 +1,12 @@
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBase
 from app.models.division import Division
 from app.models.flight import Flight
 from app.models.golfer import Golfer
 
 
-class SubstituteBase(SQLModel):
+class SubstituteBase(APLGLBase):
     golfer_id: int = Field(foreign_key="golfer.id", primary_key=True)
     flight_id: int = Field(foreign_key="flight.id", primary_key=True)
     division_id: int = Field(foreign_key="division.id")
