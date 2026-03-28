@@ -19,7 +19,11 @@ from app.models.golfer import Golfer, GolferAffiliation
     ],
 )
 def test_create_golfer(
-    client_unauthorized: TestClient, name: str, affiliation: str, email: str, phone: str
+    client_unauthorized: TestClient,
+    name: str,
+    affiliation: GolferAffiliation,
+    email: str,
+    phone: str,
 ):
     response = client_unauthorized.post(
         "/golfers/",
@@ -29,7 +33,7 @@ def test_create_golfer(
 
     data = response.json()
     assert data["name"] == name
-    assert data["affiliation"] == affiliation
+    assert data["affiliation"] == affiliation.label
     assert data["email"] == email
     assert data["phone"] == phone
     assert data["id"] is not None
@@ -133,7 +137,7 @@ def test_update_golfer(session: Session, client_admin: TestClient):
 
     data = response.json()
     assert data["name"] == "New Golfer"
-    assert data["affiliation"] == golfer.affiliation
+    assert data["affiliation"] == golfer.affiliation.label
     assert data["id"] == golfer.id
 
 
