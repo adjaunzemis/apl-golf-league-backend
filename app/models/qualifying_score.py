@@ -1,16 +1,16 @@
 from datetime import datetime
-from enum import StrEnum
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.golfer import Golfer
 from app.models.tee import TeeGender
 
 
-class QualifyingScoreType(StrEnum):
+class QualifyingScoreType(DisplayEnum):
     QUALIFYING_ROUND = "QUALIFYING_ROUND"
     OFFICIAL_HANDICAP_INDEX = "OFFICIAL_HANDICAP_INDEX"
 

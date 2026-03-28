@@ -1,14 +1,14 @@
-from enum import StrEnum
 from typing import List, Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.hole import Hole, HoleRead
 
 
-class TeeGender(StrEnum):
+class TeeGender(DisplayEnum):
     MENS = "MENS"
     LADIES = "LADIES"
 

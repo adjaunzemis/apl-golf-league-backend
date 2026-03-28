@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from enum import StrEnum
 from typing import Union
 
 from pydantic.v1 import BaseModel
@@ -7,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.golfer import Golfer, GolferRead
 from app.models.hole_result import (
     HoleResult,
@@ -20,14 +20,14 @@ from app.models.round_golfer_link import RoundGolferLink
 from app.models.tee import Tee, TeeGender, TeeRead
 
 
-class RoundType(StrEnum):
+class RoundType(DisplayEnum):
     QUALIFYING = "QUALIFYING"
     FLIGHT = "FLIGHT"
     PLAYOFF = "PLAYOFF"
     TOURNAMENT = "TOURNAMENT"
 
 
-class ScoringType(StrEnum):
+class ScoringType(DisplayEnum):
     INDIVIDUAL = "INDIVIDUAL"
     GROUP = "GROUP"
 

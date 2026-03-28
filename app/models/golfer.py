@@ -1,15 +1,15 @@
 from datetime import datetime
-from enum import StrEnum
 
 from pydantic.v1 import BaseModel
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.team_golfer_link import TeamRole
 
 
-class GolferAffiliation(StrEnum):
+class GolferAffiliation(DisplayEnum):
     APL_EMPLOYEE = "APL_EMPLOYEE"
     APL_RETIREE = "APL_RETIREE"
     APL_FAMILY = "APL_FAMILY"

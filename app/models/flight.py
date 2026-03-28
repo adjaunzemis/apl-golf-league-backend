@@ -1,11 +1,11 @@
 from datetime import datetime
-from enum import StrEnum
 
 from pydantic.v1 import BaseModel
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.flight_division_link import FlightDivisionLink
@@ -122,7 +122,7 @@ class FlightStatistics(BaseModel):
     golfers: list[FlightGolferStatistics] = Field(default_factory=list)
 
 
-class FlightFreeAgentCadence(StrEnum):
+class FlightFreeAgentCadence(DisplayEnum):
     WEEKLY = "WEEKLY"
     BIWEEKLY = "BIWEEKLY"
     MONTHLY = "MONTHLY"

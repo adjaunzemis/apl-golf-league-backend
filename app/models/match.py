@@ -1,8 +1,7 @@
-from enum import StrEnum
-
 from pydantic.v1 import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.base import DisplayEnum
 from app.models.flight import Flight, FlightRead
 from app.models.match_round_link import MatchRoundLink
 from app.models.round import (
@@ -81,7 +80,7 @@ class MatchDataWithCount(BaseModel):
     matches: list[MatchData]
 
 
-class MatchHoleWinner(StrEnum):
+class MatchHoleWinner(DisplayEnum):
     """Indicates which team won the hole during the match."""
 
     HOME = "HOME"

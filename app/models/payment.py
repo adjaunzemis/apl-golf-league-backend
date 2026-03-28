@@ -1,22 +1,23 @@
-from enum import StrEnum
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
+from app.models.base import DisplayEnum
 
-class LeagueDuesType(StrEnum):
+
+class LeagueDuesType(DisplayEnum):
     FLIGHT_DUES = "FLIGHT_DUES"
     TOURNAMENT_ONLY_DUES = "TOURNAMENT_ONLY_DUES"
 
 
-class TournamentEntryFeeType(StrEnum):
+class TournamentEntryFeeType(DisplayEnum):
     MEMBER_FEE = "MEMBER_FEE"
     NON_MEMBER_FEE = "NON_MEMBER_FEE"
 
 
-class PaymentMethod(StrEnum):
+class PaymentMethod(DisplayEnum):
     CASH_OR_CHECK = "CASH_OR_CHECK"
     PAYPAL = "PAYPAL"
     EXEMPT = "EXEMPT"

@@ -1,12 +1,13 @@
-from enum import StrEnum
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
+from app.models.base import DisplayEnum
 
-class Committee(StrEnum):
+
+class Committee(DisplayEnum):
     LEAGUE = "LEAGUE"
     EXECUTIVE = "EXECUTIVE"
     RULES = "RULES"

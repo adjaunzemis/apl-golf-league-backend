@@ -1,11 +1,11 @@
-from enum import StrEnum
-
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
+from app.models.base import DisplayEnum
 
-class TeamRole(StrEnum):
+
+class TeamRole(DisplayEnum):
     CAPTAIN = "CAPTAIN"
     PLAYER = "PLAYER"
     SUBSTITUTE = "SUBSTITUTE"
