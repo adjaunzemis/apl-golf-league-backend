@@ -1,11 +1,13 @@
 from enum import StrEnum
-from typing import get_args, get_origin
+from typing import ClassVar, get_args, get_origin
 
 from pydantic.v1 import validator
 from sqlmodel import SQLModel
 
 
 class DisplayEnum(StrEnum):
+    _custom_labels: ClassVar[dict[str, str]]
+
     @classmethod
     def from_any(cls, value):
         if isinstance(value, cls):
@@ -18,20 +20,32 @@ class DisplayEnum(StrEnum):
             except ValueError:
                 pass
 
-            # Human-readable → enum
-            normalized = value.upper().replace(" ", "_")
-            return cls(normalized)
+            # Normalize human → enum
+            normalized = cls._normalize(value)
 
-        raise TypeError(f"Invalid value for {cls.__name__}: {value}")
+            for member in cls:
+                if normalized == member.value:
+                    return member
+
+        raise ValueError(f"Invalid value '{value}' for {cls.__name__}")
+
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return (
+            value.upper()
+            .replace("'", "")  # remove apostrophes
+            .replace("-", "_")  # hyphen → underscore
+            .replace(" ", "_")  # spaces → underscore
+        )
 
     @property
     def label(self) -> str:
-        return (
-            self.value.replace("_", " ")
-            .title()
-            .replace("Apl", "APL")
-            .replace("Non ", "Non-")
-        )
+        if self in self._custom_labels:
+            return self._custom_labels[self]
+        return self.value.replace("_", " ").title()
+
+
+DisplayEnum._custom_labels = {}  # initialize custom labels, empty by default
 
 
 class APLGLBaseModel(SQLModel):

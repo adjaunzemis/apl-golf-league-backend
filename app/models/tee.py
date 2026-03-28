@@ -13,6 +13,12 @@ class TeeGender(DisplayEnum):
     LADIES = "LADIES"
 
 
+TeeGender._custom_labels = {  # initialize custom labels
+    TeeGender.MENS: "Men's",
+    TeeGender.LADIES: "Ladies'",
+}
+
+
 class TeeBase(APLGLBaseModel):
     name: str
     gender: TeeGender = Field(
