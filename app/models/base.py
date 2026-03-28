@@ -1,6 +1,8 @@
 from enum import StrEnum
+from typing import get_args, get_origin
 
-from pydantic.v1 import BaseModel, validator
+from pydantic.v1 import validator
+from sqlmodel import SQLModel
 
 
 class DisplayEnum(StrEnum):
@@ -27,13 +29,10 @@ class DisplayEnum(StrEnum):
         return self.value.replace("_", " ").title().replace("Apl", "APL")
 
 
-class APLGLBase(BaseModel):
+class APLGLBase(SQLModel):
     class Config:
-        use_enum_values = False  # keep enum objects, not raw strings
-        json_encoders = {
-            DisplayEnum: lambda v: v.label
-            # DisplayEnum: lambda v: {"value": v.value, "label": v.label} # future upgrade path
-        }
+        use_enum_values = False
+        json_encoders = {DisplayEnum: lambda v: v.label}
 
     @validator("*", pre=True)
     def parse_enums(cls, v, field):
@@ -42,10 +41,17 @@ class APLGLBase(BaseModel):
 
         field_type = field.type_
 
+        # Direct enum
         try:
             if issubclass(field_type, DisplayEnum):
                 return field_type.from_any(v)
         except TypeError:
-            pass  # field_type might not be a class (e.g. Union, List, etc.)
+            pass
+
+        # List[Enum]
+        if get_origin(field.outer_type_) is list:
+            inner = get_args(field.outer_type_)[0]
+            if isinstance(v, list) and issubclass(inner, DisplayEnum):
+                return [inner.from_any(i) for i in v]
 
         return v
