@@ -26,7 +26,12 @@ class DisplayEnum(StrEnum):
 
     @property
     def label(self) -> str:
-        return self.value.replace("_", " ").title().replace("Apl", "APL")
+        return (
+            self.value.replace("_", " ")
+            .title()
+            .replace("Apl", "APL")
+            .replace("Non ", "Non-")
+        )
 
 
 class APLGLBaseModel(SQLModel):
