@@ -36,7 +36,7 @@ router = APIRouter(prefix="/teams", tags=["Teams"])
 class TeamGolferSignupData(SQLModel):
     golfer_id: int
     golfer_name: str
-    role: str
+    role: TeamRole
     division_id: int
 
 
