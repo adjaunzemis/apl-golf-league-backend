@@ -4,7 +4,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 import pytz
-from dotenv import load_dotenv
 from sqlmodel import Session, create_engine, select
 
 from app.dependencies import get_settings
@@ -83,8 +82,8 @@ def compile_season_statistics(*, session: Session, year: int):
     """ """
     print(f"Compiling season statistics for {year}")
 
-    SEASON_START_DATE = datetime(year, 4, 24, tzinfo=pytz.UTC)  # TODO: un-hardcode
-    PLAYOFFS_START_DATE = datetime(year, 9, 4, tzinfo=pytz.UTC)  # TODO: un-hardcode
+    SEASON_START_DATE = datetime(year, 4, 21, tzinfo=pytz.UTC)  # TODO: un-hardcode
+    PLAYOFFS_START_DATE = datetime(year, 9, 1, tzinfo=pytz.UTC)  # TODO: un-hardcode
     rounds = {}
     stats = {}
 
@@ -245,18 +244,19 @@ def compile_season_statistics(*, session: Session, year: int):
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    # TODO: Make this a runnable task
+
+    YEAR = 2025  # TODO: un-hardcode year for analysis
 
     settings = get_settings()
 
-    DB_URL = "localhost"  # TODO: replace with external database url!
+    DB_URL = settings.apl_golf_league_api_url
     DB_PORT = (
         settings.apl_golf_league_api_database_port_external
     )  # NOTE: using external port, not running from inside container
     db_uri = f"postgresql://{settings.apl_golf_league_api_database_user}:{settings.apl_golf_league_api_database_password}@{DB_URL}:{DB_PORT}/{settings.apl_golf_league_api_database_name}"
 
     engine = create_engine(db_uri, echo=False)
-    YEAR = 2023  # TODO: un-hardcode year for analysis
 
     with Session(engine) as session:
         compile_season_statistics(session=session, year=YEAR)
