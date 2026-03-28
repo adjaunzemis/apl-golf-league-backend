@@ -18,7 +18,7 @@ Defines architecture, conventions, and expectations for backend development.
 
 - Use RESTful conventions
 - Keep endpoints thin (no business logic)
-- Use Pydantic/SQLModel schemas for all inputs/outputs
+- Use APLGLBaseModel (a subclass of Pydantic/SQLModel) schemas for all inputs/outputs
 - Always use explicit typing
 
 ### Endpoints
