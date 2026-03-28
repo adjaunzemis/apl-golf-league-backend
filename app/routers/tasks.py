@@ -6,8 +6,8 @@ import datetime
 from typing import List, Optional
 
 import fastapi
-from pydantic.v1 import BaseModel
 
+from app.models.base import APLGLBaseModel
 from app.scheduler import app as app_scheduler
 
 session = app_scheduler.session
@@ -15,7 +15,7 @@ session = app_scheduler.session
 router = fastapi.APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-class Task(BaseModel):
+class Task(APLGLBaseModel):
     name: str
     description: Optional[str]
     priority: int

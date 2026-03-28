@@ -4,9 +4,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
+from app.models.base import APLGLBaseModel
 from app.models.flight import Flight
 from app.models.golfer import Golfer
 from app.models.hole import Hole
@@ -34,12 +35,12 @@ from app.utilities.apl_handicap_system import APLHandicapSystem
 router = APIRouter(prefix="/matches", tags=["Matches"])
 
 
-class HoleResultInput(SQLModel):
+class HoleResultInput(APLGLBaseModel):
     hole_id: int
     gross_score: int
 
 
-class RoundInput(SQLModel):
+class RoundInput(APLGLBaseModel):
     team_id: int
     golfer_id: int
     golfer_playing_handicap: int
@@ -49,7 +50,7 @@ class RoundInput(SQLModel):
     holes: List[HoleResultInput]
 
 
-class MatchInput(SQLModel):
+class MatchInput(APLGLBaseModel):
     match_id: int
     flight_id: int
     week: int

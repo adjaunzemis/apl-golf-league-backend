@@ -3,12 +3,13 @@ from typing import Any, Dict, List
 
 from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic.v1 import BaseModel, EmailStr
+from pydantic.v1 import EmailStr
 
 from app.dependencies import get_settings
+from app.models.base import APLGLBaseModel
 
 
-class EmailSchema(BaseModel):
+class EmailSchema(APLGLBaseModel):
     subject: str
     to_addresses: List[EmailStr]
     body: Dict[str, Any]

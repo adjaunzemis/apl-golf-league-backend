@@ -1,22 +1,29 @@
 from datetime import datetime
-from enum import StrEnum
 
-from pydantic.v1 import BaseModel
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.team_golfer_link import TeamRole
 
 
-class GolferAffiliation(StrEnum):
-    APL_EMPLOYEE = "APL Employee"
-    APL_RETIREE = "APL Retiree"
-    APL_FAMILY = "APL Family"
-    NON_APL_EMPLOYEE = "Non-APL Employee"
+class GolferAffiliation(DisplayEnum):
+    APL_EMPLOYEE = "APL_EMPLOYEE"
+    APL_RETIREE = "APL_RETIREE"
+    APL_FAMILY = "APL_FAMILY"
+    NON_APL_EMPLOYEE = "NON_APL_EMPLOYEE"
 
 
-class GolferBase(SQLModel):
+GolferAffiliation._custom_labels = {  # initialize custom labels
+    GolferAffiliation.APL_EMPLOYEE: "APL Employee",
+    GolferAffiliation.APL_RETIREE: "APL Retiree",
+    GolferAffiliation.APL_FAMILY: "APL Family",
+    GolferAffiliation.NON_APL_EMPLOYEE: "Non-APL Employee",
+}
+
+
+class GolferBase(APLGLBaseModel):
     name: str
     affiliation: GolferAffiliation | None = Field(
         sa_column=Column(
@@ -43,7 +50,7 @@ class GolferCreate(GolferBase):
     pass
 
 
-class GolferUpdate(SQLModel):
+class GolferUpdate(APLGLBaseModel):
     name: str | None = None
     affiliation: GolferAffiliation | None = None
     email: str | None = None
@@ -56,7 +63,7 @@ class GolferRead(GolferBase):
     id: int
 
 
-class GolferStatisticsOLD(SQLModel):
+class GolferStatisticsOLD(APLGLBaseModel):
     num_rounds: int = 0
     num_holes: int = 0
     avg_gross_score: float = 0
@@ -71,7 +78,7 @@ class GolferStatisticsOLD(SQLModel):
     num_others: int = 0
 
 
-class GolferStatisticsScoring(BaseModel):
+class GolferStatisticsScoring(APLGLBaseModel):
     avg_score: float = 0
     avg_score_to_par: float = 0
     avg_par_3_score: float = 0
@@ -87,7 +94,7 @@ class GolferStatisticsScoring(BaseModel):
     num_others: int = 0
 
 
-class GolferStatistics(BaseModel):
+class GolferStatistics(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     num_rounds: int = 0
@@ -104,7 +111,7 @@ class TeamGolferStatistics(GolferStatistics):
     golfer_team_role: TeamRole
 
 
-class GolferTeamData(BaseModel):
+class GolferTeamData(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     golfer_role: TeamRole

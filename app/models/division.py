@@ -1,13 +1,14 @@
 from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBaseModel
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.tee import TeeGender
 from app.models.tournament_division_link import TournamentDivisionLink
 
 
-class DivisionBase(SQLModel):
+class DivisionBase(APLGLBaseModel):
     name: str
     gender: TeeGender
     primary_tee_id: int = Field(default=None, foreign_key="tee.id")
@@ -29,7 +30,7 @@ class DivisionCreate(DivisionBase):
     pass
 
 
-class DivisionUpdate(SQLModel):
+class DivisionUpdate(APLGLBaseModel):
     name: Optional[str] = None
     gender: Optional[TeeGender] = None
     primary_tee_id: Optional[int] = None
@@ -40,12 +41,12 @@ class DivisionRead(DivisionBase):
     id: int
 
 
-class DivisionData(SQLModel):
+class DivisionData(APLGLBaseModel):
     id: int
     flight_id: int = None
     tournament_id: int = None
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int
@@ -62,11 +63,11 @@ class DivisionData(SQLModel):
     secondary_tee_slope: int
 
 
-class FlightDivision(SQLModel):
+class FlightDivision(APLGLBaseModel):
     id: int
     flight_id: int
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int
@@ -83,11 +84,11 @@ class FlightDivision(SQLModel):
     secondary_tee_slope: int
 
 
-class TournamentDivision(SQLModel):
+class TournamentDivision(APLGLBaseModel):
     id: int
     tournament_id: int
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int

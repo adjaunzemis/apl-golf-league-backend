@@ -1,12 +1,13 @@
-from enum import StrEnum
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
+
+from app.models.base import APLGLBaseModel, DisplayEnum
 
 
-class Committee(StrEnum):
+class Committee(DisplayEnum):
     LEAGUE = "LEAGUE"
     EXECUTIVE = "EXECUTIVE"
     RULES = "RULES"
@@ -16,7 +17,7 @@ class Committee(StrEnum):
     PLANNING = "PLANNING"
 
 
-class OfficerBase(SQLModel):
+class OfficerBase(APLGLBaseModel):
     name: str
     year: int
     committee: Committee = Field(
@@ -43,7 +44,7 @@ class OfficerCreate(OfficerBase):
     pass
 
 
-class OfficerUpdate(SQLModel):
+class OfficerUpdate(APLGLBaseModel):
     name: Optional[str] = None
     year: Optional[int] = None
     committee: Optional[Committee] = None

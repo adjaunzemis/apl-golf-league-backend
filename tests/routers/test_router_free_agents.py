@@ -69,7 +69,7 @@ def test_get_flight_free_agents_for_flight_empty(
 def test_create_flight_free_agent(session_with_flight_free_agents, client_unauthorized):
     response = client_unauthorized.post(
         "/free-agents/flight/",
-        json={"flight_id": 1, "golfer_id": 5, "division_id": 1, "cadence": "Weekly"},
+        json={"flight_id": 1, "golfer_id": 5, "division_id": 1, "cadence": "WEEKLY"},
     )
     assert response.status_code == status.HTTP_200_OK
     free_agent_api = FlightFreeAgent(**response.json())
@@ -83,7 +83,7 @@ def test_create_flight_free_agent_duplicate(
 ):
     response = client_admin.post(
         "/free-agents/flight/",
-        json={"flight_id": 1, "golfer_id": 1, "division_id": 1, "cadence": "Weekly"},
+        json={"flight_id": 1, "golfer_id": 1, "division_id": 1, "cadence": "WEEKLY"},
     )
     assert response.status_code == status.HTTP_409_CONFLICT
 

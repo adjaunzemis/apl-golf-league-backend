@@ -1,29 +1,30 @@
-from enum import StrEnum
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
+
+from app.models.base import APLGLBaseModel, DisplayEnum
 
 
-class LeagueDuesType(StrEnum):
-    FLIGHT_DUES = "Flight Dues"
-    TOURNAMENT_ONLY_DUES = "Tournament-Only Dues"
+class LeagueDuesType(DisplayEnum):
+    FLIGHT_DUES = "FLIGHT_DUES"
+    TOURNAMENT_ONLY_DUES = "TOURNAMENT_ONLY_DUES"
 
 
-class TournamentEntryFeeType(StrEnum):
-    MEMBER_FEE = "Member Fee"
-    NON_MEMBER_FEE = "Non-Member Fee"
+class TournamentEntryFeeType(DisplayEnum):
+    MEMBER_FEE = "MEMBER_FEE"
+    NON_MEMBER_FEE = "NON_MEMBER_FEE"
 
 
-class PaymentMethod(StrEnum):
-    CASH_OR_CHECK = "Cash or Check"
-    PAYPAL = "PayPal"
-    EXEMPT = "Exempt"
-    LINKED = "Linked"
+class PaymentMethod(DisplayEnum):
+    CASH_OR_CHECK = "CASH_OR_CHECK"
+    PAYPAL = "PAYPAL"
+    EXEMPT = "EXEMPT"
+    LINKED = "LINKED"
 
 
-class LeagueDuesBase(SQLModel):
+class LeagueDuesBase(APLGLBaseModel):
     year: int
     type: LeagueDuesType = Field(
         sa_column=Column(
@@ -47,7 +48,7 @@ class LeagueDuesCreate(LeagueDuesBase):
     pass
 
 
-class LeagueDuesUpdate(SQLModel):
+class LeagueDuesUpdate(APLGLBaseModel):
     year: Optional[int] = None
     type: Optional[LeagueDuesType] = None
     amount: Optional[float] = None
@@ -57,7 +58,7 @@ class LeagueDuesRead(LeagueDuesBase):
     id: int
 
 
-class LeagueDuesPaymentBase(SQLModel):
+class LeagueDuesPaymentBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     type: LeagueDuesType
@@ -87,7 +88,7 @@ class LeagueDuesPaymentCreate(LeagueDuesPaymentBase):
     pass
 
 
-class LeagueDuesPaymentUpdate(SQLModel):
+class LeagueDuesPaymentUpdate(APLGLBaseModel):
     golfer_id: Optional[int] = None
     year: Optional[int] = None
     type: Optional[LeagueDuesType] = None
@@ -103,7 +104,7 @@ class LeagueDuesPaymentRead(LeagueDuesPaymentBase):
     id: int
 
 
-class TournamentEntryFeePaymentBase(SQLModel):
+class TournamentEntryFeePaymentBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     year: int
     tournament_id: int = Field(default=None, foreign_key="tournament.id")

@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBaseModel
 from app.models.golfer import Golfer
 from app.models.round import Round, RoundType, ScoringType
 
 
-class HandicapIndexBase(SQLModel):
+class HandicapIndexBase(APLGLBaseModel):
     golfer_id: int = Field(default=None, foreign_key="golfer.id")
     round_id: int = Field(default=None, foreign_key="round.id")
     date_posted: datetime = Field(default=None)
@@ -25,7 +26,7 @@ class HandicapIndexCreate(HandicapIndexBase):
     pass
 
 
-class HandicapIndexUpdate(SQLModel):
+class HandicapIndexUpdate(APLGLBaseModel):
     golfer_id: Optional[int] = None
     round_id: Optional[int] = None
     date_posted: Optional[datetime] = None
@@ -37,7 +38,7 @@ class HandicapIndexRead(HandicapIndexBase):
     id: int
 
 
-class ScoringRecordRound(SQLModel):
+class ScoringRecordRound(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     round_id: int | None

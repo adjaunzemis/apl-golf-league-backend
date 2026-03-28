@@ -261,7 +261,7 @@ def test_read_tee(session: Session, client_unauthorized: TestClient):
 
     data = response.json()
     assert data["name"] == tee.name
-    assert data["gender"] == tee.gender
+    assert data["gender"] == tee.gender.label
     assert data["rating"] == tee.rating
     assert data["slope"] == tee.slope
     assert data["color"] == tee.color
@@ -332,7 +332,7 @@ def test_read_course_with_data(session: Session, client_unauthorized: TestClient
 
     tee_data = track_data["tees"][0]
     assert tee_data["name"] == tee.name
-    assert tee_data["gender"] == tee.gender
+    assert tee_data["gender"] == tee.gender.label
     assert tee_data["rating"] == tee.rating
     assert tee_data["slope"] == tee.slope
     assert tee_data["color"] == tee.color

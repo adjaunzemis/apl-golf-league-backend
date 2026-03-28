@@ -19,7 +19,11 @@ from app.models.golfer import Golfer, GolferAffiliation
     ],
 )
 def test_create_golfer(
-    client_unauthorized: TestClient, name: str, affiliation: str, email: str, phone: str
+    client_unauthorized: TestClient,
+    name: str,
+    affiliation: GolferAffiliation,
+    email: str,
+    phone: str,
 ):
     response = client_unauthorized.post(
         "/golfers/",
@@ -29,7 +33,7 @@ def test_create_golfer(
 
     data = response.json()
     assert data["name"] == name
-    assert data["affiliation"] == affiliation
+    assert data["affiliation"] == affiliation.label
     assert data["email"] == email
     assert data["phone"] == phone
     assert data["id"] is not None
@@ -51,7 +55,11 @@ def test_create_golfer(
     ],
 )
 def test_create_golfer_invalid(
-    client_unauthorized: TestClient, name: str, affiliation: str, email: str, phone: str
+    client_unauthorized: TestClient,
+    name: str,
+    affiliation: GolferAffiliation,
+    email: str,
+    phone: str,
 ):
     response = client_unauthorized.post(
         "/golfers/",
@@ -76,7 +84,7 @@ def test_create_golfer_incomplete(client_unauthorized: TestClient):
     ],
 )
 def test_create_golfer_invalid(
-    client_unauthorized: TestClient, name: str, affiliation: str
+    client_unauthorized: TestClient, name: str, affiliation: GolferAffiliation
 ):
     response = client_unauthorized.post(
         "/golfers/", json={"name": name, "affiliation": affiliation}
@@ -101,7 +109,7 @@ def test_read_golfers(session: Session, client_unauthorized: TestClient):
     assert len(data["golfers"]) == len(golfers)
     for dIdx in range(len(data["golfers"])):
         assert data["golfers"][dIdx]["name"] == golfers[dIdx].name
-        assert data["golfers"][dIdx]["affiliation"] == golfers[dIdx].affiliation
+        assert data["golfers"][dIdx]["affiliation"] == golfers[dIdx].affiliation.label
         assert data["golfers"][dIdx]["golfer_id"] == golfers[dIdx].id
 
 
@@ -117,7 +125,7 @@ def test_read_golfer(session: Session, client_unauthorized: TestClient):
 
     data = response.json()
     assert data["name"] == golfer.name
-    assert data["affiliation"] == golfer.affiliation
+    assert data["affiliation"] == golfer.affiliation.label
     assert data["golfer_id"] == golfer.id
 
 
@@ -133,7 +141,7 @@ def test_update_golfer(session: Session, client_admin: TestClient):
 
     data = response.json()
     assert data["name"] == "New Golfer"
-    assert data["affiliation"] == golfer.affiliation
+    assert data["affiliation"] == golfer.affiliation.label
     assert data["id"] == golfer.id
 
 

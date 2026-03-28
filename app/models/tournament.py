@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from pydantic.v1 import BaseModel
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBaseModel
 from app.models.course import Course
 from app.models.division import Division, DivisionCreate
 from app.models.golfer import Golfer, TeamGolferStatistics
@@ -12,7 +12,7 @@ from app.models.tournament_division_link import TournamentDivisionLink
 from app.models.tournament_team_link import TournamentTeamLink
 
 
-class TournamentBase(SQLModel):
+class TournamentBase(APLGLBaseModel):
     name: str
     year: int
     date: datetime | None = None
@@ -48,7 +48,7 @@ class TournamentCreate(TournamentBase):
     divisions: list[DivisionCreate] | None = None
 
 
-class TournamentUpdate(SQLModel):
+class TournamentUpdate(APLGLBaseModel):
     name: str | None = None
     year: int | None = None
     date: datetime | None = None
@@ -77,7 +77,7 @@ class TournamentRead(TournamentBase):
     # course: Optional[Course] = None # TODO: try using this instead of joins in query?
 
 
-class TournamentInfo(SQLModel):
+class TournamentInfo(APLGLBaseModel):
     id: int
     year: int
     name: str
@@ -103,7 +103,7 @@ class TournamentInfo(SQLModel):
     num_teams: int
 
 
-class TournamentTeamGolfer(BaseModel):
+class TournamentTeamGolfer(APLGLBaseModel):
     golfer_id: int
     name: str
     role: TeamRole
@@ -112,14 +112,14 @@ class TournamentTeamGolfer(BaseModel):
     email: str | None
 
 
-class TournamentTeam(BaseModel):
+class TournamentTeam(APLGLBaseModel):
     tournament_id: int
     team_id: int
     name: str
     golfers: list[TournamentTeamGolfer] = Field(default_factory=list)
 
 
-class TournamentStandingsTeam(BaseModel):
+class TournamentStandingsTeam(APLGLBaseModel):
     team_id: int
     team_name: str
     gross_score: int
@@ -127,7 +127,7 @@ class TournamentStandingsTeam(BaseModel):
     position: str = ""
 
 
-class TournamentStandingsGolfer(BaseModel):
+class TournamentStandingsGolfer(APLGLBaseModel):
     golfer_id: int
     golfer_name: str
     # division_name: str # TODO: pass this through tournament round data
@@ -137,18 +137,18 @@ class TournamentStandingsGolfer(BaseModel):
     position: str = ""
 
 
-class TournamentStandings(BaseModel):
+class TournamentStandings(APLGLBaseModel):
     tournament_id: int
     teams: list[TournamentStandingsTeam] = Field(default_factory=list)
     golfers: list[TournamentStandingsGolfer] = Field(default_factory=list)
 
 
-class TournamentStatistics(BaseModel):
+class TournamentStatistics(APLGLBaseModel):
     tournament_id: int
     golfers: list[TeamGolferStatistics] = Field(default_factory=list)
 
 
-class TournamentFreeAgentBase(SQLModel):
+class TournamentFreeAgentBase(APLGLBaseModel):
     golfer_id: int = Field(foreign_key="golfer.id", primary_key=True)
     tournament_id: int = Field(foreign_key="tournament.id", primary_key=True)
     division_id: int = Field(foreign_key="division.id")

@@ -1,19 +1,25 @@
-from enum import StrEnum
 from typing import List, Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from app.models.base import APLGLBaseModel, DisplayEnum
 from app.models.hole import Hole, HoleRead
 
 
-class TeeGender(StrEnum):
-    MENS = "Men's"
-    LADIES = "Ladies'"
+class TeeGender(DisplayEnum):
+    MENS = "MENS"
+    LADIES = "LADIES"
 
 
-class TeeBase(SQLModel):
+TeeGender._custom_labels = {  # initialize custom labels
+    TeeGender.MENS: "Men's",
+    TeeGender.LADIES: "Ladies'",
+}
+
+
+class TeeBase(APLGLBaseModel):
     name: str
     gender: TeeGender = Field(
         sa_column=Column(
@@ -46,7 +52,7 @@ class TeeCreate(TeeBase):
     pass
 
 
-class TeeUpdate(SQLModel):
+class TeeUpdate(APLGLBaseModel):
     name: Optional[str] = None
     gender: Optional[TeeGender] = None
     rating: Optional[float] = None

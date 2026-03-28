@@ -14,8 +14,8 @@ def test_update_tournament_divisions_sync(client_admin: TestClient, session: Ses
         "date": "2025-05-01T08:00:00",
         "course_id": 1,
         "divisions": [
-            {"name": "Div A", "gender": "Men's", "primary_tee_id": 1},
-            {"name": "Div B", "gender": "Men's", "primary_tee_id": 1},
+            {"name": "Div A", "gender": "MENS", "primary_tee_id": 1},
+            {"name": "Div B", "gender": "MENS", "primary_tee_id": 1},
         ],
         "secretary": "Sec",
     }
@@ -48,10 +48,10 @@ def test_update_tournament_divisions_sync(client_admin: TestClient, session: Ses
             {
                 "id": div_b_id,
                 "name": "Div B Updated",
-                "gender": "Men's",
+                "gender": "MENS",
                 "primary_tee_id": 1,
             },
-            {"name": "Div C", "gender": "Men's", "primary_tee_id": 1},
+            {"name": "Div C", "gender": "MENS", "primary_tee_id": 1},
         ],
         "secretary": "Sec",
     }

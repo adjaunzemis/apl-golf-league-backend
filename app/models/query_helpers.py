@@ -2,14 +2,15 @@ from datetime import date as dt_date
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import aliased
-from sqlmodel import Field, Session, SQLModel, desc, or_, select
+from sqlmodel import Field, Session, desc, or_, select
 
+from app.models.base import APLGLBaseModel
 from app.models.course import Course
 from app.models.division import Division, DivisionData
 from app.models.flight import Flight
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import Golfer, GolferStatisticsOLD
+from app.models.golfer import Golfer, GolferAffiliation, GolferStatisticsOLD
 from app.models.handicap import HandicapIndex
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult, HoleResultData
@@ -31,7 +32,7 @@ from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 # TODO: Move custom route data models elsewhere
-class HandicapIndexData(SQLModel):
+class HandicapIndexData(APLGLBaseModel):
     active_date: str
     active_handicap_index: float | None = None
     active_rounds: list[RoundSummary] = Field(default_factory=list)
@@ -39,7 +40,7 @@ class HandicapIndexData(SQLModel):
     pending_rounds: list[RoundSummary] = Field(default_factory=list)
 
 
-class GolferTeamData(SQLModel):
+class GolferTeamData(APLGLBaseModel):
     team_id: int
     golfer_id: int
     golfer_name: str
@@ -58,22 +59,22 @@ class GolferTeamData(SQLModel):
     handicap_index_updated: str | None = None
 
 
-class GolferData(SQLModel):
+class GolferData(APLGLBaseModel):
     golfer_id: int
     name: str
-    affiliation: str | None = None
+    affiliation: GolferAffiliation | None = None
     email: str | None = None
     phone: str | None = None
     member_since: int = None
     handicap_index_data: HandicapIndexData = None
 
 
-class GolferDataWithCount(SQLModel):
+class GolferDataWithCount(APLGLBaseModel):
     num_golfers: int
     golfers: list[GolferData]
 
 
-class FlightTeamWithMatchData(SQLModel):
+class FlightTeamWithMatchData(APLGLBaseModel):
     id: int
     name: str
     year: int
@@ -96,7 +97,7 @@ class TournamentTeamData(TeamRead):
     rounds: list[RoundResults] | None = Field(default_factory=list)
 
 
-class FlightData(SQLModel):
+class FlightData(APLGLBaseModel):
     id: int
     year: int
     name: str
@@ -117,7 +118,7 @@ class FlightData(SQLModel):
     matches: list[MatchSummary] = Field(default_factory=list)
 
 
-class TournamentData(SQLModel):
+class TournamentData(APLGLBaseModel):
     id: int
     year: int
     name: str
