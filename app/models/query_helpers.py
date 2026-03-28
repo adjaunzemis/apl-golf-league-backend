@@ -10,7 +10,7 @@ from app.models.division import Division, DivisionData
 from app.models.flight import Flight
 from app.models.flight_division_link import FlightDivisionLink
 from app.models.flight_team_link import FlightTeamLink
-from app.models.golfer import Golfer, GolferStatisticsOLD
+from app.models.golfer import Golfer, GolferAffiliation, GolferStatisticsOLD
 from app.models.handicap import HandicapIndex
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult, HoleResultData
@@ -62,7 +62,7 @@ class GolferTeamData(APLGLBaseModel):
 class GolferData(APLGLBaseModel):
     golfer_id: int
     name: str
-    affiliation: str | None = None
+    affiliation: GolferAffiliation | None = None
     email: str | None = None
     phone: str | None = None
     member_since: int = None

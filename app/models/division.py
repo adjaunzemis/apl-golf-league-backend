@@ -46,7 +46,7 @@ class DivisionData(APLGLBaseModel):
     flight_id: int = None
     tournament_id: int = None
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int
@@ -67,7 +67,7 @@ class FlightDivision(APLGLBaseModel):
     id: int
     flight_id: int
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int
@@ -88,7 +88,7 @@ class TournamentDivision(APLGLBaseModel):
     id: int
     tournament_id: int
     name: str
-    gender: str
+    gender: TeeGender
     primary_track_id: int
     primary_track_name: str
     primary_tee_id: int

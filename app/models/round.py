@@ -129,7 +129,7 @@ class RoundResults(APLGLBaseModel):
     track_name: str
     tee_id: int
     tee_name: str
-    tee_gender: str
+    tee_gender: TeeGender
     tee_par: int
     tee_rating: float
     tee_slope: float
