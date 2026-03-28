@@ -12,13 +12,11 @@ class TeeGender(DisplayEnum):
     MENS = "MENS"
     LADIES = "LADIES"
 
-    @property
-    def label(self) -> str:
-        if self == self.MENS:
-            return "Men's"
-        if self == self.LADIES:
-            return "Ladies'"
-        return super().label
+
+TeeGender._custom_labels = {  # initialize custom labels
+    TeeGender.MENS: "Men's",
+    TeeGender.LADIES: "Ladies'",
+}
 
 
 class TeeBase(APLGLBaseModel):

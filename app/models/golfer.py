@@ -19,7 +19,7 @@ GolferAffiliation._custom_labels = {  # initialize custom labels
     GolferAffiliation.APL_EMPLOYEE: "APL Employee",
     GolferAffiliation.APL_RETIREE: "APL Retiree",
     GolferAffiliation.APL_FAMILY: "APL Family",
-    # GolferAffiliation.NON_APL_EMPLOYEE: "Non-APL Employee",
+    GolferAffiliation.NON_APL_EMPLOYEE: "Non-APL Employee",
 }
 
 
