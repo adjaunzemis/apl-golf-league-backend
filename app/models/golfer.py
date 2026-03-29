@@ -15,7 +15,7 @@ class GolferAffiliation(DisplayEnum):
     NON_APL_EMPLOYEE = "NON_APL_EMPLOYEE"
 
 
-GolferAffiliation._custom_labels = {  # initialize custom labels
+GolferAffiliation._custom_labels = {
     GolferAffiliation.APL_EMPLOYEE: "APL Employee",
     GolferAffiliation.APL_RETIREE: "APL Retiree",
     GolferAffiliation.APL_FAMILY: "APL Family",
