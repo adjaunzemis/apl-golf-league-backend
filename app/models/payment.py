@@ -12,9 +12,19 @@ class LeagueDuesType(DisplayEnum):
     TOURNAMENT_ONLY_DUES = "TOURNAMENT_ONLY_DUES"
 
 
+LeagueDuesType._custom_labels = {
+    LeagueDuesType.TOURNAMENT_ONLY_DUES: "Tournament-Only Dues"
+}
+
+
 class TournamentEntryFeeType(DisplayEnum):
     MEMBER_FEE = "MEMBER_FEE"
     NON_MEMBER_FEE = "NON_MEMBER_FEE"
+
+
+TournamentEntryFeeType._custom_labels = {
+    TournamentEntryFeeType.NON_MEMBER_FEE: "Non-Member Fee"
+}
 
 
 class PaymentMethod(DisplayEnum):
@@ -22,6 +32,9 @@ class PaymentMethod(DisplayEnum):
     PAYPAL = "PAYPAL"
     EXEMPT = "EXEMPT"
     LINKED = "LINKED"
+
+
+PaymentMethod._custom_labels = {PaymentMethod.PAYPAL: "PayPal"}
 
 
 class LeagueDuesBase(APLGLBaseModel):
