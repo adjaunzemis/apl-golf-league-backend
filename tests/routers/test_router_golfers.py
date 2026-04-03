@@ -92,6 +92,40 @@ def test_create_golfer_invalid(
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
+@pytest.mark.parametrize(
+    "first_name, second_name",
+    [
+        ("Duplicate Golfer", "Duplicate Golfer"),
+        ("Duplicate Golfer", "duplicate golfer"),
+        ("Duplicate Golfer", "  DUPLICATE   GOLFER  "),
+    ],
+)
+def test_create_golfer_duplicate_name(
+    session: Session, client_unauthorized: TestClient, first_name: str, second_name: str
+):
+    # First golfer
+    email1 = "first@example.com"
+    affiliation = GolferAffiliation.APL_EMPLOYEE
+
+    response = client_unauthorized.post(
+        "/golfers/",
+        json={"name": first_name, "affiliation": affiliation, "email": email1},
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    # Attempt to create another with same (or similar normalized) name
+    response = client_unauthorized.post(
+        "/golfers/",
+        json={
+            "name": second_name,
+            "affiliation": affiliation,
+            "email": "second@example.com",
+        },
+    )
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert "already exists" in response.json()["detail"]
+
+
 def test_read_golfers(session: Session, client_unauthorized: TestClient):
     golfers = [
         Golfer(name="Test Golfer A", affiliation=GolferAffiliation.NON_APL_EMPLOYEE),

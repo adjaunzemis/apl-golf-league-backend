@@ -1,3 +1,7 @@
+import re
+from dataclasses import dataclass
+
+from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
 from app.models.golfer import Golfer, GolferStatistics
@@ -5,6 +9,104 @@ from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.round import Round, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
+
+
+@dataclass
+class NameMatch:
+    id: int
+    name: str
+    score: float
+
+
+@dataclass
+class NameCheckResult:
+    is_unique: bool
+    exact_matches: list[NameMatch]
+    possible_matches: list[NameMatch]
+
+
+def normalize_name(name: str) -> str:
+    """Trim, collapse whitespace, lowercase."""
+    return re.sub(r"\s+", " ", name.strip()).lower()
+
+
+def find_exact_matches(session: Session, normalized_name: str) -> list[Golfer]:
+    """
+    Finds exact matches using Python-side normalization for consistency.
+    For large datasets, this could be pushed into SQL instead.
+    """
+    golfers = session.exec(select(Golfer)).all()
+
+    return [g for g in golfers if normalize_name(g.name) == normalized_name]
+
+
+def score_name(a: str, b: str) -> float:
+    """
+    Returns similarity score in [0, 1].
+    token_sort_ratio handles word order differences well.
+    """
+    return fuzz.token_sort_ratio(a, b) / 100.0
+
+
+def find_fuzzy_matches(
+    input_name: str, candidates: list[Golfer], threshold: float = 0.7, limit: int = 5
+) -> list[NameMatch]:
+    norm_input = normalize_name(input_name)
+
+    results: list[NameMatch] = []
+
+    for g in candidates:
+        norm_candidate = normalize_name(g.name)
+        score = score_name(norm_input, norm_candidate)
+
+        if score >= threshold:
+            results.append(NameMatch(id=g.id, name=g.name, score=score))
+
+    return sorted(results, key=lambda x: x.score, reverse=True)[:limit]
+
+
+def check_golfer_name_uniqueness(
+    session: Session,
+    name: str,
+    fuzzy_threshold: float = 0.7,
+    hard_block_threshold: float = 0.85,
+) -> NameCheckResult:
+    """
+    Checks whether a golfer name is unique.
+
+    Behavior:
+    - Exact normalized match → NOT unique (hard fail)
+    - High fuzzy match (>= hard_block_threshold) → NOT unique
+    - Medium fuzzy match → allowed but flagged
+    """
+
+    normalized = normalize_name(name)
+
+    # 1. Exact match check
+    exact = find_exact_matches(session, normalized)
+    exact_matches = [NameMatch(id=g.id, name=g.name, score=1.0) for g in exact]
+
+    if exact_matches:
+        return NameCheckResult(
+            is_unique=False, exact_matches=exact_matches, possible_matches=[]
+        )
+
+    # 2. Fuzzy match check
+    candidates = list(session.exec(select(Golfer)).all())
+
+    fuzzy_matches = find_fuzzy_matches(name, candidates, threshold=fuzzy_threshold)
+
+    # 3. Decision logic
+    is_unique = True
+
+    if fuzzy_matches:
+        top_score = fuzzy_matches[0].score
+        if top_score >= hard_block_threshold:
+            is_unique = False
+
+    return NameCheckResult(
+        is_unique=is_unique, exact_matches=[], possible_matches=fuzzy_matches
+    )
 
 
 def get_statistics(
