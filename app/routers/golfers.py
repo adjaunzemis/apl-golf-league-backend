@@ -84,8 +84,15 @@ async def create_golfer(
             detail=f"Invalid golfer registration, email is required",
         )
 
-    # Convert name to title case
     golfer.name = golfer.name.title()
+    name_check = db_golfers.check_golfer_name_uniqueness(
+        session=session, name=golfer.name, hard_block_threshold=0.9
+    )
+    if not name_check.is_unique:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Invalid golfer registration, golfer with name '{golfer.name}' already exists",
+        )
 
     # Add to database
     golfer_db = Golfer.model_validate(golfer)
