@@ -48,9 +48,7 @@ def _get_project_info():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_sql_db_and_tables()
-    create_nosql_db_and_collections()
     yield
-    close_nosql_db()
 
 
 app = FastAPI(
