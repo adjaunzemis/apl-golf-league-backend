@@ -6,19 +6,12 @@ import logging
 import tomllib
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Dict, List
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
 from starlette.responses import JSONResponse
 
-from app.dependencies import (
-    close_nosql_db,
-    create_nosql_db_and_collections,
-    create_sql_db_and_tables,
-    get_nosql_db_client,
-)
+from app.dependencies import create_sql_db_and_tables
 from app.routers import (
     courses,
     flights,
@@ -55,9 +48,7 @@ def _get_project_info():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_sql_db_and_tables()
-    create_nosql_db_and_collections()
     yield
-    close_nosql_db()
 
 
 app = FastAPI(
@@ -147,14 +138,6 @@ app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
 app.include_router(payments.router, dependencies=[Depends(log_request_data)])
-
-
-@app.get("/mongodb_test/", response_model=List[Dict])
-async def test_nosql_db(*, client: MongoClient = Depends(get_nosql_db_client)):
-    DB_NAME = "TestDB"
-    return list(
-        client[DB_NAME]["TestCollection"].find(projection={"_id": False}, limit=100)
-    )
 
 
 @app.post("/email_test/")

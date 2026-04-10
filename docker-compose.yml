@@ -21,12 +21,9 @@ services:
     networks:
       - jaunzenet-traefik
       - jaunzenet-postgresql
-      - jaunzenet-mongodb
 
 networks:
   jaunzenet-traefik:
     external: true
   jaunzenet-postgresql:
-    external: true
-  jaunzenet-mongodb:
     external: true
