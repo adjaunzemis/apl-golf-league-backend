@@ -42,7 +42,7 @@ class HoleResultInput(APLGLBaseModel):
 
 class RoundInput(APLGLBaseModel):
     team_id: int
-    golfer_id: int  # TODO: Remove, deprecated
+    golfer_id: int | None = None  # TODO: Remove, deprecated
     golfer_ids: list[int]
     golfer_playing_handicap: int
     course_id: int
