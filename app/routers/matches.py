@@ -1,9 +1,9 @@
 from datetime import datetime
 from http import HTTPStatus
-from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
+from pydantic.v1 import root_validator
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
@@ -42,12 +42,24 @@ class HoleResultInput(APLGLBaseModel):
 
 class RoundInput(APLGLBaseModel):
     team_id: int
-    golfer_id: int
+    golfer_id: int | None = None  # TODO: Remove, deprecated
+    golfer_ids: list[int]
     golfer_playing_handicap: int
     course_id: int
     track_id: int
     tee_id: int
-    holes: List[HoleResultInput]
+    holes: list[HoleResultInput]
+
+    @root_validator(pre=True)
+    def set_golfer_ids(cls, values):  # TODO: Remove with deprecated field
+        if "golfer_ids" in values:
+            if "golfer_id" in values:
+                raise ValueError("Cannot provide both golfer_id and golfer_ids")
+            return values
+        if "golfer_id" not in values:
+            raise ValueError("Must provide either golfer_id or golfer_ids")
+        values["golfer_ids"] = [values["golfer_id"]]
+        return values
 
 
 class MatchInput(APLGLBaseModel):
@@ -57,7 +69,7 @@ class MatchInput(APLGLBaseModel):
     date_played: datetime
     home_score: float
     away_score: float
-    rounds: List[RoundInput]
+    rounds: list[RoundInput]
 
 
 @router.get("/", response_model=MatchDataWithCount)
@@ -185,12 +197,15 @@ async def post_match_rounds(
         )
 
     for round_input in match_input.rounds:
-        golfer_db = session.get(Golfer, round_input.golfer_id)
-        if not golfer_db:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f"Golfer (id={round_input.golfer_id}) not found",
-            )
+        golfers_db = []
+        for golfer_id in round_input.golfer_ids:
+            golfer_db = session.get(Golfer, golfer_id)
+            if not golfer_db:
+                raise HTTPException(
+                    status_code=HTTPStatus.NOT_FOUND,
+                    detail=f"Golfer (id={golfer_id}) not found",
+                )
+            golfers_db.append(golfer_db)
 
         team_db = session.get(Team, round_input.team_id)
         if not team_db:
@@ -224,12 +239,13 @@ async def post_match_rounds(
         session.commit()
         session.refresh(match_round_link_db)
 
-        round_golfer_link_db = RoundGolferLink(
-            round_id=round_db.id,
-            golfer_id=golfer_db.id,
-            playing_handicap=round_input.golfer_playing_handicap,
-        )
-        session.add(round_golfer_link_db)
+        for golfer_db in golfers_db:
+            round_golfer_link_db = RoundGolferLink(
+                round_id=round_db.id,
+                golfer_id=golfer_db.id,
+                playing_handicap=round_input.golfer_playing_handicap,
+            )
+            session.add(round_golfer_link_db)
         session.commit()
         session.refresh(round_golfer_link_db)
 
