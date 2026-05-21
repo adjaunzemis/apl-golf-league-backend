@@ -1,9 +1,9 @@
 from datetime import datetime
 from http import HTTPStatus
-from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
+from pydantic.v1 import root_validator
 from sqlmodel import Session, select
 
 from app.dependencies import get_current_active_user, get_sql_db_session
@@ -42,12 +42,24 @@ class HoleResultInput(APLGLBaseModel):
 
 class RoundInput(APLGLBaseModel):
     team_id: int
-    golfer_ids: List[int]
+    golfer_id: int  # TODO: Remove, deprecated
+    golfer_ids: list[int]
     golfer_playing_handicap: int
     course_id: int
     track_id: int
     tee_id: int
-    holes: List[HoleResultInput]
+    holes: list[HoleResultInput]
+
+    @root_validator(pre=True)
+    def set_golfer_ids(cls, values):  # TODO: Remove with deprecated field
+        if "golfer_ids" in values:
+            if "golfer_id" in values:
+                raise ValueError("Cannot provide both golfer_id and golfer_ids")
+            return values
+        if "golfer_id" not in values:
+            raise ValueError("Must provide either golfer_id or golfer_ids")
+        values["golfer_ids"] = [values["golfer_id"]]
+        return values
 
 
 class MatchInput(APLGLBaseModel):
@@ -57,7 +69,7 @@ class MatchInput(APLGLBaseModel):
     date_played: datetime
     home_score: float
     away_score: float
-    rounds: List[RoundInput]
+    rounds: list[RoundInput]
 
 
 @router.get("/", response_model=MatchDataWithCount)
