@@ -46,8 +46,8 @@ router = APIRouter(prefix="/rounds", tags=["Rounds"])
 async def read_rounds(
     *,
     session: Session = Depends(get_sql_db_session),
-    golfer_id: int = Query(default=None, ge=0),
-    year: int = Query(default=None, ge=2000),
+    golfer_id: int | None = Query(default=None, ge=0),
+    year: int | None = Query(default=None, ge=2000),
 ):
     # Process query parameters to limit results
     if golfer_id:  # limit by golfer
@@ -93,7 +93,10 @@ async def read_rounds(
                 .where(TournamentRoundLink.round_id == round_id)
             ).one()
             round_data += get_tournament_rounds(
-                session=session, tournament_id=tournament_id, round_ids=(round_id,)
+                session=session,
+                tournament_id=tournament_id,
+                round_ids=(round_id,),
+                golfer_id=golfer_id,
             )
     return round_data
 

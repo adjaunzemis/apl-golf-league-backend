@@ -1022,7 +1022,10 @@ def get_rounds_for_tournament(
 
 
 def get_tournament_rounds(
-    session: Session, tournament_id: int, round_ids: list[int]
+    session: Session,
+    tournament_id: int,
+    round_ids: list[int],
+    golfer_id: int | None = None,
 ) -> list[RoundResults]:
     """
     Retrieves round data for the given tournament-play rounds, including results.
@@ -1035,6 +1038,8 @@ def get_tournament_rounds(
         tournament identifier
     round_ids : list of integers
         round identifiers
+    golfer_id : int, optional
+        golfer identifier
 
     Returns
     -------
@@ -1042,7 +1047,7 @@ def get_tournament_rounds(
         round results for the given rounds
 
     """
-    round_query_data = session.exec(
+    query = (
         select(Round, RoundGolferLink, Golfer, TeamGolferLink, Team, Course, Track, Tee)
         .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
         .join(Golfer, onclause=Golfer.id == RoundGolferLink.golfer_id)
@@ -1055,7 +1060,11 @@ def get_tournament_rounds(
         .join(Course)
         .where(Round.id.in_(round_ids))
         .where(TournamentTeamLink.tournament_id == tournament_id)
-    ).all()
+    )
+    if golfer_id is not None:
+        query = query.where(RoundGolferLink.golfer_id == golfer_id)
+
+    round_query_data = session.exec(query).all()
     round_data = [
         RoundResults(
             round_id=round.id,
