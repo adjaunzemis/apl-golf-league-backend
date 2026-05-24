@@ -1062,7 +1062,7 @@ def get_tournament_rounds(
         .where(TournamentTeamLink.tournament_id == tournament_id)
     )
     if golfer_id is not None:
-        query.where(RoundGolferLink.golfer_id == golfer_id)
+        query = query.where(RoundGolferLink.golfer_id == golfer_id)
 
     round_query_data = session.exec(query).all()
     round_data = [
