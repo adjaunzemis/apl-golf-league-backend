@@ -1,5 +1,5 @@
 # ---------- Builder ----------
-FROM python:3.12-slim@sha256:dd29372629eeba2dd003fd9e9d35a5b8236c44727875a0364254b5127af88e65 AS builder
+FROM python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a AS builder
 
 # Install build dependencies (only needed here)
 RUN apt-get update && apt-get install -y \
@@ -22,7 +22,7 @@ RUN sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 RUN uv sync --frozen
 
 # ---------- Runtime ----------
-FROM python:3.12-slim@sha256:dd29372629eeba2dd003fd9e9d35a5b8236c44727875a0364254b5127af88e65
+FROM python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
 
 # Install runtime dependency for postgres
 RUN apt-get update && apt-get install -y \
