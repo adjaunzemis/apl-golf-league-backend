@@ -6,7 +6,7 @@ authors = [
     { name = "Andris Jaunzemis", email = "adjaunzemis@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.17.2",
     "bcrypt>=4.0.1,<5.0",
@@ -45,7 +45,7 @@ dev-dependencies = [
 pythonpath = "."
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["F401", "I"]
