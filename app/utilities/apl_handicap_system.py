@@ -23,11 +23,15 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
     """
 
     def compute_hole_maximum_score(
-        self, par: int, stroke_index: int, course_handicap: int = None
+        self, par: int, stroke_index: int, course_handicap: int | None = None
     ) -> int:
-        whs = WorldHandicapSystem()
+        whs = WorldHandicapSystem()  # TODO: Don't re-instantiate WHS each call
         return whs.compute_hole_maximum_score(
-            par=par, stroke_index=stroke_index, course_handicap=course_handicap * 2
+            par=par,
+            stroke_index=stroke_index,
+            course_handicap=course_handicap * 2
+            if course_handicap is not None
+            else None,
         )
 
     def compute_hole_maximum_strokes(self, par: int, handicap_strokes: int) -> int:
