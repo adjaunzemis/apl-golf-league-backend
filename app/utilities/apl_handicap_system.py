@@ -33,24 +33,3 @@ class APLHandicapSystem(APLLegacyHandicapSystem):
             if course_handicap is not None
             else None,
         )
-
-    def compute_hole_maximum_strokes(self, par: int, handicap_strokes: int) -> int:
-        """
-        Computes maximum strokes allowed per league rules: double par + handicap strokes
-
-        This is separate from the maximum score for handicapping purposes.
-
-        Parameters
-        ----------
-        par : int
-            hole par
-        handicap_strokes : int
-            number of handicap strokes given to the relevant golfer on this hole
-
-        Returns
-        -------
-        max_strokes : int
-            maximum number of strokes allowed per league rules: double par + handicap strokes
-
-        """
-        return 2 * par + handicap_strokes
