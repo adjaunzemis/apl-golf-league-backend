@@ -1,17 +1,15 @@
-from dataclasses import dataclass
-
 from loguru import logger
 from sqlmodel import Session
 
 from app.database import courses as db_courses
 from app.database import tournaments as db_tournaments
+from app.models.base import APLGLBaseModel
 from app.models.tournament import Tournament
 from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
-@dataclass
-class TournamentGolferHandicapData:
+class TournamentGolferHandicapData(APLGLBaseModel):
     team: str
     golfer: str
     handicap_index: float | None
@@ -29,8 +27,7 @@ class TournamentGolferHandicapData:
     tournament_course_handicap: int
 
 
-@dataclass
-class TournamentTeamHandicapData:
+class TournamentTeamHandicapData(APLGLBaseModel):
     team: str
     tournament_team_handicap: int
 
