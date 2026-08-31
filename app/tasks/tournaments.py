@@ -87,10 +87,10 @@ def compile_tournament_handicaps(
         f"Compiling tournament handicap data for '{tournament.name}' ({tournament.year})"
     )
 
-    hcp_sys = get_handicap_system_for_tournament(tournament)
-    logger.info(f"Using handicap system: {type(hcp_sys)}")
+    ahs = get_handicap_system_for_tournament(tournament)
+    logger.info(f"Using handicap system: {type(ahs)}")
 
-    handicap_allowance = hcp_sys.get_handicap_allowance(
+    handicap_allowance = ahs.get_handicap_allowance(
         is_shamble=(not (tournament.shamble is None) and tournament.shamble)
     )
     logger.info(f"Handicap allowance: {handicap_allowance}")
@@ -133,13 +133,13 @@ def compile_tournament_handicaps(
                 ch_front = 0
                 ch_back = 0
             else:
-                ch_front = hcp_sys.compute_course_handicap(
+                ch_front = ahs.compute_course_handicap(
                     par=golfer_division.primary_tee_par,
                     rating=golfer_division.primary_tee_rating,
                     slope=golfer_division.primary_tee_slope,
                     handicap_index=golfer.handicap_index,
                 )
-                ch_back = hcp_sys.compute_course_handicap(
+                ch_back = ahs.compute_course_handicap(
                     par=golfer_division.secondary_tee_par,
                     rating=golfer_division.secondary_tee_rating,
                     slope=golfer_division.secondary_tee_slope,
