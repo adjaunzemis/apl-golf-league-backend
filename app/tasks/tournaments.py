@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from loguru import logger
 from sqlmodel import Session
 
 from app.database import courses as db_courses
 from app.database import tournaments as db_tournaments
 from app.models.base import APLGLBaseModel
+from app.models.query_helpers import get_handicap_index_data
 from app.models.tournament import Tournament
 from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
@@ -117,9 +120,19 @@ def compile_tournament_handicaps(
         logger.error(err_msg)
         raise ValueError(err_msg)
     teams_by_id = {team.team_id: team for team in teams}
+    logger.info(f"Processing handicaps for {len(teams)} teams")
+
+    if tournament.date is None:
+        err_msg = f"Cannot compute handicaps for tournament without date"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+    hcp_min_date = datetime(tournament.date.year - 2, 1, 1)
+    hcp_max_date = tournament.date
+    logger.info(
+        f"Computing handicap indexes using rounds from {hcp_min_date} to {hcp_max_date}"
+    )
 
     team_golfer_handicaps: dict[int, list[TournamentGolferHandicapData]] = {}
-    logger.info(f"Processing handicaps for {len(teams)} teams")
     for team in teams:
         logger.info(f"Team '{team.name}', {len(team.golfers)} golfers")
         team_golfer_handicaps[team.team_id] = []
@@ -127,9 +140,14 @@ def compile_tournament_handicaps(
         for golfer in team.golfers:
             golfer_division = divisions_by_name[golfer.division]
 
-            # TODO: Fix handicap validity date, get relevant handicap index
-            # NOTE: This will be much easier when historical handicap table is available
-            if golfer.handicap_index is None:
+            golfer_hcp_data = get_handicap_index_data(
+                session=session,
+                golfer_id=golfer.golfer_id,
+                min_date=hcp_min_date,
+                max_date=hcp_max_date,
+            )
+            golfer_hcp_index = golfer_hcp_data.active_handicap_index
+            if golfer_hcp_index is None:
                 ch_front = 0
                 ch_back = 0
             else:
@@ -137,20 +155,20 @@ def compile_tournament_handicaps(
                     par=golfer_division.primary_tee_par,
                     rating=golfer_division.primary_tee_rating,
                     slope=golfer_division.primary_tee_slope,
-                    handicap_index=golfer.handicap_index,
+                    handicap_index=golfer_hcp_index,
                 )
                 ch_back = ahs.compute_course_handicap(
                     par=golfer_division.secondary_tee_par,
                     rating=golfer_division.secondary_tee_rating,
                     slope=golfer_division.secondary_tee_slope,
-                    handicap_index=golfer.handicap_index,
+                    handicap_index=golfer_hcp_index,
                 )
             ch_tournament = round(handicap_allowance * (ch_front + ch_back))
 
             data = TournamentGolferHandicapData(
                 team=team.name,
                 golfer=golfer.name,
-                handicap_index=golfer.handicap_index,
+                handicap_index=golfer_hcp_index,
                 division=golfer.division,
                 front_tee=golfer_division.primary_tee_name,
                 front_par=golfer_division.primary_tee_par,
