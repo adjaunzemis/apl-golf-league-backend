@@ -116,7 +116,7 @@ def compile_tournament_handicaps(
         err_msg = f"Cannot find teams for tournament {tournament.name}"
         logger.error(err_msg)
         raise ValueError(err_msg)
-    teams_by_id = {team.id: team for team in teams}
+    teams_by_id = {team.team_id: team for team in teams}
 
     team_golfer_handicaps: dict[int, list[TournamentGolferHandicapData]] = {}
     logger.info(f"Processing handicaps for {len(teams)} teams")
