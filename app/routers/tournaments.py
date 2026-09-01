@@ -34,6 +34,7 @@ from app.models.tournament_team_link import TournamentTeamLink
 from app.models.user import User
 from app.routers.matches import RoundInput
 from app.routers.utilities import upsert_division
+from app.tasks.tournaments import compile_tournament_handicaps
 from app.utilities.apl_handicap_system import APLHandicapSystem
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
@@ -386,3 +387,12 @@ async def get_statistics(
     tournament_id: int = Path(..., description="Tournament identifier"),
 ):
     return db_tournaments.get_statistics(session=session, tournament_id=tournament_id)
+
+
+@router.get("/handicaps/{tournament_id}")
+async def get_handicaps(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    tournament_id: int = Path(..., description="Tournament identifier"),
+):
+    return compile_tournament_handicaps(session=session, tournament_id=tournament_id)

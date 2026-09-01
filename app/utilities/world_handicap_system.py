@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 
 from app.utilities.handicap_system import HandicapSystem
@@ -17,7 +15,11 @@ class WorldHandicapSystem(HandicapSystem):
     """
 
     def compute_hole_adjusted_gross_score(
-        self, par: int, stroke_index: int, score: int, course_handicap: int = None
+        self,
+        par: int,
+        stroke_index: int,
+        score: int,
+        course_handicap: int | None = None,
     ) -> int:
         # Reference: USGA 2020 RoH 3.1
         return min(
@@ -28,7 +30,7 @@ class WorldHandicapSystem(HandicapSystem):
         )
 
     def compute_hole_maximum_score(
-        self, par: int, stroke_index: int, course_handicap: int = None
+        self, par: int, stroke_index: int, course_handicap: int | None = None
     ) -> int:
         # Reference: USGA 2020 RoH 3.1
         if course_handicap is None:  # handicap not established
@@ -62,7 +64,7 @@ class WorldHandicapSystem(HandicapSystem):
         score_diff = (113 / slope) * (score - rating - playing_conditions_correction)
         return np.round(score_diff, 1)  # round to nearest tenth
 
-    def compute_handicap_index(self, record: List[float]) -> float:
+    def compute_handicap_index(self, record: list[float]) -> float:
         # Reference: USGA 2020 RoH 5.2, 5.3, 5.8
         record_sorted = np.sort(record)
         if len(record_sorted) < 4:
