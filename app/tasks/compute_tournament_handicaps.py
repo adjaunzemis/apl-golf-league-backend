@@ -75,7 +75,8 @@ if __name__ == "__main__":
     # TOURNAMENT_ID = 42  # Norbeck (2025)
     # TOURNAMENT_ID = 39  # Eagle's Nest (2025)
     # TOURNAMENT_ID = 41  # Banquet (2025)
-    TOURNAMENT_ID = 44  # Maryland National (2026)
+    # TOURNAMENT_ID = 44  # Maryland National (2026)
+    TOURNAMENT_ID = 47  # Montgomery CC (2026)
 
     print(f"Computing tournament (id={TOURNAMENT_ID}) handicaps")
 
@@ -169,11 +170,13 @@ if __name__ == "__main__":
             # NOTE: This will be much easier when historical handicap table is available
 
             # Compute course handicaps
+            tee_primary = division_tees[division_db.id]["primary"]
+            tee_secondary = division_tees[division_db.id]["secondary"]
+
             if golfer_db.handicap_index is None:
                 course_handicap_primary = 0
                 course_handicap_secondary = 0
             else:
-                tee_primary = division_tees[division_db.id]["primary"]
                 course_handicap_primary = ahs.compute_course_handicap(
                     par=tee_primary.par,
                     rating=tee_primary.rating,
@@ -181,7 +184,6 @@ if __name__ == "__main__":
                     handicap_index=golfer_db.handicap_index,
                 )
 
-                tee_secondary = division_tees[division_db.id]["secondary"]
                 course_handicap_secondary = ahs.compute_course_handicap(
                     par=tee_secondary.par,
                     rating=tee_secondary.rating,
