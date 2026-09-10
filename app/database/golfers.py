@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
-from app.models.golfer import Golfer, GolferStatistics
+from app.models.golfer import Golfer, GolferStatistics, GolferUpdate
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.round import Round, ScoringType
@@ -30,12 +30,16 @@ def normalize_name(name: str) -> str:
     return re.sub(r"\s+", " ", name.strip()).lower()
 
 
-def find_exact_matches(session: Session, normalized_name: str) -> list[Golfer]:
+def find_exact_matches(
+    session: Session, normalized_name: str, exclude_golfer_id: int | None = None
+) -> list[Golfer]:
     """
     Finds exact matches using Python-side normalization for consistency.
     For large datasets, this could be pushed into SQL instead.
     """
     golfers = session.exec(select(Golfer)).all()
+    if exclude_golfer_id is not None:
+        golfers = [g for g in golfers if g.id != exclude_golfer_id]
 
     return [g for g in golfers if normalize_name(g.name) == normalized_name]
 
@@ -70,6 +74,7 @@ def check_golfer_name_uniqueness(
     name: str,
     fuzzy_threshold: float = 0.7,
     hard_block_threshold: float = 0.85,
+    exclude_golfer_id: int | None = None,
 ) -> NameCheckResult:
     """
     Checks whether a golfer name is unique.
@@ -83,7 +88,7 @@ def check_golfer_name_uniqueness(
     normalized = normalize_name(name)
 
     # 1. Exact match check
-    exact = find_exact_matches(session, normalized)
+    exact = find_exact_matches(session, normalized, exclude_golfer_id=exclude_golfer_id)
     exact_matches = [NameMatch(id=g.id, name=g.name, score=1.0) for g in exact]
 
     if exact_matches:
@@ -93,6 +98,8 @@ def check_golfer_name_uniqueness(
 
     # 2. Fuzzy match check
     candidates = list(session.exec(select(Golfer)).all())
+    if exclude_golfer_id is not None:
+        candidates = [g for g in candidates if g.id != exclude_golfer_id]
 
     fuzzy_matches = find_fuzzy_matches(name, candidates, threshold=fuzzy_threshold)
 
@@ -231,3 +238,41 @@ def get_statistics(
         ) / golfer_stats.num_rounds
 
     return golfer_stats
+
+
+def get_by_id(session: Session, golfer_id: int) -> Golfer | None:
+    """Get a golfer by ID from the database."""
+    return session.get(Golfer, golfer_id)
+
+
+def update_golfer(
+    session: Session, golfer_id: int, golfer_update: GolferUpdate
+) -> Golfer | None:
+    """Update golfer information in the database.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    golfer_id : int
+        ID of golfer to update.
+    golfer_update : GolferUpdate
+        Data model containing fields to update.
+
+    Returns
+    -------
+    Golfer | None
+        Updated Golfer instance, or None if golfer not found.
+    """
+    golfer_db = get_by_id(session, golfer_id)
+    if golfer_db is None:
+        return None
+
+    update_data = golfer_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(golfer_db, key, value)
+
+    session.add(golfer_db)
+    session.commit()
+    session.refresh(golfer_db)
+    return golfer_db
