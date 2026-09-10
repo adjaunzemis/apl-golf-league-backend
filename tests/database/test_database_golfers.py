@@ -2,7 +2,12 @@ import pytest
 from sqlmodel import Session
 
 from app.database import golfers as db_golfers
-from app.models.golfer import Golfer, GolferAffiliation
+from app.models.golfer import (
+    Golfer,
+    GolferAffiliation,
+    GolferCreate,
+    GolferUpdate,
+)
 
 
 @pytest.mark.parametrize(
@@ -102,3 +107,155 @@ def test_check_golfer_name_uniqueness(
     assert result.is_unique == expected_unique
     assert len(result.exact_matches) == expected_exact_count
     assert len(result.possible_matches) == expected_fuzzy_count
+
+
+def test_check_golfer_name_uniqueness_exclude_id(session: Session):
+    golfer1 = Golfer(name="John Doe", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    golfer2 = Golfer(name="Jane Smith", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    session.add(golfer1)
+    session.add(golfer2)
+    session.commit()
+
+    # Exclude golfer1 itself: "John Doe" should be considered unique
+    result_self = db_golfers.check_golfer_name_uniqueness(
+        session, "John Doe", exclude_golfer_id=golfer1.id
+    )
+    assert result_self.is_unique is True
+    assert len(result_self.exact_matches) == 0
+
+    # Exclude golfer2: "John Doe" should still be flagged as non-unique
+    result_other = db_golfers.check_golfer_name_uniqueness(
+        session, "John Doe", exclude_golfer_id=golfer2.id
+    )
+    assert result_other.is_unique is False
+    assert len(result_other.exact_matches) == 1
+
+
+def test_get_by_id(session: Session):
+    golfer = Golfer(name="Tiger Woods", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    session.add(golfer)
+    session.commit()
+
+    fetched = db_golfers.get_by_id(session, golfer.id)
+    assert fetched is not None
+    assert fetched.id == golfer.id
+    assert fetched.name == "Tiger Woods"
+
+    non_existent = db_golfers.get_by_id(session, 99999)
+    assert non_existent is None
+
+
+def test_update_golfer_partial(session: Session):
+    golfer = Golfer(
+        name="Arnold Palmer",
+        affiliation=GolferAffiliation.APL_EMPLOYEE,
+        email="arnold@example.com",
+        phone="555-0100",
+    )
+    session.add(golfer)
+    session.commit()
+
+    # Update only email
+    update_data = GolferUpdate(email="arnold.new@example.com")
+    updated = db_golfers.update_golfer(session, golfer.id, update_data)
+    assert updated is not None
+    assert updated.email == "arnold.new@example.com"
+    assert updated.name == "Arnold Palmer"
+    assert updated.affiliation == GolferAffiliation.APL_EMPLOYEE
+    assert updated.phone == "555-0100"
+
+    # Verify persisted in database
+    refetched = db_golfers.get_by_id(session, golfer.id)
+    assert refetched.email == "arnold.new@example.com"
+
+
+def test_update_golfer_multiple_fields(session: Session):
+    golfer = Golfer(
+        name="Jack Nicklaus",
+        affiliation=GolferAffiliation.APL_EMPLOYEE,
+        email="jack@example.com",
+    )
+    session.add(golfer)
+    session.commit()
+
+    update_data = GolferUpdate(
+        name="Golden Bear",
+        affiliation=GolferAffiliation.APL_RETIREE,
+        phone="555-0200",
+        handicap_index=2.4,
+    )
+    updated = db_golfers.update_golfer(session, golfer.id, update_data)
+    assert updated is not None
+    assert updated.name == "Golden Bear"
+    assert updated.affiliation == GolferAffiliation.APL_RETIREE
+    assert updated.phone == "555-0200"
+    assert updated.handicap_index == 2.4
+    assert updated.email == "jack@example.com"
+
+
+def test_update_golfer_not_found(session: Session):
+    update_data = GolferUpdate(name="Non Existent")
+    result = db_golfers.update_golfer(session, 99999, update_data)
+    assert result is None
+
+
+def test_create_golfer(session: Session):
+    golfer_create = GolferCreate(
+        name="Ben Hogan",
+        affiliation=GolferAffiliation.APL_EMPLOYEE,
+        email="ben@example.com",
+        phone="555-0300",
+    )
+    golfer_db = db_golfers.create_golfer(session, golfer_create)
+    assert golfer_db.id is not None
+    assert golfer_db.name == "Ben Hogan"
+    assert golfer_db.email == "ben@example.com"
+    assert golfer_db.phone == "555-0300"
+
+    fetched = db_golfers.get_by_id(session, golfer_db.id)
+    assert fetched is not None
+    assert fetched.name == "Ben Hogan"
+
+
+def test_delete_golfer(session: Session):
+    golfer = Golfer(name="Sam Snead", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    session.add(golfer)
+    session.commit()
+
+    deleted = db_golfers.delete_golfer(session, golfer.id)
+    assert deleted is not None
+    assert deleted.id == golfer.id
+
+    # Confirm it's gone
+    assert db_golfers.get_by_id(session, golfer.id) is None
+
+    # Deleting nonexistent returns None
+    assert db_golfers.delete_golfer(session, 99999) is None
+
+
+def test_get_all(session: Session):
+    g1 = Golfer(name="Golfer One", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    g2 = Golfer(name="Golfer Two", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    session.add(g1)
+    session.add(g2)
+    session.commit()
+
+    all_golfers = db_golfers.get_all(session)
+    assert len(all_golfers) == 2
+    names = {g.name for g in all_golfers}
+    assert "Golfer One" in names
+    assert "Golfer Two" in names
+
+
+def test_get_ids(session: Session):
+    for i in range(5):
+        session.add(
+            Golfer(name=f"Golfer {i}", affiliation=GolferAffiliation.APL_EMPLOYEE)
+        )
+    session.commit()
+
+    ids = db_golfers.get_ids(session, offset=0, limit=3)
+    assert len(ids) == 3
+
+    ids_page2 = db_golfers.get_ids(session, offset=3, limit=3)
+    assert len(ids_page2) == 2

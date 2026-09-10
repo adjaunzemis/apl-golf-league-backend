@@ -1,14 +1,28 @@
 import re
 from dataclasses import dataclass
+from datetime import date as dt_date
+from datetime import datetime, timedelta
 
 from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
-from app.models.golfer import Golfer, GolferStatistics
+from app.models.division import Division
+from app.models.flight import Flight
+from app.models.flight_division_link import FlightDivisionLink
+from app.models.golfer import Golfer, GolferCreate, GolferStatistics, GolferUpdate
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
+from app.models.query_helpers import (
+    GolferData,
+    GolferTeamData,
+    get_handicap_index_data,
+)
 from app.models.round import Round, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
+from app.models.team import Team
+from app.models.team_golfer_link import TeamGolferLink
+from app.models.tournament import Tournament
+from app.models.tournament_division_link import TournamentDivisionLink
 
 
 @dataclass
@@ -30,12 +44,16 @@ def normalize_name(name: str) -> str:
     return re.sub(r"\s+", " ", name.strip()).lower()
 
 
-def find_exact_matches(session: Session, normalized_name: str) -> list[Golfer]:
+def find_exact_matches(
+    session: Session, normalized_name: str, exclude_golfer_id: int | None = None
+) -> list[Golfer]:
     """
     Finds exact matches using Python-side normalization for consistency.
     For large datasets, this could be pushed into SQL instead.
     """
     golfers = session.exec(select(Golfer)).all()
+    if exclude_golfer_id is not None:
+        golfers = [g for g in golfers if g.id != exclude_golfer_id]
 
     return [g for g in golfers if normalize_name(g.name) == normalized_name]
 
@@ -70,6 +88,7 @@ def check_golfer_name_uniqueness(
     name: str,
     fuzzy_threshold: float = 0.7,
     hard_block_threshold: float = 0.85,
+    exclude_golfer_id: int | None = None,
 ) -> NameCheckResult:
     """
     Checks whether a golfer name is unique.
@@ -83,7 +102,7 @@ def check_golfer_name_uniqueness(
     normalized = normalize_name(name)
 
     # 1. Exact match check
-    exact = find_exact_matches(session, normalized)
+    exact = find_exact_matches(session, normalized, exclude_golfer_id=exclude_golfer_id)
     exact_matches = [NameMatch(id=g.id, name=g.name, score=1.0) for g in exact]
 
     if exact_matches:
@@ -93,6 +112,8 @@ def check_golfer_name_uniqueness(
 
     # 2. Fuzzy match check
     candidates = list(session.exec(select(Golfer)).all())
+    if exclude_golfer_id is not None:
+        candidates = [g for g in candidates if g.id != exclude_golfer_id]
 
     fuzzy_matches = find_fuzzy_matches(name, candidates, threshold=fuzzy_threshold)
 
@@ -231,3 +252,232 @@ def get_statistics(
         ) / golfer_stats.num_rounds
 
     return golfer_stats
+
+
+def get_by_id(session: Session, golfer_id: int) -> Golfer | None:
+    """Get a golfer by ID from the database."""
+    return session.get(Golfer, golfer_id)
+
+
+def update_golfer(
+    session: Session, golfer_id: int, golfer_update: GolferUpdate
+) -> Golfer | None:
+    """Update golfer information in the database.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    golfer_id : int
+        ID of golfer to update.
+    golfer_update : GolferUpdate
+        Data model containing fields to update.
+
+    Returns
+    -------
+    Golfer | None
+        Updated Golfer instance, or None if golfer not found.
+    """
+    golfer_db = get_by_id(session, golfer_id)
+    if golfer_db is None:
+        return None
+
+    update_data = golfer_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(golfer_db, key, value)
+
+    session.add(golfer_db)
+    session.commit()
+    session.refresh(golfer_db)
+    return golfer_db
+
+
+def create_golfer(session: Session, golfer: GolferCreate) -> Golfer:
+    """Create a new golfer in the database."""
+    golfer_db = Golfer.model_validate(golfer)
+    session.add(golfer_db)
+    session.commit()
+    session.refresh(golfer_db)
+    return golfer_db
+
+
+def delete_golfer(session: Session, golfer_id: int) -> Golfer | None:
+    """Delete a golfer from the database by ID."""
+    golfer_db = get_by_id(session, golfer_id)
+    if golfer_db is None:
+        return None
+    session.delete(golfer_db)
+    session.commit()
+    return golfer_db
+
+
+def get_all(session: Session) -> list[Golfer]:
+    """Retrieve all golfers from the database."""
+    return list(session.exec(select(Golfer)).all())
+
+
+def get_ids(session: Session, offset: int = 0, limit: int = 100) -> list[int]:
+    """Retrieve paginated list of golfer IDs."""
+    return list(session.exec(select(Golfer.id).offset(offset).limit(limit)).all())
+
+
+def get_golfer_year_joined(session: Session, golfer_id: int) -> int | None:
+    """Determines year golfer joined league based on oldest round in database."""
+    oldest_round_date = session.exec(
+        select(Round.date_played)
+        .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
+        .where(RoundGolferLink.golfer_id == golfer_id)
+        .order_by(Round.date_played)
+        .limit(1)
+    ).one_or_none()
+    if not oldest_round_date:
+        return None
+    return oldest_round_date.year
+
+
+def get_golfers(
+    session: Session,
+    golfer_ids: list[int],
+    min_date: dt_date = datetime(datetime.today().year - 2, 1, 1).date(),
+    max_date: dt_date = datetime.today().date() + timedelta(days=1),
+    include_scoring_record: bool = False,
+    use_legacy_handicapping: bool = False,
+) -> list[GolferData]:
+    """Retrieves golfer data for the given golfers."""
+    golfer_query_data = session.exec(select(Golfer).where(Golfer.id.in_(golfer_ids)))
+    golfer_data = [
+        GolferData(
+            golfer_id=golfer.id,
+            name=golfer.name,
+            email=golfer.email,
+            phone=golfer.phone,
+            affiliation=golfer.affiliation,
+            member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
+            handicap_index_data=get_handicap_index_data(
+                session=session,
+                golfer_id=golfer.id,
+                min_date=min_date,
+                max_date=max_date,
+                limit=10,
+                include_rounds=include_scoring_record,
+                use_legacy_handicapping=use_legacy_handicapping,
+            ),
+        )
+        for golfer in golfer_query_data
+    ]
+    return golfer_data
+
+
+def get_golfer_team_data(
+    session: Session, golfer_ids: list[int], year: int | None = None
+) -> list[GolferTeamData]:
+    """Retrieves team golfer data for the given golfers."""
+    if year:  # filter results by year
+        flight_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Flight)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                FlightDivisionLink,
+                onclause=FlightDivisionLink.division_id == Division.id,
+            )
+            .join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id)
+            .where(Flight.year == year)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+        tournament_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Tournament)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                TournamentDivisionLink,
+                onclause=TournamentDivisionLink.division_id == Division.id,
+            )
+            .join(
+                Tournament,
+                onclause=TournamentDivisionLink.tournament_id == Tournament.id,
+            )
+            .where(Tournament.year == year)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+    else:  # no filtering
+        flight_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Flight)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                FlightDivisionLink,
+                onclause=FlightDivisionLink.division_id == Division.id,
+            )
+            .join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+        tournament_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Tournament)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                TournamentDivisionLink,
+                onclause=TournamentDivisionLink.division_id == Division.id,
+            )
+            .join(
+                Tournament,
+                onclause=TournamentDivisionLink.tournament_id == Tournament.id,
+            )
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+    golfer_team_data = [
+        GolferTeamData(
+            team_id=team_golfer_link.team_id,
+            golfer_id=golfer.id,
+            golfer_name=golfer.name,
+            golfer_email=golfer.email,
+            flight_id=flight.id,
+            flight_name=flight.name,
+            division_id=division.id,
+            division_name=division.name,
+            team_name=team.name,
+            role=team_golfer_link.role,
+            year=flight.year,
+            handicap_index=golfer.handicap_index,
+            handicap_index_updated=(
+                golfer.handicap_index_updated.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if golfer.handicap_index_updated
+                else None
+            ),
+        )
+        for team_golfer_link, team, golfer, division, flight in flight_team_data
+    ]
+    golfer_team_data.extend(
+        [
+            GolferTeamData(
+                team_id=team_golfer_link.team_id,
+                golfer_id=golfer.id,
+                golfer_name=golfer.name,
+                golfer_email=golfer.email,
+                tournament_id=tournament.id,
+                tournament_name=tournament.name,
+                division_id=division.id,
+                division_name=division.name,
+                team_name=team.name,
+                role=team_golfer_link.role,
+                year=tournament.year,
+                handicap_index=golfer.handicap_index,
+                handicap_index_updated=(
+                    golfer.handicap_index_updated.astimezone()
+                    .replace(microsecond=0)
+                    .isoformat()
+                    if golfer.handicap_index_updated
+                    else None
+                ),
+            )
+            for team_golfer_link, team, golfer, division, tournament in tournament_team_data
+        ]
+    )
+    return golfer_team_data
