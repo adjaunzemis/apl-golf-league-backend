@@ -192,6 +192,81 @@ def test_update_golfer_unauthorized(session: Session, client_unauthorized: TestC
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+def test_update_golfer_non_admin(session: Session, client_non_admin: TestClient):
+    golfer = Golfer(
+        name="Test Golfer A", affiliation=GolferAffiliation.NON_APL_EMPLOYEE
+    )
+    session.add(golfer)
+    session.commit()
+
+    response = client_non_admin.patch(
+        f"/golfers/{golfer.id}", json={"name": "New Golfer"}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "User not authorized to update golfers" in response.json()["detail"]
+
+
+def test_update_golfer_not_found(session: Session, client_admin: TestClient):
+    response = client_admin.patch("/golfers/99999", json={"name": "New Golfer"})
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Golfer not found"
+
+
+@pytest.mark.parametrize(
+    "invalid_name",
+    [
+        "A",
+        "This Name Is Definitely Way Too Long For The Golfer Limit",
+        "Invalid@Name!",
+    ],
+)
+def test_update_golfer_invalid_name(
+    session: Session, client_admin: TestClient, invalid_name: str
+):
+    golfer = Golfer(
+        name="Test Golfer A", affiliation=GolferAffiliation.NON_APL_EMPLOYEE
+    )
+    session.add(golfer)
+    session.commit()
+
+    response = client_admin.patch(f"/golfers/{golfer.id}", json={"name": invalid_name})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_update_golfer_duplicate_name(session: Session, client_admin: TestClient):
+    golfer1 = Golfer(name="Existing Golfer", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    golfer2 = Golfer(name="Another Golfer", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    session.add(golfer1)
+    session.add(golfer2)
+    session.commit()
+
+    response = client_admin.patch(
+        f"/golfers/{golfer2.id}", json={"name": "Existing Golfer"}
+    )
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert "already exists" in response.json()["detail"]
+
+
+def test_update_golfer_same_name_different_field(
+    session: Session, client_admin: TestClient
+):
+    golfer = Golfer(
+        name="Existing Golfer",
+        affiliation=GolferAffiliation.APL_EMPLOYEE,
+        email="old@example.com",
+    )
+    session.add(golfer)
+    session.commit()
+
+    response = client_admin.patch(
+        f"/golfers/{golfer.id}",
+        json={"name": "existing golfer", "email": "new@example.com"},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == "Existing Golfer"
+    assert response.json()["email"] == "new@example.com"
+
+
 def test_delete_golfer(session: Session, client_admin: TestClient):
     golfer = Golfer(
         name="Test Golfer A", affiliation=GolferAffiliation.NON_APL_EMPLOYEE
