@@ -26,11 +26,13 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
     """
 
     def compute_hole_maximum_score(
-        self, par: int, stroke_index: int, course_handicap: int = None
+        self, par: int, stroke_index: int, course_handicap: int | None = None
     ) -> int:
         # Reference: USGA Equitable Stroke Control (prior to 2020)
         # Note: This has already taken into account 9-hole course handicaps with 18-hole stroke indexes,
         # do not multiply course handicap by two!
+        if course_handicap is None:
+            return 10
         if course_handicap <= 4:
             return par + 2
         elif course_handicap <= 9:
@@ -41,6 +43,27 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
             return 9
         else:
             return 10
+
+    def compute_hole_maximum_strokes(self, par: int, handicap_strokes: int) -> int:
+        """
+        Computes maximum strokes allowed per league rules: double par + handicap strokes
+
+        This is separate from the maximum score for handicapping purposes.
+
+        Parameters
+        ----------
+        par : int
+            hole par
+        handicap_strokes : int
+            number of handicap strokes given to the relevant golfer on this hole
+
+        Returns
+        -------
+        max_strokes : int
+            maximum number of strokes allowed per league rules: double par + handicap strokes
+
+        """
+        return 2 * par + handicap_strokes
 
     def compute_hole_handicap_strokes(
         self, stroke_index: int, course_handicap: int
@@ -137,6 +160,20 @@ class APLLegacyHandicapSystem(WorldHandicapSystem):
         elif result.away_team_net_score < result.home_team_net_score:
             result.winner = MatchHoleWinner.AWAY
         return result
+
+    def get_handicap_allowance(self, is_shamble: bool = False) -> float:
+        """
+        Determines the handicap allowance for a round given the type of event being played.
+
+        Returns
+        -------
+        allowance : float
+            scaling factor for handicaps in this scoring mode, in range [0, 1]
+
+        """
+        if is_shamble:
+            return 0.7
+        return 1.0
 
     @property
     def maximum_handicap_index(self) -> float:
