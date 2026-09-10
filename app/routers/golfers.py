@@ -19,8 +19,6 @@ from app.models.query_helpers import (
     GolferData,
     GolferDataWithCount,
     GolferTeamData,
-    get_golfer_team_data,
-    get_golfers,
 )
 from app.models.user import User
 
@@ -39,7 +37,7 @@ async def read_golfers(
     # Return count of relevant golfers from database and golfer data list
     return GolferDataWithCount(
         num_golfers=len(golfer_ids),
-        golfers=get_golfers(session=session, golfer_ids=golfer_ids),
+        golfers=db_golfers.get_golfers(session=session, golfer_ids=golfer_ids),
     )
 
 
@@ -116,7 +114,7 @@ async def read_golfer(
     min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
     max_date: date = Query(default=date.today() + timedelta(days=1)),
 ):
-    golfer_db = get_golfers(
+    golfer_db = db_golfers.get_golfers(
         session=session,
         golfer_ids=[
             golfer_id,
@@ -185,7 +183,9 @@ async def read_golfer_team_data(
     golfer_id: int,
     year: int | None = Query(default=None),
 ):
-    return get_golfer_team_data(session=session, golfer_ids=(golfer_id,), year=year)
+    return db_golfers.get_golfer_team_data(
+        session=session, golfer_ids=(golfer_id,), year=year
+    )
 
 
 @router.get("/{golfer_id}/statistics", response_model=GolferStatistics)

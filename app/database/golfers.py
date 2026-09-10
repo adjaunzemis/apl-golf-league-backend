@@ -1,14 +1,28 @@
 import re
 from dataclasses import dataclass
+from datetime import date as dt_date
+from datetime import datetime, timedelta
 
 from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
+from app.models.division import Division
+from app.models.flight import Flight
+from app.models.flight_division_link import FlightDivisionLink
 from app.models.golfer import Golfer, GolferCreate, GolferStatistics, GolferUpdate
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
+from app.models.query_helpers import (
+    GolferData,
+    GolferTeamData,
+    get_handicap_index_data,
+)
 from app.models.round import Round, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
+from app.models.team import Team
+from app.models.team_golfer_link import TeamGolferLink
+from app.models.tournament import Tournament
+from app.models.tournament_division_link import TournamentDivisionLink
 
 
 @dataclass
@@ -305,3 +319,165 @@ def get_all(session: Session) -> list[Golfer]:
 def get_ids(session: Session, offset: int = 0, limit: int = 100) -> list[int]:
     """Retrieve paginated list of golfer IDs."""
     return list(session.exec(select(Golfer.id).offset(offset).limit(limit)).all())
+
+
+def get_golfer_year_joined(session: Session, golfer_id: int) -> int | None:
+    """Determines year golfer joined league based on oldest round in database."""
+    oldest_round_date = session.exec(
+        select(Round.date_played)
+        .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
+        .where(RoundGolferLink.golfer_id == golfer_id)
+        .order_by(Round.date_played)
+        .limit(1)
+    ).one_or_none()
+    if not oldest_round_date:
+        return None
+    return oldest_round_date.year
+
+
+def get_golfers(
+    session: Session,
+    golfer_ids: list[int],
+    min_date: dt_date = datetime(datetime.today().year - 2, 1, 1).date(),
+    max_date: dt_date = datetime.today().date() + timedelta(days=1),
+    include_scoring_record: bool = False,
+    use_legacy_handicapping: bool = False,
+) -> list[GolferData]:
+    """Retrieves golfer data for the given golfers."""
+    golfer_query_data = session.exec(select(Golfer).where(Golfer.id.in_(golfer_ids)))
+    golfer_data = [
+        GolferData(
+            golfer_id=golfer.id,
+            name=golfer.name,
+            email=golfer.email,
+            phone=golfer.phone,
+            affiliation=golfer.affiliation,
+            member_since=get_golfer_year_joined(session=session, golfer_id=golfer.id),
+            handicap_index_data=get_handicap_index_data(
+                session=session,
+                golfer_id=golfer.id,
+                min_date=min_date,
+                max_date=max_date,
+                limit=10,
+                include_rounds=include_scoring_record,
+                use_legacy_handicapping=use_legacy_handicapping,
+            ),
+        )
+        for golfer in golfer_query_data
+    ]
+    return golfer_data
+
+
+def get_golfer_team_data(
+    session: Session, golfer_ids: list[int], year: int | None = None
+) -> list[GolferTeamData]:
+    """Retrieves team golfer data for the given golfers."""
+    if year:  # filter results by year
+        flight_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Flight)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                FlightDivisionLink,
+                onclause=FlightDivisionLink.division_id == Division.id,
+            )
+            .join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id)
+            .where(Flight.year == year)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+        tournament_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Tournament)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                TournamentDivisionLink,
+                onclause=TournamentDivisionLink.division_id == Division.id,
+            )
+            .join(
+                Tournament,
+                onclause=TournamentDivisionLink.tournament_id == Tournament.id,
+            )
+            .where(Tournament.year == year)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+    else:  # no filtering
+        flight_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Flight)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                FlightDivisionLink,
+                onclause=FlightDivisionLink.division_id == Division.id,
+            )
+            .join(Flight, onclause=FlightDivisionLink.flight_id == Flight.id)
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+        tournament_team_data = session.exec(
+            select(TeamGolferLink, Team, Golfer, Division, Tournament)
+            .join(Team, onclause=TeamGolferLink.team_id == Team.id)
+            .join(Golfer, onclause=TeamGolferLink.golfer_id == Golfer.id)
+            .join(Division, onclause=TeamGolferLink.division_id == Division.id)
+            .join(
+                TournamentDivisionLink,
+                onclause=TournamentDivisionLink.division_id == Division.id,
+            )
+            .join(
+                Tournament,
+                onclause=TournamentDivisionLink.tournament_id == Tournament.id,
+            )
+            .where(TeamGolferLink.golfer_id.in_(golfer_ids))
+        ).all()
+    golfer_team_data = [
+        GolferTeamData(
+            team_id=team_golfer_link.team_id,
+            golfer_id=golfer.id,
+            golfer_name=golfer.name,
+            golfer_email=golfer.email,
+            flight_id=flight.id,
+            flight_name=flight.name,
+            division_id=division.id,
+            division_name=division.name,
+            team_name=team.name,
+            role=team_golfer_link.role,
+            year=flight.year,
+            handicap_index=golfer.handicap_index,
+            handicap_index_updated=(
+                golfer.handicap_index_updated.astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+                if golfer.handicap_index_updated
+                else None
+            ),
+        )
+        for team_golfer_link, team, golfer, division, flight in flight_team_data
+    ]
+    golfer_team_data.extend(
+        [
+            GolferTeamData(
+                team_id=team_golfer_link.team_id,
+                golfer_id=golfer.id,
+                golfer_name=golfer.name,
+                golfer_email=golfer.email,
+                tournament_id=tournament.id,
+                tournament_name=tournament.name,
+                division_id=division.id,
+                division_name=division.name,
+                team_name=team.name,
+                role=team_golfer_link.role,
+                year=tournament.year,
+                handicap_index=golfer.handicap_index,
+                handicap_index_updated=(
+                    golfer.handicap_index_updated.astimezone()
+                    .replace(microsecond=0)
+                    .isoformat()
+                    if golfer.handicap_index_updated
+                    else None
+                ),
+            )
+            for team_golfer_link, team, golfer, division, tournament in tournament_team_data
+        ]
+    )
+    return golfer_team_data
