@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
-from app.models.golfer import Golfer, GolferStatistics, GolferUpdate
+from app.models.golfer import Golfer, GolferCreate, GolferStatistics, GolferUpdate
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult
 from app.models.round import Round, ScoringType
@@ -276,3 +276,32 @@ def update_golfer(
     session.commit()
     session.refresh(golfer_db)
     return golfer_db
+
+
+def create_golfer(session: Session, golfer: GolferCreate) -> Golfer:
+    """Create a new golfer in the database."""
+    golfer_db = Golfer.model_validate(golfer)
+    session.add(golfer_db)
+    session.commit()
+    session.refresh(golfer_db)
+    return golfer_db
+
+
+def delete_golfer(session: Session, golfer_id: int) -> Golfer | None:
+    """Delete a golfer from the database by ID."""
+    golfer_db = get_by_id(session, golfer_id)
+    if golfer_db is None:
+        return None
+    session.delete(golfer_db)
+    session.commit()
+    return golfer_db
+
+
+def get_all(session: Session) -> list[Golfer]:
+    """Retrieve all golfers from the database."""
+    return list(session.exec(select(Golfer)).all())
+
+
+def get_ids(session: Session, offset: int = 0, limit: int = 100) -> list[int]:
+    """Retrieve paginated list of golfer IDs."""
+    return list(session.exec(select(Golfer.id).offset(offset).limit(limit)).all())

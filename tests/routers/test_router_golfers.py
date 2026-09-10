@@ -290,3 +290,21 @@ def test_delete_golfer_unauthorized(session: Session, client_unauthorized: TestC
 
     response = client_unauthorized.delete(f"/golfers/{golfer.id}")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_golfer_non_admin(session: Session, client_non_admin: TestClient):
+    golfer = Golfer(
+        name="Test Golfer A", affiliation=GolferAffiliation.NON_APL_EMPLOYEE
+    )
+    session.add(golfer)
+    session.commit()
+
+    response = client_non_admin.delete(f"/golfers/{golfer.id}")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "User not authorized to delete golfers" in response.json()["detail"]
+
+
+def test_delete_golfer_not_found(session: Session, client_admin: TestClient):
+    response = client_admin.delete("/golfers/99999")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Golfer not found"

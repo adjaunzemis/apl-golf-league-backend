@@ -2,7 +2,12 @@ import pytest
 from sqlmodel import Session
 
 from app.database import golfers as db_golfers
-from app.models.golfer import Golfer, GolferAffiliation, GolferUpdate
+from app.models.golfer import (
+    Golfer,
+    GolferAffiliation,
+    GolferCreate,
+    GolferUpdate,
+)
 
 
 @pytest.mark.parametrize(
@@ -192,3 +197,65 @@ def test_update_golfer_not_found(session: Session):
     update_data = GolferUpdate(name="Non Existent")
     result = db_golfers.update_golfer(session, 99999, update_data)
     assert result is None
+
+
+def test_create_golfer(session: Session):
+    golfer_create = GolferCreate(
+        name="Ben Hogan",
+        affiliation=GolferAffiliation.APL_EMPLOYEE,
+        email="ben@example.com",
+        phone="555-0300",
+    )
+    golfer_db = db_golfers.create_golfer(session, golfer_create)
+    assert golfer_db.id is not None
+    assert golfer_db.name == "Ben Hogan"
+    assert golfer_db.email == "ben@example.com"
+    assert golfer_db.phone == "555-0300"
+
+    fetched = db_golfers.get_by_id(session, golfer_db.id)
+    assert fetched is not None
+    assert fetched.name == "Ben Hogan"
+
+
+def test_delete_golfer(session: Session):
+    golfer = Golfer(name="Sam Snead", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    session.add(golfer)
+    session.commit()
+
+    deleted = db_golfers.delete_golfer(session, golfer.id)
+    assert deleted is not None
+    assert deleted.id == golfer.id
+
+    # Confirm it's gone
+    assert db_golfers.get_by_id(session, golfer.id) is None
+
+    # Deleting nonexistent returns None
+    assert db_golfers.delete_golfer(session, 99999) is None
+
+
+def test_get_all(session: Session):
+    g1 = Golfer(name="Golfer One", affiliation=GolferAffiliation.APL_EMPLOYEE)
+    g2 = Golfer(name="Golfer Two", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
+    session.add(g1)
+    session.add(g2)
+    session.commit()
+
+    all_golfers = db_golfers.get_all(session)
+    assert len(all_golfers) == 2
+    names = {g.name for g in all_golfers}
+    assert "Golfer One" in names
+    assert "Golfer Two" in names
+
+
+def test_get_ids(session: Session):
+    for i in range(5):
+        session.add(
+            Golfer(name=f"Golfer {i}", affiliation=GolferAffiliation.APL_EMPLOYEE)
+        )
+    session.commit()
+
+    ids = db_golfers.get_ids(session, offset=0, limit=3)
+    assert len(ids) == 3
+
+    ids_page2 = db_golfers.get_ids(session, offset=3, limit=3)
+    assert len(ids_page2) == 2

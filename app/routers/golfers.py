@@ -5,12 +5,11 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.database import golfers as db_golfers
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.golfer import (
-    Golfer,
     GolferCreate,
     GolferRead,
     GolferStatistics,
@@ -36,7 +35,7 @@ async def read_golfers(
     limit: int = Query(default=100, le=100),
 ):
     # TODO: Process query parameters to further limit golfer results returned from database
-    golfer_ids = session.exec(select(Golfer.id).offset(offset).limit(limit)).all()
+    golfer_ids = db_golfers.get_ids(session=session, offset=offset, limit=limit)
     # Return count of relevant golfers from database and golfer data list
     return GolferDataWithCount(
         num_golfers=len(golfer_ids),
@@ -46,7 +45,7 @@ async def read_golfers(
 
 @router.get("/info", response_model=List[GolferRead])
 async def read_all_golfers(*, session: Session = Depends(get_sql_db_session)):
-    return session.exec(select(Golfer)).all()
+    return db_golfers.get_all(session=session)
 
 
 def validate_golfer_name(
@@ -106,11 +105,7 @@ async def create_golfer(
         )
 
     # Add to database
-    golfer_db = Golfer.model_validate(golfer)
-    session.add(golfer_db)
-    session.commit()
-    session.refresh(golfer_db)
-    return golfer_db
+    return db_golfers.create_golfer(session=session, golfer=golfer)
 
 
 @router.get("/{golfer_id}", response_model=GolferData)
@@ -171,11 +166,15 @@ async def delete_golfer(
     current_user: User = Depends(get_current_active_user),
     golfer_id: int,
 ):
-    golfer_db = session.get(Golfer, golfer_id)
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="User not authorized to delete golfers",
+        )
+
+    golfer_db = db_golfers.delete_golfer(session=session, golfer_id=golfer_id)
     if not golfer_db:
-        raise HTTPException(status_code=404, detail="Golfer not found")
-    session.delete(golfer_db)
-    session.commit()
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Golfer not found")
     return {"ok": True}
 
 
