@@ -6,6 +6,8 @@ from fastapi.exceptions import HTTPException
 from pydantic.v1 import root_validator
 from sqlmodel import Session, select
 
+from app.database import flights as db_flights
+from app.database import teams as db_teams
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.base import APLGLBaseModel
 from app.models.flight import Flight
@@ -105,10 +107,36 @@ async def create_match(
     current_user: User = Depends(get_current_active_user),
     match: MatchCreate,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail=f"User '{current_user.name}' not authorized to create matches",
+        )
+
+    flight = db_flights.get_by_id(session=session, flight_id=match.flight_id)
+    if flight is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Unable to find flight with id: {match.flight_id}",
+        )
+    home_team = db_teams.get_by_id(session=session, team_id=match.home_team_id)
+    if home_team is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Unable to find home team with id: {match.home_team_id}",
+        )
+    away_team = db_teams.get_by_id(session=session, team_id=match.away_team_id)
+    if away_team is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Unable to find away team with id: {match.away_team_id}",
+        )
+
     match_db = Match.model_validate(match)
     session.add(match_db)
     session.commit()
     session.refresh(match_db)
+
     return match_db
 
 
