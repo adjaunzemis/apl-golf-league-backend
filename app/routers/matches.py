@@ -119,6 +119,11 @@ async def create_match(
             status_code=HTTPStatus.NOT_FOUND,
             detail=f"Unable to find flight with id: {match.flight_id}",
         )
+    if match.week > flight.weeks:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Unable to create match on week '{match.week}' for flight with '{flight.weeks}' weeks",
+        )
     home_team = db_teams.get_by_id(session=session, team_id=match.home_team_id)
     if home_team is None:
         raise HTTPException(
