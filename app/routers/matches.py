@@ -156,15 +156,24 @@ async def update_match(
     match_id: int,
     match: MatchUpdate,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail=f"User '{current_user.name}' not authorized to update matches",
+        )
+
     match_db = session.get(Match, match_id)
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
+
     match_data = match.model_dump(exclude_unset=True)
     for key, value in match_data.items():
         setattr(match_db, key, value)
+
     session.add(match_db)
     session.commit()
     session.refresh(match_db)
+
     return match_db
 
 
@@ -175,12 +184,21 @@ async def delete_match(
     current_user: User = Depends(get_current_active_user),
     match_id: int,
 ):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail=f"User '{current_user.name}' not authorized to delete matches",
+        )
+
     match_db = session.get(Match, match_id)
     if not match_db:
         raise HTTPException(status_code=404, detail="Match not found")
+
     session.delete(match_db)
     session.commit()
+
     # TODO: Delete related resources (match-round-links)
+
     return {"ok": True}
 
 
@@ -192,6 +210,11 @@ async def post_match_rounds(
     match_input: MatchInput,
 ):
     # TODO: Check user credentials
+    if not (current_user.is_admin or current_user.edit_flights):
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail=f"User '{current_user.name}' not authorized to enter match scores",
+        )
     ahs = APLHandicapSystem()
 
     match_db = session.get(Match, match_input.match_id)
