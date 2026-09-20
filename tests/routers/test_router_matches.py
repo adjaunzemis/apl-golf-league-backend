@@ -1,9 +1,44 @@
+from datetime import datetime
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from app.models.flight import Flight
+from app.models.flight_team_link import FlightTeamLink
 from app.models.match import Match
+from app.models.team import Team
+
+
+@pytest.fixture()
+def session_with_flight_and_teams(session: Session):
+    flight = Flight(
+        name="Test Flight",
+        year=2026,
+        secretary="Test Secretary",
+        signup_start_date=datetime(2026, 1, 1),
+        signup_stop_date=datetime(2026, 1, 14),
+        start_date=datetime(2026, 1, 21),
+        weeks=10,
+    )
+    session.add(flight)
+    session.commit()
+    session.refresh(flight)
+
+    team_1 = Team(name="Test Team 1")
+    session.add(team_1)
+    team_2 = Team(name="Test Team 2")
+    session.add(team_2)
+    session.commit()
+    session.refresh(team_1)
+    session.refresh(team_2)
+
+    session.add(FlightTeamLink(flight_id=flight.id, team_id=team_1.id))
+    session.add(FlightTeamLink(flight_id=flight.id, team_id=team_2.id))
+    session.commit()
+
+    yield session
 
 
 @pytest.mark.parametrize(
@@ -16,6 +51,7 @@ from app.models.match import Match
     ],
 )
 def test_create_match(
+    session_with_flight_and_teams: Session,
     client_admin: TestClient,
     flight_id: int,
     week: int,
@@ -49,7 +85,7 @@ def test_create_match(
 
 @pytest.mark.parametrize(
     "flight_id, week, home_team_id, away_team_id, home_score, away_score",
-    [(1, None, 1, 2, 7.5, 3.5)],
+    [(1, 1, 1, 2, 7.5, 3.5)],
 )
 def test_create_match_unauthorized(
     client_unauthorized: TestClient,
@@ -61,6 +97,33 @@ def test_create_match_unauthorized(
     away_score: float,
 ):
     response = client_unauthorized.post(
+        "/matches/",
+        json={
+            "flight_id": flight_id,
+            "week": week,
+            "home_team_id": home_team_id,
+            "away_team_id": away_team_id,
+            "home_score": home_score,
+            "away_score": away_score,
+        },
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "flight_id, week, home_team_id, away_team_id, home_score, away_score",
+    [(1, 1, 1, 2, 7.5, 3.5)],
+)
+def test_create_match_non_admin(
+    client_non_admin: TestClient,
+    flight_id: int,
+    week: int,
+    home_team_id: int,
+    away_team_id: int,
+    home_score: float,
+    away_score: float,
+):
+    response = client_non_admin.post(
         "/matches/",
         json={
             "flight_id": flight_id,
@@ -112,7 +175,7 @@ def test_create_match_incomplete(
         (1, 1, 1, 2, 7.5, {"key": "value"}),
     ],
 )
-def test_create_match_invalid(
+def test_create_match_unprocessable(
     client_admin: TestClient,
     flight_id: int,
     week: int,
@@ -134,6 +197,52 @@ def test_create_match_invalid(
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+@pytest.mark.parametrize(
+    "flight_id, week, home_team_id, away_team_id, home_score, away_score, expected_status, expected_detail",
+    [
+        (2, 1, 1, 2, 7.5, 3.5, status.HTTP_404_NOT_FOUND, "Unable to find flight"),
+        (
+            1,
+            11,
+            1,
+            2,
+            7.5,
+            3.5,
+            status.HTTP_400_BAD_REQUEST,
+            "Unable to create match on week",
+        ),
+        (1, 1, 3, 2, 7.5, 3.5, status.HTTP_404_NOT_FOUND, "Unable to find home team"),
+        (1, 1, 1, 3, 7.5, 3.5, status.HTTP_404_NOT_FOUND, "Unable to find away team"),
+    ],
+)
+def test_create_match_invalid(
+    session_with_flight_and_teams: Session,
+    client_admin: TestClient,
+    flight_id: int,
+    week: int,
+    home_team_id: int,
+    away_team_id: int,
+    home_score: float,
+    away_score: float,
+    expected_status: int,
+    expected_detail: str,
+):
+    # Invalid match data
+    response = client_admin.post(
+        "/matches/",
+        json={
+            "flight_id": flight_id,
+            "week": week,
+            "home_team_id": home_team_id,
+            "away_team_id": away_team_id,
+            "home_score": home_score,
+            "away_score": away_score,
+        },
+    )
+    assert response.status_code == expected_status
+    assert expected_detail in response.json()["detail"]
 
 
 def test_update_match(session: Session, client_admin: TestClient):
