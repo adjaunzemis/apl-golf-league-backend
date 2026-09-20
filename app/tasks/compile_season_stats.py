@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import numpy as np
 import pandas as pd
-import pytz
 from sqlmodel import Session, create_engine, select
 
 from app.dependencies import get_settings
@@ -82,8 +81,8 @@ def compile_season_statistics(*, session: Session, year: int):
     """ """
     print(f"Compiling season statistics for {year}")
 
-    SEASON_START_DATE = datetime(year, 4, 21, tzinfo=pytz.UTC)  # TODO: un-hardcode
-    PLAYOFFS_START_DATE = datetime(year, 9, 1, tzinfo=pytz.UTC)  # TODO: un-hardcode
+    SEASON_START_DATE = datetime(year, 4, 21, tzinfo=timezone.utc)  # TODO: un-hardcode
+    PLAYOFFS_START_DATE = datetime(year, 9, 1, tzinfo=timezone.utc)  # TODO: un-hardcode
     rounds = {}
     stats = {}
 
@@ -246,7 +245,7 @@ def compile_season_statistics(*, session: Session, year: int):
 if __name__ == "__main__":
     # TODO: Make this a runnable task
 
-    YEAR = 2025  # TODO: un-hardcode year for analysis
+    YEAR = 2026  # TODO: un-hardcode year for analysis
 
     settings = get_settings()
 
