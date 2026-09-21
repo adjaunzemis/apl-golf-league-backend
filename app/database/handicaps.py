@@ -10,6 +10,17 @@ from app.models.round_golfer_link import RoundGolferLink
 from app.models.tee import Tee
 from app.models.track import Track
 from app.utilities.apl_handicap_system import APLHandicapSystem
+from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
+
+
+def get_handicap_system_for_year(
+    year: int,
+) -> APLHandicapSystem | APLLegacyHandicapSystem:
+    """Gets relevant handicap system for a given year."""
+    if year < 2022:
+        return APLLegacyHandicapSystem()
+    else:
+        return APLHandicapSystem()
 
 
 def get_handicap_history_for_golfer(

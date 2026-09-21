@@ -5,11 +5,9 @@ from sqlmodel import Session
 
 from app.database import courses as db_courses
 from app.database import tournaments as db_tournaments
+from app.database.handicaps import get_handicap_system_for_year
 from app.models.base import APLGLBaseModel
 from app.models.query_helpers import get_handicap_index_data
-from app.models.tournament import Tournament
-from app.utilities.apl_handicap_system import APLHandicapSystem
-from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
 
 class TournamentGolferHandicapData(APLGLBaseModel):
@@ -33,16 +31,6 @@ class TournamentGolferHandicapData(APLGLBaseModel):
 class TournamentTeamHandicapData(APLGLBaseModel):
     team: str
     tournament_team_handicap: int
-
-
-def get_handicap_system_for_tournament(
-    tournament: Tournament,
-) -> APLHandicapSystem | APLLegacyHandicapSystem:
-    """Gets relevant handicap system for the given tournament."""
-    if tournament.year < 2022:
-        return APLLegacyHandicapSystem()
-    else:
-        return APLHandicapSystem()
 
 
 def compute_team_handicap_scramble(handicaps: list[int]) -> int:
@@ -90,7 +78,7 @@ def compile_tournament_handicaps(
         f"Compiling tournament handicap data for '{tournament.name}' ({tournament.year})"
     )
 
-    ahs = get_handicap_system_for_tournament(tournament)
+    ahs = get_handicap_system_for_year(tournament.year)
     logger.info(f"Using handicap system: {type(ahs)}")
 
     handicap_allowance = ahs.get_handicap_allowance(
