@@ -125,7 +125,7 @@ def get_rounds_in_scoring_record(
     golfer_id: int,
     min_date: dt_date,
     max_date: dt_date,
-    limit: int = 20,
+    limit: int | None = 20,
     use_legacy_handicapping: bool = False,
 ) -> List[RoundSummary]:
     """
@@ -153,7 +153,7 @@ def get_rounds_in_scoring_record(
 
     Returns
     -------
-    rounds : list of RoundResults
+    rounds : list of RoundSummary
         round results for rounds in golfer's scoring record
 
     """
