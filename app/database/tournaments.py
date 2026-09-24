@@ -39,6 +39,10 @@ def get_ids(session: Session, year: int | None = None) -> list[int]:
     return session.exec(query.order_by(Tournament.id)).all()
 
 
+def get_by_id(session: Session, tournament_id: int) -> Tournament | None:
+    return session.get(Tournament, tournament_id)
+
+
 def get_info(session: Session, tournament_id: int) -> TournamentInfo:
     tournament = session.exec(
         select(Tournament).where(Tournament.id == tournament_id)

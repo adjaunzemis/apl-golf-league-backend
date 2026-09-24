@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class HandicapSystem(ABC):
@@ -9,7 +8,11 @@ class HandicapSystem(ABC):
 
     @abstractmethod
     def compute_hole_adjusted_gross_score(
-        self, par: int, stroke_index: int, score: int, course_handicap: int = None
+        self,
+        par: int,
+        stroke_index: int,
+        score: int,
+        course_handicap: int | None = None,
     ) -> int:
         """
         Computes adjusted gross score on a hole for handicapping purposes.
@@ -40,7 +43,7 @@ class HandicapSystem(ABC):
 
     @abstractmethod
     def compute_hole_maximum_score(
-        self, par: int, stroke_index: int, course_handicap: int = None
+        self, par: int, stroke_index: int, course_handicap: int | None = None
     ) -> int:
         """
         Computes maximum score on a hole for handicapping purposes.
@@ -139,7 +142,7 @@ class HandicapSystem(ABC):
         """
 
     @abstractmethod
-    def compute_handicap_index(self, record: List[float]) -> float:
+    def compute_handicap_index(self, record: list[float]) -> float:
         """
         Computes handicap index for a given scoring record.
 
