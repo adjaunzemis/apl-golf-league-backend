@@ -8,6 +8,7 @@ from app.database import seasons as db_seasons
 from app.dependencies import get_current_active_user, get_sql_db_session
 from app.models.season import Season, SeasonCreate
 from app.models.user import User
+from app.tasks.seasons import compile_season_statistics
 
 router = APIRouter(prefix="/seasons", tags=["Seasons"])
 
@@ -105,3 +106,12 @@ async def delete_season(
             detail="Unable to delete season",
         )
     return season_db
+
+
+@router.get("/{year}/statistics")
+async def get_season_statistics(
+    *,
+    session: Session = Depends(get_sql_db_session),
+    year: int,
+) -> dict:  # TODO: data model for response
+    return compile_season_statistics(session=session, year=year)
