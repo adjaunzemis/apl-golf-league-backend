@@ -114,8 +114,8 @@ def compile_tournament_handicaps(
         err_msg = f"Cannot compute handicaps for tournament without date"
         logger.error(err_msg)
         raise ValueError(err_msg)
-    hcp_min_date = datetime(tournament.date.year - 2, 1, 1)
-    hcp_max_date = tournament.date
+    hcp_min_date = datetime(tournament.date.year - 2, 1, 1).date()
+    hcp_max_date = tournament.date.date()
     logger.info(
         f"Computing handicap indexes using rounds from {hcp_min_date} to {hcp_max_date}"
     )
