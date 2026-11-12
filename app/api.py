@@ -6,6 +6,7 @@ import logging
 import tomllib
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,7 +63,7 @@ app = FastAPI(
 
 CONFIG_PATH = "app/logging.config"
 logger = logging.getLogger(__name__)
-logger = CustomizeLogger.make_logger(CONFIG_PATH)
+logger = CustomizeLogger.make_logger(Path(CONFIG_PATH))
 app.logger = logger
 
 
@@ -136,7 +137,3 @@ app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
 app.include_router(payments.router, dependencies=[Depends(log_request_data)])
-
-
-if __name__ == "__main__":
-    app.run()
