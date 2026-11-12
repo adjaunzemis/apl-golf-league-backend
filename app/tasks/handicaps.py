@@ -465,12 +465,12 @@ async def update_golfer_handicaps(
         .where(Officer.role == "Handicapper")
     ).all()
 
-    if not dry_run and len(handicappers) > 0:
+    if len(handicappers) > 0:
         logger.info(
             f"Sending handicap update report to {len(handicappers)} handicapper(s)..."
         )
         message = MessageSchema(
-            subject=f"[APL Golf League] Handicap Update Report - {datetime.now().date().isoformat()}",
+            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now().date().isoformat()}",
             recipients=[
                 EmailStr(hc.email) for hc in handicappers if hc.email is not None
             ],
