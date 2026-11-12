@@ -1,7 +1,9 @@
+import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi.exceptions import HTTPException
+from loguru import logger
 from sqlmodel import Session, select
 
 from app.database import flights as db_flights
@@ -21,6 +23,7 @@ from app.models.query_helpers import (
 from app.models.team_golfer_link import TeamGolferLink
 from app.models.user import User
 from app.routers.utilities import upsert_division
+from app.tasks.matches import initialize_matches_for_flight
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
@@ -346,3 +349,36 @@ async def move_team(
     session.commit()
     session.refresh(team_db)
     return team_db
+
+
+class InitializeScheduleRequest(APLGLBaseModel):
+    flight_id: int
+    bye_weeks_by_team: str | None = None
+    dry_run: bool = False
+    force: bool = False
+
+
+@router.post("/initialize-schedule")
+async def initialize_schedule(
+    request: InitializeScheduleRequest, session: Session = Depends(get_sql_db_session)
+):
+    if request.bye_weeks_by_team is None:
+        bye_week_requests = None
+    else:
+        bye_week_requests = {
+            int(team): int(week)
+            for team, week in json.loads(request.bye_weeks_by_team).items()
+        }
+
+    logger.info(
+        f"Initializing matches {'(dry-run)' if request.dry_run else ''} for flight id={request.flight_id}"
+    )
+
+    matchup_matrix = await initialize_matches_for_flight(
+        session=session,
+        flight_id=request.flight_id,
+        bye_weeks_by_team=bye_week_requests,
+        dry_run=request.dry_run,
+        force=request.force,
+    )
+    return matchup_matrix
