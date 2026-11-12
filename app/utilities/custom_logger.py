@@ -53,6 +53,13 @@ class CustomizeLogger:
         cls, filepath: Path, level: str, rotation: str, retention: str, format: str
     ):
         logger.remove()
+
+        def patch_record(record):
+            record["extra"].setdefault("request_id", "-")
+            record["extra"].setdefault("method", "-")
+
+        logger.configure(patcher=patch_record)
+
         logger.add(
             sys.stdout, enqueue=True, backtrace=True, level=level.upper(), format=format
         )
@@ -65,12 +72,15 @@ class CustomizeLogger:
             level=level.upper(),
             format=format,
         )
+
         logging.basicConfig(handlers=[InterceptHandler()], level=0)
         logging.getLogger("uvicorn.access").handlers = [InterceptHandler()]
+
         for _log in ["uvicorn", "uvicorn.error", "fastapi"]:
             _logger = logging.getLogger(_log)
             _logger.handlers = [InterceptHandler()]
-        return logger.bind(request_id=None, method=None)
+
+        return logger
 
     @classmethod
     def load_logging_config(cls, config_path):

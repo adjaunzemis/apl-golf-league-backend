@@ -6,10 +6,10 @@ import logging
 import tomllib
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
 
 from app.dependencies import create_sql_db_and_tables
 from app.routers import (
@@ -24,13 +24,11 @@ from app.routers import (
     rounds,
     seasons,
     substitutes,
-    tasks,
     teams,
     tournaments,
     users,
 )
 from app.utilities.custom_logger import CustomizeLogger
-from app.utilities.notifications import EmailSchema, send_email
 
 
 @lru_cache
@@ -64,7 +62,7 @@ app = FastAPI(
 
 CONFIG_PATH = "app/logging.config"
 logger = logging.getLogger(__name__)
-logger = CustomizeLogger.make_logger(CONFIG_PATH)
+logger = CustomizeLogger.make_logger(Path(CONFIG_PATH))
 app.logger = logger
 
 
@@ -123,7 +121,6 @@ async def get_heartbeat():
     return {"status": "alive"}
 
 
-app.include_router(tasks.router, dependencies=[Depends(log_request_data)])
 app.include_router(users.router, dependencies=[Depends(log_request_data)])
 app.include_router(seasons.router, dependencies=[Depends(log_request_data)])
 app.include_router(courses.router, dependencies=[Depends(log_request_data)])
@@ -138,17 +135,3 @@ app.include_router(matches.router, dependencies=[Depends(log_request_data)])
 app.include_router(officers.router, dependencies=[Depends(log_request_data)])
 app.include_router(handicaps.router, dependencies=[Depends(log_request_data)])
 app.include_router(payments.router, dependencies=[Depends(log_request_data)])
-
-
-@app.post("/email_test/")
-async def test_email(
-    *, email: EmailSchema, background_tasks: BackgroundTasks
-) -> JSONResponse:
-    send_email(email, "handicap_update_report.html", background_tasks)
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"message": "Email has been sent"}
-    )
-
-
-if __name__ == "__main__":
-    app.run()

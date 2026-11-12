@@ -2,13 +2,18 @@ from datetime import date as dt_date
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+from fastapi_mail import FastMail, MessageSchema, MessageType
+from loguru import logger
+from pydantic import EmailStr
 from sqlmodel import Session, desc, select
 
+from app.dependencies import get_email_config
 from app.models.base import APLGLBaseModel
 from app.models.course import Course
 from app.models.golfer import Golfer
 from app.models.hole import Hole
 from app.models.hole_result import HoleResult, HoleResultData
+from app.models.officer import Officer
 from app.models.qualifying_score import QualifyingScore
 from app.models.round import Round, RoundSummary, RoundType, ScoringType
 from app.models.round_golfer_link import RoundGolferLink
@@ -328,7 +333,7 @@ def get_handicap_index_data(
     return data
 
 
-def update_golfer_handicaps(
+async def update_golfer_handicaps(
     *,
     session: Session,
     prior_end_date: dt_date,
@@ -351,7 +356,7 @@ def update_golfer_handicaps(
         end date for current handicap update
     min_date: datetime | None
         earliest allowed date for rounds in scoring record
-        Default: None, uses default (last three calendar years)
+        Default: None, uses default (end date minus three calendar years)
     golfer_id: int | None
         specific golfer to update handicap index
         Default: None, all golfers
@@ -363,15 +368,15 @@ def update_golfer_handicaps(
         Default: False
 
     """
-    print(
+    logger.info(
         f"Starting handicap update: prior={prior_end_date}, new={new_end_date}, force_update={force_update}"
     )
     if dry_run:
-        print(f"NOTE: Dry-run, won't commit changes to database!")
+        logger.info(f"NOTE: Dry-run, won't commit changes to database!")
 
     if min_date is None:
-        min_date = datetime(datetime.today().year - 3, 1, 1).date()
-    print(f"Minimum date for rounds in handicap consideration: {min_date}")
+        min_date = datetime(new_end_date.year - 3, 1, 1).date()
+    logger.info(f"Minimum date for rounds in handicap consideration: {min_date}")
 
     if golfer_id is not None:
         golfer_db = session.exec(
@@ -429,7 +434,7 @@ def update_golfer_handicaps(
                 break
 
         if update_required:
-            print(
+            logger.info(
                 f"Updating handicap index for '{golfer_db.name}' (id={golfer_db.id}): db={current_handicap_index}, prior={prior_handicap_index_data.active_handicap_index}, new={new_handicap_index} : "
                 + ", ".join(update_reasons)
             )
@@ -448,9 +453,38 @@ def update_golfer_handicaps(
                 session.add(golfer_db)
 
     if not dry_run:
+        logger.info("Committing handicap updates to database...")
         session.commit()  # update all handicaps at once
 
-    print(f"Completed handicap update!")
+    logger.info(f"Completed handicap update!")
+
+    # TODO: Get active year handicappers
+    handicappers = session.exec(
+        select(Officer)
+        .where(Officer.year == new_end_date.year)
+        .where(Officer.role == "Handicapper")
+    ).all()
+
+    if len(handicappers) > 0:
+        logger.info(
+            f"Sending handicap update report to {len(handicappers)} handicapper(s)..."
+        )
+        message = MessageSchema(
+            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now().date().isoformat()}",
+            recipients=[
+                EmailStr(hc.email) for hc in handicappers if hc.email is not None
+            ],
+            template_body={
+                "update_date": datetime.now().replace(microsecond=0).isoformat(),
+                "updates": updates_info,
+            },
+            subtype=MessageType.html,
+        )
+        fm = FastMail(get_email_config())
+        await fm.send_message(
+            message=message, template_name="handicap_update_report.html"
+        )
+
     return updates_info
 
 

@@ -1,3 +1,4 @@
+from loguru import logger
 from sqlmodel import Session, select
 
 from app.models.flight import Flight
@@ -5,7 +6,7 @@ from app.models.flight_team_link import FlightTeamLink
 from app.models.match import Match
 
 
-def initialize_matches_for_flight(
+async def initialize_matches_for_flight(
     *,
     session: Session,
     flight_id: int,
@@ -17,20 +18,18 @@ def initialize_matches_for_flight(
     if flight_db is None:
         raise ValueError(f"Unable to find flight with id={flight_id}")
 
-    print(f"Initializing matches for flight: '{flight_db.name} ({flight_db.year})'")
+    logger.info(
+        f"Initializing matches for flight: '{flight_db.name} ({flight_db.year})'"
+    )
     if dry_run:
-        print(f"NOTE: Dry-run, won't commit changes to database!")
+        logger.info(f"NOTE: Dry-run, won't commit changes to database!")
 
     flight_team_links_db = session.exec(
         select(FlightTeamLink).where(FlightTeamLink.flight_id == flight_db.id)
     ).all()
     if (not flight_team_links_db) or (len(flight_team_links_db) == 0):
         raise ValueError(
-            "Unable to find teams in flight: "
-            + flight_db.name
-            + " ("
-            + flight_db.year
-            + ")"
+            f"Unable to find teams in flight: {flight_db.name} ({flight_db.year})"
         )
 
     team_ids = [link.team_id for link in flight_team_links_db]
@@ -203,7 +202,7 @@ def initialize_matches_for_flight(
                 raise ValueError(
                     f"Team id '{team_id}' not valid for flight id '{flight_id}'"
                 )
-            print(f"Team '{team_id}' requested bye week '{bye_week}'")
+            logger.info(f"Team '{team_id}' requested bye week '{bye_week}'")
 
             team_idx = next(
                 idx for idx in range(len(team_ids)) if team_ids[idx] == team_id
@@ -220,7 +219,7 @@ def initialize_matches_for_flight(
                 )
 
             if team_idx in team_idxs_with_bye:
-                print(f"Team '{team_id}' already has bye on week '{bye_week}'!")
+                logger.info(f"Team '{team_id}' already has bye on week '{bye_week}'!")
                 continue
 
             # TODO: Improve bye week request clashing checks and multiple bye team options
@@ -228,7 +227,7 @@ def initialize_matches_for_flight(
             old_team_id = team_ids[team_idxs_with_bye[0]]
             team_ids[team_idxs_with_bye[0]] = team_id
             team_ids[team_idx] = old_team_id
-            print(
+            logger.info(
                 f"Swapped teams '{team_id}' and '{old_team_id}' to meet bye week '{bye_week}' request"
             )
 
@@ -253,7 +252,7 @@ def initialize_matches_for_flight(
                     )
                 ).one_or_none()
                 if not match_db:
-                    print(
+                    logger.info(
                         f"Adding match: week={week}, home_team_id={team_id}, away_team_id={opponent_team_id}"
                     )
                     if not dry_run:
@@ -266,6 +265,8 @@ def initialize_matches_for_flight(
                         session.add(match_db)
                         session.commit()
 
-    print(
+    logger.info(
         f"Completed match initialization for flight: '{flight_db.name} ({flight_db.year})'"
     )
+
+    return matchup_matrix

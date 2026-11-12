@@ -3,8 +3,10 @@ from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from fastapi_mail import ConnectionConfig
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from pydantic.v1 import DirectoryPath, EmailStr
 from sqlalchemy.future import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -15,6 +17,22 @@ from app.models.user import User
 @lru_cache()
 def get_settings():
     return Settings()
+
+
+@lru_cache()
+def get_email_config() -> ConnectionConfig:
+    settings = get_settings()
+    return ConnectionConfig(
+        MAIL_USERNAME=settings.mail_username,
+        MAIL_PASSWORD=settings.mail_password,
+        MAIL_FROM=EmailStr(settings.mail_from_address),
+        MAIL_FROM_NAME=settings.mail_from_name,
+        MAIL_SERVER=settings.mail_server,
+        MAIL_PORT=settings.mail_port,
+        TEMPLATE_FOLDER=DirectoryPath("app/templates/"),
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+    )
 
 
 """ SQL Database """
