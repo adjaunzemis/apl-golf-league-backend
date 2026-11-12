@@ -24,7 +24,6 @@ from app.routers import (
     rounds,
     seasons,
     substitutes,
-    tasks,
     teams,
     tournaments,
     users,
@@ -122,7 +121,6 @@ async def get_heartbeat():
     return {"status": "alive"}
 
 
-app.include_router(tasks.router, dependencies=[Depends(log_request_data)])
 app.include_router(users.router, dependencies=[Depends(log_request_data)])
 app.include_router(seasons.router, dependencies=[Depends(log_request_data)])
 app.include_router(courses.router, dependencies=[Depends(log_request_data)])
