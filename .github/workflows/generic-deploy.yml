@@ -89,7 +89,7 @@ jobs:
             docker container stop "$CONTAINER" || true
 
             echo "Deploying $TAG to $ENV"
-            docker-compose --env-file "$ENV_FILE" up -d
+            docker compose --env-file "$ENV_FILE" up -d
 
             echo "Cleanup"
             sleep 5
