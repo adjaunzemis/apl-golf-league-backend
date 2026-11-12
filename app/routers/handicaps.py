@@ -2,13 +2,30 @@ from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    status,
+)
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from loguru import logger
+from pydantic.v1 import EmailStr
 from sqlmodel import Session, select
 
 from app.database import handicaps as db_handicap
-from app.dependencies import get_current_active_user, get_sql_db_session
+from app.dependencies import (
+    get_current_active_user,
+    get_email_config,
+    get_sql_db_session,
+)
+from app.models.base import APLGLBaseModel
 from app.models.golfer import Golfer
 from app.models.handicap import ScoringRecordRound
+from app.models.officer import Officer
 from app.models.qualifying_score import (
     QualifyingScore,
     QualifyingScoreCreate,
@@ -21,6 +38,7 @@ from app.models.query_helpers import (
     get_rounds_in_scoring_record,
 )
 from app.models.user import User
+from app.tasks.handicaps import update_golfer_handicaps
 from app.utilities.apl_handicap_system import APLHandicapSystem
 from app.utilities.apl_legacy_handicap_system import APLLegacyHandicapSystem
 
@@ -205,3 +223,73 @@ async def get_golfer_scoring_record_rounds(
     return db_handicap.get_scoring_record_rounds_for_golfer(
         session=session, golfer_id=golfer_id, year=year
     )
+
+
+class UpdateHandicapsRequest(APLGLBaseModel):
+    golfer_id: int | None = None
+    update_end: datetime | None = None
+    prior_update_end: datetime | None = None
+    force_update: bool = False
+    dry_run: bool = False
+
+
+@router.post("/update-handicaps")
+async def update_handicaps(
+    request: UpdateHandicapsRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_sql_db_session),
+    current_user: User = Depends(get_current_active_user),
+    email_config: ConnectionConfig = Depends(get_email_config),
+):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"User '{current_user.name}' not authorized for handicap updates",
+        )
+
+    if request.update_end is not None:
+        update_end = request.update_end
+    else:
+        sunday_current = datetime.now() - timedelta(
+            days=(datetime.now().weekday() + 1) % 7
+        )
+        update_end = sunday_current + timedelta(days=1)
+
+    if request.prior_update_end is not None:
+        prior_update_end = request.prior_update_end
+    else:
+        prior_update_end = update_end - timedelta(days=7)
+
+    updates_info = update_golfer_handicaps(
+        session=session,
+        golfer_id=request.golfer_id,
+        prior_end_date=prior_update_end,
+        new_end_date=update_end,
+        force_update=request.force_update,
+        dry_run=request.dry_run,
+    )
+
+    # TODO: Get active year handicappers
+    handicappers = session.exec(
+        select(Officer)
+        .where(Officer.year == update_end.year)
+        .where(Officer.role == "Handicapper")
+    ).all()
+
+    if not request.dry_run and len(handicappers) > 0:
+        logger.info("Sending handicap update report to handicappers...")
+        message = MessageSchema(
+            subject=f"[APL Golf League] Handicap Update Report - {datetime.now().date().isoformat()}",
+            recipients=[
+                EmailStr(hc.email) for hc in handicappers if hc.email is not None
+            ],
+            template_body={
+                "update_date": datetime.now().replace(microsecond=0).isoformat(),
+                "updates": updates_info,
+            },
+            subtype=MessageType.html,
+        )
+        fm = FastMail(email_config)
+        background_tasks.add_task(
+            fm.send_message, message, template_name="handicap_update_report.html"
+        )
