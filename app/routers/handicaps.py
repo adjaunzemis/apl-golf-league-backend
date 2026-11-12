@@ -255,8 +255,8 @@ async def update_handicaps(
         update_golfer_handicaps,
         session=session,
         golfer_id=request.golfer_id,
-        prior_end_date=prior_update_end,
-        new_end_date=update_end,
+        prior_end_date=prior_update_end.date(),
+        new_end_date=update_end.date(),
         force_update=request.force_update,
         dry_run=request.dry_run,
     )
