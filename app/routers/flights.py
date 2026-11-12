@@ -374,11 +374,16 @@ async def initialize_schedule(
         f"Initializing matches {'(dry-run)' if request.dry_run else ''} for flight id={request.flight_id}"
     )
 
-    matchup_matrix = await initialize_matches_for_flight(
-        session=session,
-        flight_id=request.flight_id,
-        bye_weeks_by_team=bye_week_requests,
-        dry_run=request.dry_run,
-        force=request.force,
-    )
-    return matchup_matrix
+    try:
+        matchup_matrix = await initialize_matches_for_flight(
+            session=session,
+            flight_id=request.flight_id,
+            bye_weeks_by_team=bye_week_requests,
+            dry_run=request.dry_run,
+            force=request.force,
+        )
+        return matchup_matrix
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}"
+        )
