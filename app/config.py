@@ -1,7 +1,9 @@
-from pydantic.v1 import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     apl_golf_league_api_url: str
     apl_golf_league_api_database_user: str
     apl_golf_league_api_database_password: str
@@ -20,6 +22,3 @@ class Settings(BaseSettings):
     mail_from_name: str
     mail_server: str
     mail_port: int
-
-    class Config:
-        env_file = ".env"

@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi_mail import ConnectionConfig
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic.v1 import DirectoryPath, EmailStr
+from pydantic import DirectoryPath, EmailStr
 from sqlalchemy.future import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 

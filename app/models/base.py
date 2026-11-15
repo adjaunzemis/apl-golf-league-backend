@@ -1,7 +1,8 @@
 from enum import StrEnum
-from typing import ClassVar, get_args, get_origin
+from types import UnionType
+from typing import Any, ClassVar, Union, get_args, get_origin
 
-from pydantic.v1 import validator
+from pydantic import ValidationInfo, field_serializer, field_validator
 from sqlmodel import SQLModel
 
 
@@ -59,35 +60,54 @@ class DisplayEnum(StrEnum):
 
 
 class APLGLBaseModel(SQLModel):
-    class Config:
-        use_enum_values = False  # store actual Enum, not string
-        json_encoders = {
-            DisplayEnum: lambda v: v.label  # always serialize with label
-        }
-
-    @validator("*", pre=True)
-    def parse_enums(cls, v, field):
+    @field_validator("*", mode="before")
+    @classmethod
+    def parse_enums(cls, value: Any, info: ValidationInfo) -> Any:
         """
         Automatically convert values to DisplayEnum if needed.
-        Supports single enum or List[enum].
+        Supports single enums, optional enums, lists, and optional lists.
         """
-        if v is None:
-            return v
+        if value is None:
+            return value
 
-        field_type = getattr(field, "type_", None)
+        annotation = cls.model_fields[info.field_name].annotation
 
-        # direct enum
-        try:
-            if field_type and issubclass(field_type, DisplayEnum):
-                return field_type.from_any(v)
-        except TypeError:
-            pass  # field_type not a class, skip
+        # Unwrap Optional[T] / T | None
+        origin = get_origin(annotation)
+        if origin in (Union, UnionType):
+            args = [arg for arg in get_args(annotation) if arg is not type(None)]
+            if len(args) == 1:
+                annotation = args[0]
+                origin = get_origin(annotation)
 
-        # List[Enum]
-        outer_type = getattr(field, "outer_type_", None)
-        if get_origin(outer_type) is list:
-            inner_type = get_args(outer_type)[0]
-            if isinstance(v, list) and issubclass(inner_type, DisplayEnum):
-                return [inner_type.from_any(i) for i in v]
+        # List[DisplayEnum]
+        if origin is list:
+            args = get_args(annotation)
+            if not args or not isinstance(value, list):
+                return value
 
-        return v
+            inner_type = args[0]
+            if isinstance(inner_type, type) and issubclass(inner_type, DisplayEnum):
+                return [
+                    inner_type.from_any(item) if item is not None else None
+                    for item in value
+                ]
+
+        # Direct DisplayEnum
+        if isinstance(annotation, type) and issubclass(annotation, DisplayEnum):
+            return annotation.from_any(value)
+
+        return value
+
+    @field_serializer("*", when_used="json", check_fields=False)
+    def serialize_display_enums(self, value: Any) -> Any:
+        """Serialize DisplayEnum instances using their human-friendly labels."""
+        if isinstance(value, DisplayEnum):
+            return value.label
+
+        if isinstance(value, list):
+            return [
+                item.label if isinstance(item, DisplayEnum) else item for item in value
+            ]
+
+        return value

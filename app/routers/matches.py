@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from pydantic.v1 import root_validator
+from pydantic import model_validator
 from sqlmodel import Session, select
 
 from app.database import flights as db_flights
@@ -52,7 +52,7 @@ class RoundInput(APLGLBaseModel):
     tee_id: int
     holes: list[HoleResultInput]
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def set_golfer_ids(cls, values):  # TODO: Remove with deprecated field
         if "golfer_ids" in values:
             if "golfer_id" in values:
