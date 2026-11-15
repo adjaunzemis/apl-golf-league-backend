@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlmodel import Session
@@ -18,8 +18,8 @@ def test_get_rounds_by_id(session: Session, num_rounds: int, query_ids: list[int
             tee_id=1,
             type=RoundType.FLIGHT,
             scoring_type=ScoringType.INDIVIDUAL,
-            date_played=datetime(2024, 1, 1),
-            date_updated=datetime.now(),
+            date_played=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            date_updated=datetime.now(timezone.utc),
         )
         session.add(rnd)
         rounds.append(rnd)

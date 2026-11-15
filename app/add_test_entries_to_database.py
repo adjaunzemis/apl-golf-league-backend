@@ -3001,7 +3001,7 @@ if __name__ == "__main__":
     #     he_golfer_db = add_golfer(session=session, name="Hawkeye", affiliation=GolferAffiliation.NON_APL_EMPLOYEE)
 
     #     # Flight and Divisions
-    #     tf_flight_db = add_flight(session=session, name="Test Flight", year=2022, course_id=dr_course_db.id, logo_url="apl_golf_logo.png", secretary="Andris Jaunzemis", secretary_email="adjaunzemis@gmail.com", signup_start_date=datetime(2022, 3, 1, 0, 0, 0), signup_stop_date=datetime(2022, 4, 1, 0, 0, 0), start_date=datetime(2022, 4, 18, 0, 0, 0), weeks=19)
+    #     tf_flight_db = add_flight(session=session, name="Test Flight", year=2022, course_id=dr_course_db.id, logo_url="apl_golf_logo.png", secretary="Andris Jaunzemis", secretary_email="adjaunzemis@gmail.com", signup_start_date=datetime(2022, 3, 1, 0, 0, 0, tzinfo=timezone.utc), signup_stop_date=datetime(2022, 4, 1, 0, 0, 0, tzinfo=timezone.utc), start_date=datetime(2022, 4, 18, 0, 0, 0, tzinfo=timezone.utc), weeks=19)
 
     #     tf_middle_mens_division_db = add_division(session=session, name="Middle", gender=TeeGender.MENS, primary_tee_id=dr_front_white_mens_tee_db.id, secondary_tee_id=dr_back_white_mens_tee_db.id, flight_id=tf_flight_db.id)
     #     tf_senior_mens_division_db = add_division(session=session, name="Senior", gender=TeeGender.MENS, primary_tee_id=dr_front_gold_mens_tee_db.id, secondary_tee_id=dr_back_gold_mens_tee_db.id, flight_id=tf_flight_db.id)

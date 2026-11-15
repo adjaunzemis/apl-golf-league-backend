@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 from typing import Union
 
 import pytest
@@ -29,7 +29,7 @@ from app.utilities.apl_handicap_system import APLHandicapSystem
 def round_validate_data_valid():
     return {
         "course_handicap": 12,
-        "date_played": date.today().isoformat(),
+        "date_played": datetime.now(timezone.utc).isoformat(),
         "holes": [
             {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 5},
             {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 7},
@@ -42,7 +42,7 @@ def round_validate_data_valid():
 def round_validate_data_invalid():
     return {
         "course_handicap": 12,
-        "date_played": date.today().isoformat(),
+        "date_played": datetime.now(timezone.utc).isoformat(),
         "holes": [
             {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 11},
             {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 0},
@@ -152,7 +152,16 @@ def test_submit_round(
     session.add(
         Golfer(id=1, name="Test Golfer", affiliation=GolferAffiliation.APL_EMPLOYEE)
     )
-    session.add(Tee(id=1, name="Test", gender=TeeGender.MENS, rating=72.3, slope=123))
+    session.add(
+        Tee(
+            id=1,
+            name="Test",
+            gender=TeeGender.MENS,
+            rating=72.3,
+            slope=123,
+            color="white",
+        )
+    )
     for hole_idx, hole in enumerate(round_validate_data_valid["holes"]):
         session.add(
             Hole(

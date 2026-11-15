@@ -1,5 +1,5 @@
 from datetime import date as dt_date
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi_mail import FastMail, MessageSchema, MessageType
@@ -448,7 +448,7 @@ async def update_golfer_handicaps(
                 }
             )
             golfer_db.handicap_index = new_handicap_index
-            golfer_db.handicap_index_updated = datetime.now()
+            golfer_db.handicap_index_updated = datetime.now(timezone.utc)
             if not dry_run:
                 session.add(golfer_db)
 
@@ -470,12 +470,14 @@ async def update_golfer_handicaps(
             f"Sending handicap update report to {len(handicappers)} handicapper(s)..."
         )
         message = MessageSchema(
-            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now().date().isoformat()}",
+            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now(timezone.utc).date().isoformat()}",
             recipients=[
                 EmailStr(hc.email) for hc in handicappers if hc.email is not None
             ],
             template_body={
-                "update_date": datetime.now().replace(microsecond=0).isoformat(),
+                "update_date": datetime.now(timezone.utc)
+                .replace(microsecond=0)
+                .isoformat(),
                 "updates": updates_info,
             },
             subtype=MessageType.html,
@@ -561,7 +563,7 @@ def recalculate_hole_results(
                     session.commit()
                     session.refresh(hole_result_db)
             if error_found_in_round:
-                round_db.date_updated = datetime.now()
+                round_db.date_updated = datetime.now(timezone.utc)
                 if not dry_run:
                     session.add(round_db)
                     session.commit()

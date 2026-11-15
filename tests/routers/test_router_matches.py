@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import status
@@ -17,9 +17,9 @@ def session_with_flight_and_teams(session: Session):
         name="Test Flight",
         year=2026,
         secretary="Test Secretary",
-        signup_start_date=datetime(2026, 1, 1),
-        signup_stop_date=datetime(2026, 1, 14),
-        start_date=datetime(2026, 1, 21),
+        signup_start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        signup_stop_date=datetime(2026, 1, 14, tzinfo=timezone.utc),
+        start_date=datetime(2026, 1, 21, tzinfo=timezone.utc),
         weeks=10,
     )
     session.add(flight)

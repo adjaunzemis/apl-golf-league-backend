@@ -11,7 +11,7 @@ def test_update_tournament_divisions_sync(client_admin: TestClient, session: Ses
     tournament_data = {
         "name": "Initial Tournament",
         "year": 2025,
-        "date": "2025-05-01T08:00:00",
+        "date": "2025-05-01T08:00:00Z",
         "course_id": 1,
         "divisions": [
             {"name": "Div A", "gender": "MENS", "primary_tee_id": 1},
@@ -42,7 +42,7 @@ def test_update_tournament_divisions_sync(client_admin: TestClient, session: Ses
         "id": tournament_id,
         "name": "Updated Tournament",
         "year": 2025,
-        "date": "2025-05-01T08:00:00",
+        "date": "2025-05-01T08:00:00Z",
         "course_id": 1,
         "divisions": [
             {

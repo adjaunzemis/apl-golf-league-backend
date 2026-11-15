@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, status
@@ -274,8 +274,9 @@ async def submit_round(
             year=round.date_played.year,
             month=round.date_played.month,
             day=round.date_played.day,
+            tzinfo=timezone.utc,
         ),
-        date_updated=datetime.today(),
+        date_updated=datetime.now(timezone.utc),
     )
     session.add(round_db)
     session.commit()

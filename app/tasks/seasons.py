@@ -47,7 +47,7 @@ def filter_rounds(
     rounds_db: list[RoundSummary],
     include_tournaments: bool = False,
     include_playoffs: bool = False,
-    playoffs_start_date: datetime = datetime.now(),
+    playoffs_start_date: datetime = datetime.now(timezone.utc),
 ):
     """
     Filters rounds to those to be used for statistics.

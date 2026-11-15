@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import List
 
@@ -151,7 +151,7 @@ async def create_qualifying_score(
                 for qualifying_score in qualifying_scores_db
             ]
         )
-        golfer_db.handicap_index_updated = datetime.now()
+        golfer_db.handicap_index_updated = datetime.now(timezone.utc)
         session.add(golfer_db)
         session.commit()
         session.refresh(golfer_db)
@@ -241,8 +241,8 @@ async def update_handicaps(
     if request.update_end is not None:
         update_end = request.update_end
     else:
-        sunday_current = datetime.now() - timedelta(
-            days=(datetime.now().weekday() + 1) % 7
+        sunday_current = datetime.now(timezone.utc) - timedelta(
+            days=(datetime.now(timezone.utc).weekday() + 1) % 7
         )
         update_end = sunday_current + timedelta(days=1)
 

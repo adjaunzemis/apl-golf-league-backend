@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import status
@@ -56,9 +56,9 @@ def test_create_team_flight(
             year=2021,
             id=flight_id,
             secretary="Test Secretary",
-            signup_start_date=datetime(2021, 3, 1),
-            signup_stop_date=datetime(2021, 3, 15),
-            start_date=datetime(2021, 4, 1),
+            signup_start_date=datetime(2021, 3, 1, tzinfo=timezone.utc),
+            signup_stop_date=datetime(2021, 3, 15, tzinfo=timezone.utc),
+            start_date=datetime(2021, 4, 1, tzinfo=timezone.utc),
             weeks=18,
         )
     )
@@ -123,9 +123,9 @@ def test_read_teams(session: Session, client_unauthorized: TestClient):
             year=2021,
             id=1,
             secretary="Test Secretary",
-            signup_start_date=datetime(2021, 3, 1),
-            signup_stop_date=datetime(2021, 3, 15),
-            start_date=datetime(2021, 4, 1),
+            signup_start_date=datetime(2021, 3, 1, tzinfo=timezone.utc),
+            signup_stop_date=datetime(2021, 3, 15, tzinfo=timezone.utc),
+            start_date=datetime(2021, 4, 1, tzinfo=timezone.utc),
             weeks=18,
         )
     )
@@ -174,9 +174,9 @@ def test_read_team_flight(session: Session, client_unauthorized: TestClient):
             year=2021,
             id=1,
             secretary="Test Secretary",
-            signup_start_date=datetime(2021, 3, 1),
-            signup_stop_date=datetime(2021, 3, 15),
-            start_date=datetime(2021, 4, 1),
+            signup_start_date=datetime(2021, 3, 1, tzinfo=timezone.utc),
+            signup_stop_date=datetime(2021, 3, 15, tzinfo=timezone.utc),
+            start_date=datetime(2021, 4, 1, tzinfo=timezone.utc),
             weeks=18,
         )
     )
