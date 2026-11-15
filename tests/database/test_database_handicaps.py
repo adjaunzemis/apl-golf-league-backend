@@ -21,6 +21,7 @@ def test_get_handicap_history_for_golfer(session: Session, num_rounds: int):
     for idx in range(num_rounds):
         hcp = HandicapIndex(
             golfer_id=GOLFER_ID,
+            round_id=idx + 1,
             date_posted=datetime.now(timezone.utc) - timedelta(days=(num_rounds - idx)),
             round_number=1,
             handicap_index=generate_random_number(),
