@@ -54,9 +54,7 @@ def parse_tournament_info_file(file: str, year: int):
                     elif line_parts[0].lower() == "date":
                         date_str = f"{year}-{line_parts[1][:3]}-{line_parts[2]}"
                         try:
-                            info["date"] = datetime.strptime(
-                                date_str, "%Y-%b-%d"
-                            ).date()
+                            info["date"] = datetime.strptime(date_str, "%Y-%b-%d")
                         except:
                             raise ValueError(
                                 "Unable to parse tournament date: " + date_str

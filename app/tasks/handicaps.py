@@ -1,5 +1,4 @@
-from datetime import date as dt_date
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi_mail import FastMail, MessageSchema, MessageType
@@ -128,8 +127,8 @@ def get_round_summaries(
 def get_rounds_in_scoring_record(
     session: Session,
     golfer_id: int,
-    min_date: dt_date,
-    max_date: dt_date,
+    min_date: datetime,
+    max_date: datetime,
     limit: int | None = 20,
     use_legacy_handicapping: bool = False,
 ) -> List[RoundSummary]:
@@ -243,8 +242,8 @@ def get_rounds_in_scoring_record(
 def get_handicap_index_data(
     session: Session,
     golfer_id: int,
-    min_date: dt_date,
-    max_date: dt_date,
+    min_date: datetime,
+    max_date: datetime,
     limit: int = 20,
     include_rounds: bool = False,
     use_legacy_handicapping: bool = False,
@@ -300,7 +299,7 @@ def get_handicap_index_data(
     pending_rounds = []
     pending_index = None
     pending_date_start = max_date + timedelta(days=1)
-    if datetime.today().date() > pending_date_start:
+    if datetime.today().date() > pending_date_start.date():
         pending_rounds = get_rounds_in_scoring_record(
             session=session,
             golfer_id=golfer_id,
@@ -336,9 +335,9 @@ def get_handicap_index_data(
 async def update_golfer_handicaps(
     *,
     session: Session,
-    prior_end_date: dt_date,
-    new_end_date: dt_date,
-    min_date: dt_date | None = None,
+    prior_end_date: datetime,
+    new_end_date: datetime,
+    min_date: datetime | None = None,
     golfer_id: int | None = None,
     force_update: bool = False,
     dry_run: bool = False,
@@ -375,7 +374,7 @@ async def update_golfer_handicaps(
         logger.info(f"NOTE: Dry-run, won't commit changes to database!")
 
     if min_date is None:
-        min_date = datetime(new_end_date.year - 3, 1, 1).date()
+        min_date = datetime(new_end_date.year - 3, 1, 1, tzinfo=timezone.utc)
     logger.info(f"Minimum date for rounds in handicap consideration: {min_date}")
 
     if golfer_id is not None:
@@ -448,7 +447,7 @@ async def update_golfer_handicaps(
                 }
             )
             golfer_db.handicap_index = new_handicap_index
-            golfer_db.handicap_index_updated = datetime.now()
+            golfer_db.handicap_index_updated = datetime.now(timezone.utc)
             if not dry_run:
                 session.add(golfer_db)
 
@@ -470,12 +469,14 @@ async def update_golfer_handicaps(
             f"Sending handicap update report to {len(handicappers)} handicapper(s)..."
         )
         message = MessageSchema(
-            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now().date().isoformat()}",
+            subject=f"[APL Golf League] Handicap Update Report {'(Dry-Run)' if dry_run else ''} - {datetime.now(timezone.utc).date().isoformat()}",
             recipients=[
                 EmailStr(hc.email) for hc in handicappers if hc.email is not None
             ],
             template_body={
-                "update_date": datetime.now().replace(microsecond=0).isoformat(),
+                "update_date": datetime.now(timezone.utc)
+                .replace(microsecond=0)
+                .isoformat(),
                 "updates": updates_info,
             },
             subtype=MessageType.html,
@@ -561,7 +562,7 @@ def recalculate_hole_results(
                     session.commit()
                     session.refresh(hole_result_db)
             if error_found_in_round:
-                round_db.date_updated = datetime.now()
+                round_db.date_updated = datetime.now(timezone.utc)
                 if not dry_run:
                     session.add(round_db)
                     session.commit()

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Field, Relationship
@@ -9,9 +9,9 @@ from app.models.round import Round, RoundType, ScoringType
 
 
 class HandicapIndexBase(APLGLBaseModel):
-    golfer_id: int = Field(default=None, foreign_key="golfer.id")
-    round_id: int = Field(default=None, foreign_key="round.id")
-    date_posted: datetime = Field(default=None)
+    golfer_id: int = Field(foreign_key="golfer.id")
+    round_id: int = Field(foreign_key="round.id")
+    date_posted: datetime = Field(default=datetime.now(timezone.utc))
     round_number: int = Field(default=1)
     handicap_index: float = Field(default=None)
 

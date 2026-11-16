@@ -47,7 +47,7 @@ def filter_rounds(
     rounds_db: list[RoundSummary],
     include_tournaments: bool = False,
     include_playoffs: bool = False,
-    playoffs_start_date: datetime = datetime.now(),
+    playoffs_start_date: datetime = datetime.now(timezone.utc),
 ):
     """
     Filters rounds to those to be used for statistics.
@@ -148,8 +148,8 @@ def compile_season_statistics(*, session: Session, year: int):
                 golfer_starting_handicap = get_handicap_index_data(
                     session=session,
                     golfer_id=golfer_db.id,
-                    min_date=datetime(year - 2, 1, 1).date(),
-                    max_date=start_date.date(),
+                    min_date=datetime(year - 2, 1, 1),
+                    max_date=start_date,
                     limit=10,
                     include_rounds=True,
                 )
@@ -163,8 +163,8 @@ def compile_season_statistics(*, session: Session, year: int):
                     golfer_starting_handicap = get_handicap_index_data(
                         session=session,
                         golfer_id=golfer_db.id,
-                        min_date=datetime(year - 2, 1, 1).date(),
-                        max_date=(first_round.date_played - timedelta(days=1)).date(),
+                        min_date=datetime(year - 2, 1, 1),
+                        max_date=(first_round.date_played - timedelta(days=1)),
                         limit=10,
                         include_rounds=True,
                     )
@@ -182,8 +182,8 @@ def compile_season_statistics(*, session: Session, year: int):
                 golfer_current_handicap = get_handicap_index_data(
                     session=session,
                     golfer_id=golfer_db.id,
-                    min_date=datetime(year - 2, 1, 1).date(),
-                    max_date=datetime.today().date(),
+                    min_date=datetime(year - 2, 1, 1),
+                    max_date=datetime.today(),
                     limit=10,
                     include_rounds=True,
                 )

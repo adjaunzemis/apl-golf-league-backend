@@ -1,4 +1,3 @@
-from datetime import date as dt_date
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import aliased
@@ -65,8 +64,8 @@ class GolferData(APLGLBaseModel):
     affiliation: GolferAffiliation | None = None
     email: str | None = None
     phone: str | None = None
-    member_since: int = None
-    handicap_index_data: HandicapIndexData = None
+    member_since: int | None = None
+    handicap_index_data: HandicapIndexData | None = None
 
 
 class GolferDataWithCount(APLGLBaseModel):
@@ -1097,8 +1096,8 @@ def get_round_summaries(
 def get_rounds_in_scoring_record(
     session: Session,
     golfer_id: int,
-    min_date: dt_date,
-    max_date: dt_date,
+    min_date: datetime,
+    max_date: datetime,
     limit: int = 20,
     use_legacy_handicapping: bool = False,
 ) -> list[RoundSummary]:
@@ -1212,8 +1211,8 @@ def get_rounds_in_scoring_record(
 def get_handicap_index_data(
     session: Session,
     golfer_id: int,
-    min_date: dt_date,
-    max_date: dt_date,
+    min_date: datetime,
+    max_date: datetime,
     limit: int = 20,
     include_rounds: bool = False,
     use_legacy_handicapping: bool = False,
@@ -1227,9 +1226,9 @@ def get_handicap_index_data(
         database session
     golfer_id : int
         golfer identifier in database
-    min_date : date
+    min_date : datetime
         earliest date allowed for rounds in the scoring record
-    max_date : date
+    max_date : datetime
         latest date allowed for rounds in the scoring record
         Note: rounds after this date will be in the "pending" scoring record
     limit : int, optional
@@ -1270,7 +1269,7 @@ def get_handicap_index_data(
     # Process pending scoring record (between max_date and now)
     pending_rounds = []
     pending_index = None
-    if datetime.today().date() > max_date:
+    if datetime.today().date() > max_date.date():
         pending_rounds = get_rounds_in_scoring_record(
             session=session,
             golfer_id=golfer_id,

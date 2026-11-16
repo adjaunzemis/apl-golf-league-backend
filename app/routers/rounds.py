@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, status
@@ -56,8 +56,10 @@ async def read_rounds(
                 select(Round.id, Round.type)
                 .join(RoundGolferLink, onclause=RoundGolferLink.round_id == Round.id)
                 .where(RoundGolferLink.golfer_id == golfer_id)
-                .where(Round.date_played >= date(year, 1, 1))
-                .where(Round.date_played < date(year + 1, 1, 1))
+                .where(Round.date_played >= datetime(year, 1, 1, tzinfo=timezone.utc))
+                .where(
+                    Round.date_played < datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+                )
             ).all()
         else:  # all rounds for golfer
             round_query_data = session.exec(
@@ -68,8 +70,8 @@ async def read_rounds(
     elif year:  # limit by year
         round_query_data = session.exec(
             select(Round.id, Round.type)
-            .where(Round.date_played >= date(year, 1, 1))
-            .where(Round.date_played < date(year + 1, 1, 1))
+            .where(Round.date_played >= datetime(year, 1, 1, tzinfo=timezone.utc))
+            .where(Round.date_played < datetime(year + 1, 1, 1, tzinfo=timezone.utc))
         ).all()
     else:  # no extra limitations
         round_query_data = session.exec(select(Round.id, Round.type)).all()
@@ -274,8 +276,9 @@ async def submit_round(
             year=round.date_played.year,
             month=round.date_played.month,
             day=round.date_played.day,
+            tzinfo=timezone.utc,
         ),
-        date_updated=datetime.today(),
+        date_updated=datetime.now(timezone.utc),
     )
     session.add(round_db)
     session.commit()

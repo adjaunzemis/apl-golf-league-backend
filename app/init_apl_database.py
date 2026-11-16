@@ -14,7 +14,7 @@ Andris Jaunzemis
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import numpy as np
@@ -1998,7 +1998,7 @@ def update_golfer_handicaps(
     """
     print(f"Updating golfer handicap index data")
     alhs = APLLegacyHandicapSystem()
-    update_epoch = datetime.now()
+    update_epoch = datetime.now(timezone.utc)
     if golfer_ids:
         golfers_db = session.exec(select(Golfer).where(Golfer.id.in_(golfer_ids))).all()
     else:

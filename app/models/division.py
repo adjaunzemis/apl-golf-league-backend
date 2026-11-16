@@ -11,8 +11,8 @@ from app.models.tournament_division_link import TournamentDivisionLink
 class DivisionBase(APLGLBaseModel):
     name: str
     gender: TeeGender
-    primary_tee_id: int = Field(default=None, foreign_key="tee.id")
-    secondary_tee_id: int = Field(default=None, foreign_key="tee.id")
+    primary_tee_id: int | None = Field(default=None, foreign_key="tee.id")
+    secondary_tee_id: int | None = Field(default=None, foreign_key="tee.id")
 
 
 class Division(DivisionBase, table=True):

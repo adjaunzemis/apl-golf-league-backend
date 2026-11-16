@@ -62,7 +62,7 @@ def match_data_to_dict(match_data):
     match_dict["team_2"] = int(matchup_parts[4])
     match_dict["team_1_score"] = float(matchup_parts[5])
     match_dict["team_2_score"] = float(matchup_parts[7])
-    match_dict["date_played"] = datetime.strptime(matchup_parts[9], "%b-%d-%Y").date()
+    match_dict["date_played"] = datetime.strptime(matchup_parts[9], "%b-%d-%Y")
     match_dict["course_abbreviation"] = matchup_parts[11]
 
     # Parse data entry timestamp from second line
@@ -106,7 +106,7 @@ def match_data_to_dict(match_data):
 
         match_dict["p" + str(playerNum) + "_date_played"] = datetime.strptime(
             round_parts[1], "%b-%d-%Y"
-        ).date()
+        )
         match_dict["p" + str(playerNum) + "_week"] = int(round_parts[2])
         match_dict["p" + str(playerNum) + "_name"] = round_parts[3]
         for hole_num in range(1, 10):

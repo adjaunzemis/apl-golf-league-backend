@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import List
 
@@ -46,8 +46,18 @@ async def get_scoring_record(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
-    min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
-    max_date: date = Query(default=date.today() + timedelta(days=1)),
+    min_date: datetime = Query(
+        default=datetime(datetime.today().year - 2, 1, 1, tzinfo=timezone.utc)
+    ),
+    max_date: datetime = Query(
+        default=datetime(
+            datetime.today().year,
+            datetime.today().month,
+            datetime.today().day,
+            tzinfo=timezone.utc,
+        )
+        + timedelta(days=1)
+    ),
     limit: int = Query(default=10),
     use_legacy_handicapping: bool = Query(default=False),
 ):
@@ -66,8 +76,18 @@ async def get_handicap_index(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
-    min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
-    max_date: date = Query(default=date.today() + timedelta(days=1)),
+    min_date: datetime = Query(
+        default=datetime(datetime.today().year - 2, 1, 1, tzinfo=timezone.utc)
+    ),
+    max_date: datetime = Query(
+        default=datetime(
+            datetime.today().year,
+            datetime.today().month,
+            datetime.today().day,
+            tzinfo=timezone.utc,
+        )
+        + timedelta(days=1)
+    ),
     limit: int = Query(default=10),
     include_rounds: bool = Query(default=False),
     use_legacy_handicapping: bool = Query(default=False),
@@ -151,7 +171,7 @@ async def create_qualifying_score(
                 for qualifying_score in qualifying_scores_db
             ]
         )
-        golfer_db.handicap_index_updated = datetime.now()
+        golfer_db.handicap_index_updated = datetime.now(timezone.utc)
         session.add(golfer_db)
         session.commit()
         session.refresh(golfer_db)
@@ -241,8 +261,8 @@ async def update_handicaps(
     if request.update_end is not None:
         update_end = request.update_end
     else:
-        sunday_current = datetime.now() - timedelta(
-            days=(datetime.now().weekday() + 1) % 7
+        sunday_current = datetime.now(timezone.utc) - timedelta(
+            days=(datetime.now(timezone.utc).weekday() + 1) % 7
         )
         update_end = sunday_current + timedelta(days=1)
 
@@ -255,8 +275,8 @@ async def update_handicaps(
         update_golfer_handicaps,
         session=session,
         golfer_id=request.golfer_id,
-        prior_end_date=prior_update_end.date(),
-        new_end_date=update_end.date(),
+        prior_end_date=prior_update_end,
+        new_end_date=update_end,
         force_update=request.force_update,
         dry_run=request.dry_run,
     )

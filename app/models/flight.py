@@ -17,7 +17,7 @@ from app.models.team_golfer_link import TeamRole
 class FlightBase(APLGLBaseModel):
     name: str
     year: int
-    course_id: int = Field(default=None, foreign_key="course.id")
+    course_id: int | None = Field(default=None, foreign_key="course.id")
     logo_url: str | None = None
     secretary: str
     secretary_email: str | None = None

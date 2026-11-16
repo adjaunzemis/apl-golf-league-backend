@@ -1,5 +1,4 @@
-from datetime import date, datetime
-from typing import Union
+from datetime import datetime
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
@@ -134,10 +133,10 @@ class RoundResults(APLGLBaseModel):
     tee_rating: float
     tee_slope: float
     tee_color: str
-    gross_score: int = None
-    adjusted_gross_score: int = None
-    net_score: int = None
-    score_differential: float = None
+    gross_score: int | None = None
+    adjusted_gross_score: int | None = None
+    net_score: int | None = None
+    score_differential: float | None = None
     holes: list[HoleResultData] = Field(default_factory=list)
 
 
@@ -147,13 +146,13 @@ class RoundResultsWithCount(APLGLBaseModel):
 
 
 class RoundValidationRequest(APLGLBaseModel):
-    date_played: Union[datetime, date]
+    date_played: datetime
     course_handicap: int
     holes: list[HoleResultValidationRequest] = Field(default_factory=list)
 
 
 class RoundValidationResponse(APLGLBaseModel):
-    date_played: Union[datetime, date]
+    date_played: datetime
     course_handicap: int
     holes: list[HoleResultValidationResponse] = Field(default_factory=list)
     is_valid: bool = False
@@ -172,7 +171,7 @@ class RoundSubmissionResponse(APLGLBaseModel):
     tee_id: int
     round_type: RoundType
     scoring_type: ScoringType
-    date_played: Union[datetime, date]
+    date_played: datetime
     course_handicap: int
     holes: list[HoleResultSubmissionResponse] = Field(default_factory=list)
     is_valid: bool = False
