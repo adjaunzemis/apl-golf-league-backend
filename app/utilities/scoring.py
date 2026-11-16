@@ -1,5 +1,4 @@
-from datetime import date, datetime
-from typing import Union
+from datetime import datetime
 
 from app.models.hole_result import HoleResultValidationResponse
 from app.models.match import (
@@ -187,7 +186,7 @@ def compute_match_score(
     hole_winners: list[MatchHoleWinner],
     home_net_scores: list[int],
     away_net_scores: list[int],
-    date_played: Union[datetime, date],
+    date_played: datetime,
 ):
     """Computes match score based on hole-by-hole winners and player net scores.
 
@@ -199,7 +198,7 @@ def compute_match_score(
         total net score for each round for the home team
     away_net_scores: list[int]
         total net score for each round for the away team
-    date_played: datetime | date
+    date_played: datetime
         date that the match was played
 
     Returns

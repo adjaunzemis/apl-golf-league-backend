@@ -1,5 +1,5 @@
 import re
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import List
 
@@ -111,8 +111,18 @@ async def read_golfer(
     *,
     session: Session = Depends(get_sql_db_session),
     golfer_id: int,
-    min_date: date = Query(default=date(date.today().year - 2, 1, 1)),
-    max_date: date = Query(default=date.today() + timedelta(days=1)),
+    min_date: datetime = Query(
+        default=datetime(datetime.today().year - 2, 1, 1, tzinfo=timezone.utc)
+    ),
+    max_date: datetime = Query(
+        default=datetime(
+            datetime.today().year,
+            datetime.today().month,
+            datetime.today().day,
+            tzinfo=timezone.utc,
+        )
+        + timedelta(days=1)
+    ),
 ):
     golfer_db = db_golfers.get_golfers(
         session=session,

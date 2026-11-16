@@ -1,6 +1,5 @@
 import re
 from dataclasses import dataclass
-from datetime import date as dt_date
 from datetime import datetime, timedelta, timezone
 
 from rapidfuzz import fuzz
@@ -338,10 +337,14 @@ def get_golfer_year_joined(session: Session, golfer_id: int) -> int | None:
 def get_golfers(
     session: Session,
     golfer_ids: list[int],
-    min_date: dt_date = datetime(
-        datetime.today().year - 2, 1, 1, tzinfo=timezone.utc
-    ).date(),
-    max_date: dt_date = datetime.today().date() + timedelta(days=1),
+    min_date: datetime = datetime(datetime.today().year - 2, 1, 1, tzinfo=timezone.utc),
+    max_date: datetime = datetime(
+        datetime.today().year,
+        datetime.today().month,
+        datetime.today().day,
+        tzinfo=timezone.utc,
+    )
+    + timedelta(days=1),
     include_scoring_record: bool = False,
     use_legacy_handicapping: bool = False,
 ) -> list[GolferData]:

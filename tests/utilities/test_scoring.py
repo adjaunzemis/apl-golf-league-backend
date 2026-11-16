@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 
 import pytest
 
@@ -15,7 +15,7 @@ from tests.utilities import load_fixture
         (
             {
                 "course_handicap": 12,
-                "date_played": date.today().isoformat(),
+                "date_played": datetime.today().isoformat(),
                 "holes": [
                     {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 5},
                     {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 7},
@@ -27,7 +27,7 @@ from tests.utilities import load_fixture
         (
             {
                 "course_handicap": 12,
-                "date_played": date.today().isoformat(),
+                "date_played": datetime.today().isoformat(),
                 "holes": [
                     {"number": 1, "par": 4, "stroke_index": 1, "gross_score": 11},
                     {"number": 2, "par": 3, "stroke_index": 9, "gross_score": 0},
@@ -39,7 +39,9 @@ from tests.utilities import load_fixture
         (
             {
                 "course_handicap": 6,
-                "date_played": date(year=2023, month=7, day=19),
+                "date_played": datetime(
+                    year=2023, month=7, day=19, tzinfo=timezone.utc
+                ),
                 "holes": [
                     {"number": 1, "par": 4, "stroke_index": 7, "gross_score": 7},
                     {"number": 2, "par": 4, "stroke_index": 5, "gross_score": 4},
@@ -138,7 +140,7 @@ def test_validate_match():
             [MatchHoleWinner.HOME] * 9,
             [36, 27],
             [36, 36],
-            date.today(),
+            datetime.now(timezone.utc),
             11.0,
             0.0,
         ),
@@ -146,7 +148,7 @@ def test_validate_match():
             [MatchHoleWinner.AWAY] * 9,
             [36, 36],
             [36, 27],
-            date.today(),
+            datetime.now(timezone.utc),
             0.0,
             11.0,
         ),
@@ -154,7 +156,7 @@ def test_validate_match():
             [MatchHoleWinner.TIE] * 9,
             [36, 36],
             [36, 36],
-            date.today(),
+            datetime.now(timezone.utc),
             5.5,
             5.5,
         ),
@@ -172,7 +174,7 @@ def test_validate_match():
             ],
             [42, 40],
             [43, 44],
-            date(year=2023, month=5, day=3),
+            datetime.now(timezone.utc),
             6.5,
             4.5,
         ),
@@ -182,7 +184,7 @@ def test_compute_match_score(
     hole_winners: list[MatchHoleWinner],
     home_net_scores: list[int],
     away_net_scores: list[int],
-    date_played: date,
+    date_played: datetime,
     expected_home_score: float,
     expected_away_score: float,
 ):
