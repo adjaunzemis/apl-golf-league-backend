@@ -29,6 +29,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16.0",
     "hypothesis>=6.99.8,<7.0.0",
     "ipykernel>=7.4.0,<7.5.0",
     "matplotlib>=3.8.3,<4.0.0",
