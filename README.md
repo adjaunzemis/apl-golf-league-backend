@@ -7,7 +7,7 @@ The backend server for the APL Golf League website, containing the relevant data
 This project uses `uv` for package management including virtual environments and dependencies.
 
 ```sh
-uv venv -p 3.13
+uv venv -p 3.15
 source .venv/bin/activate # on unix-based systems, or
 .venv/Scripts/activate # on Windows
 uv sync --dev
